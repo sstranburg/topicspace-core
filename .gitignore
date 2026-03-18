@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+.DS_Store
+data/
+*.npz
+venv/
+master_report.html
+*.pdf

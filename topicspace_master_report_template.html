@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TopicSpace — AI Ecosystem Narrative Intelligence Report</title>
+  <style>
+    :root{
+      --ink:#1b1f24;
+      --muted:#5b6673;
+      --line:#d9e0e7;
+      --soft:#f5f7fa;
+      --accent:#1f5eff;
+      --accent-2:#0f766e;
+      --warn:#b45309;
+      --danger:#b91c1c;
+      --good:#166534;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      color:var(--ink);
+      font:13px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+      background:#fff;
+    }
+    .page{
+      width:8.5in;
+      min-height:11in;
+      margin:0 auto;
+      padding:0.4in 0.4in 0.5in;
+      background:#fff;
+    }
+    .cover{
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      min-height:9.2in;
+    }
+    .eyebrow{
+      color:var(--accent);
+      font-weight:700;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-size:12px;
+      margin-bottom:8px;
+    }
+    h1{
+      font-size:28px;
+      line-height:1.08;
+      margin:0 0 10px;
+      max-width:7in;
+    }
+    .subtitle{
+      color:var(--muted);
+      font-size:15px;
+      max-width:6.5in;
+      margin-bottom:18px;
+    }
+    .meta-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin-top:24px;
+      max-width:6.2in;
+    }
+    .meta-card{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:12px 14px;
+      background:var(--soft);
+    }
+    .meta-card .label{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:var(--muted);
+      margin-bottom:4px;
+      font-weight:700;
+    }
+    .meta-card .value{
+      font-size:15px;
+      font-weight:600;
+    }
+    .footer-note{
+      color:var(--muted);
+      font-size:12px;
+      border-top:1px solid var(--line);
+      padding-top:10px;
+    }
+    h2{
+      font-size:18px;
+      margin:0 0 8px;
+      padding-top:2px;
+    }
+    h3{
+      font-size:14px;
+      margin:0 0 6px;
+    }
+    p{margin:0 0 6px}
+    .section{
+      margin:0 0 8px;
+    }
+    .toc{
+      border:1px solid var(--line);
+      border-radius:12px;
+      overflow:hidden;
+      margin-top:18px;
+    }
+    .toc .row{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      padding:10px 14px;
+      border-top:1px solid var(--line);
+    }
+    .toc .row:first-child{border-top:none}
+    .toc .num{color:var(--muted); min-width:26px}
+    .summary-band{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:8px;
+      margin:10px 0 14px;
+    }
+    .kpi{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:8px 10px;
+      background:linear-gradient(180deg,#fff,var(--soft));
+    }
+    .kpi .k{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.06em}
+    .kpi .v{font-size:20px;font-weight:800;margin:2px 0 1px}
+    .kpi .s{font-size:11px;color:var(--muted)}
+    .two-col{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:18px;
+      align-items:start;
+    }
+    .card{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 12px;
+      background:#fff;
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .callout{
+      background:#f8fbff;
+      border-left:4px solid var(--accent);
+      padding:8px 10px;
+      border-radius:8px;
+      margin:8px 0;
+    }
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .storm{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:8px 10px;
+      background:#fff;
+      margin-bottom:8px;
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .storm-header{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      margin-bottom:8px;
+    }
+    .storm-title{font-weight:800;font-size:13px;line-height:1.25}
+    .badge{
+      display:inline-block;
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .state-emerging{background:#ecfeff;color:#155e75}
+    .state-growing{background:#ecfdf5;color:var(--good)}
+    .state-peaking{background:#fff7ed;color:var(--warn)}
+    .state-fading{background:#fef2f2;color:var(--danger)}
+    .state-stable{background:#f4f4f5;color:#52525b}
+    .state-volatile{background:#faf5ff;color:#7e22ce}
+    .mini-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px 12px;
+      color:var(--muted);
+      font-size:11px;
+      margin-bottom:4px;
+    }
+    .bullets{margin:4px 0 0 14px;padding:0}
+    .bullets li{margin:0 0 2px}
+    .details-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:2px 16px;
+      list-style:none;
+      margin:0;padding:0;
+    }
+    .details-grid li{margin:0;font-size:11px;color:var(--muted)}
+    .viz{
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:var(--soft);
+      padding:6px;
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .viz img{display:block;width:100%;height:auto;border-radius:6px;background:#fff}
+    .viz .caption{
+      color:var(--muted);
+      font-size:10px;
+      margin-top:4px;
+    }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      border:1px solid var(--line);
+      border-radius:10px;
+      overflow:hidden;
+      font-size:11px;
+    }
+    thead th{
+      background:#f8fafc;
+      color:#334155;
+      text-align:left;
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      padding:6px 8px;
+      border-bottom:1px solid var(--line);
+    }
+    tbody td{
+      padding:6px 8px;
+      border-bottom:1px solid var(--line);
+      vertical-align:top;
+    }
+    tbody tr:last-child td{border-bottom:none}
+    tr.hide-row{display:none}
+    .muted{color:var(--muted)}
+    .small{font-size:12px}
+    @media print{
+      body{background:#fff}
+      .page{width:auto;min-height:auto;padding:0.35in 0.35in 0.4in}
+      a{text-decoration:none;color:inherit}
+    }
+  </style>
+</head>
+<body>
+
+  <section class="page cover">
+    <div>
+      <div class="eyebrow">TopicSpace</div>
+      <h1>AI Ecosystem Narrative Intelligence Report</h1>
+      <div class="subtitle">
+        Mapping narrative flows across the AI economy
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-card">
+          <div class="label">Report scope</div>
+          <div class="value">Tech ecosystem + selected actor deep dives</div>
+        </div>
+        <div class="meta-card">
+          <div class="label">Generated</div>
+          <div class="value">{{ generated_at }}</div>
+        </div>
+        <div class="meta-card">
+          <div class="label">Actors covered</div>
+          <div class="value">{{ actor_list }}</div>
+        </div>
+        <div class="meta-card">
+          <div class="label">Prepared for</div>
+          <div class="value">{{ audience_name }}</div>
+        </div>
+      </div>
+
+      <div class="toc">
+        <div class="row"><div><span class="num">1.</span> Executive overview</div><div class="muted">p. 2</div></div>
+        <div class="row"><div><span class="num">2.</span> Narrative forecast</div><div class="muted">p. 3</div></div>
+        <div class="row"><div><span class="num">2B.</span> Narrative actions</div><div class="muted">p. 3</div></div>
+        <div class="row"><div><span class="num">3.</span> Strategic watchlist</div><div class="muted">p. 3</div></div>
+        <div class="row"><div><span class="num">4.</span> Narrative phase map</div><div class="muted">p. 4</div></div>
+        <div class="row"><div><span class="num">5.</span> Narrative lineages</div><div class="muted">p. 5</div></div>
+        <div class="row"><div><span class="num">6.</span> Narrative leadership</div><div class="muted">p. 6</div></div>
+        <div class="row"><div><span class="num">7.</span> Ecosystem view</div><div class="muted">p. 7</div></div>
+        <div class="row"><div><span class="num">8.</span> Actor narrative snapshots</div><div class="muted">p. 8+</div></div>
+        <div class="row"><div><span class="num">9.</span> Convergence & propagation</div><div class="muted">later</div></div>
+        <div class="row"><div><span class="num">10.</span> Methodology &amp; Analytical Framework</div><div class="muted">final</div></div>
+        <div class="row"><div><span class="num">A.</span> Storm index</div><div class="muted">appendix</div></div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Suggested use: print as a discussion memo. Keep visuals and top narratives on the first pages; move method and diagnostics to the end.
+    </div>
+  </section>
+
+  <section class="page" style="page-break-before:always">
+    <div class="section" style="margin-bottom:0">
+      <h2>1. Executive overview</h2>
+      <div class="summary-band">
+        <div class="kpi"><div class="k">Events in storms</div><div class="v">{{ total_events }}</div><div class="s">{{ event_window }}</div></div>
+        <div class="kpi"><div class="k">Actor storms</div><div class="v">{{ actor_storm_count }}</div><div class="s">tracked narratives</div></div>
+        <div class="kpi"><div class="k">Actor lineages</div><div class="v">{{ actor_lineages_count }}</div><div class="s">actor narratives</div></div>
+        <div class="kpi"><div class="k">Ecosystem lineages</div><div class="v">{{ eco_lineages_count }}</div><div class="s">cross-actor narratives</div></div>
+        <div class="kpi"><div class="k">Avg coherence</div><div class="v">{{ avg_coherence }}</div><div class="s">narrative clarity</div></div>
+        <div class="kpi"><div class="k">Avg storm size</div><div class="v">{{ avg_storm_size }}</div><div class="s">events per storm</div></div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          <h3>Data sources</h3>
+          <p class="muted" style="margin-bottom:10px">{{ total_raw_events }} raw events ingested from multiple sources, normalized and embedded for semantic analysis.</p>
+          <table>
+            <thead><tr><th>Source</th><th>Events</th><th>Share</th><th>Time Range</th><th>Rate</th></tr></thead>
+            <tbody>
+              <tr><td>{{ source_1 }}</td><td>{{ source_1_count }}</td><td>{{ source_1_pct }}%</td><td class="muted" style="font-size:11px">{{ source_1_time }}</td><td>{{ source_1_rate }}</td></tr>
+              <tr><td>{{ source_2 }}</td><td>{{ source_2_count }}</td><td>{{ source_2_pct }}%</td><td class="muted" style="font-size:11px">{{ source_2_time }}</td><td>{{ source_2_rate }}</td></tr>
+              <tr><td>{{ source_3 }}</td><td>{{ source_3_count }}</td><td>{{ source_3_pct }}%</td><td class="muted" style="font-size:11px">{{ source_3_time }}</td><td>{{ source_3_rate }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          {{ whats_changing_html }}
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          <h3>Narrative lineages</h3>
+          {{ lineage_overview_html }}
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          <h3>Lifecycle distribution</h3>
+          <table>
+            <thead><tr><th>State</th><th>Count</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td>Emerging</td><td>{{ state_emerging }}</td><td class="muted">New formations worth watching</td></tr>
+              <tr><td>Growing</td><td>{{ state_growing }}</td><td class="muted">Strengthening narratives</td></tr>
+              <tr><td>Peaking</td><td>{{ state_peaking }}</td><td class="muted">High-attention storms</td></tr>
+              <tr><td>Fading</td><td>{{ state_fading }}</td><td class="muted">Attention cooling</td></tr>
+              <tr><td>Stable/Volatile</td><td>{{ state_other }}</td><td class="muted">Persistent or shifting narratives</td></tr>
+            </tbody>
+          </table>
+          <p class="muted" style="font-size:11px;margin-top:8px;font-style:italic">{{ lifecycle_interpretation }}</p>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          <h3>Narrative dynamics</h3>
+          <div class="grid-2">
+            <div>
+              <table>
+                <thead><tr><th>Drift class</th><th>Count</th><th>Shift type breakdown</th></tr></thead>
+                <tbody>
+                  <tr><td>Stable</td><td>{{ drift_stable }}</td><td class="muted">{{ shift_stable_detail }}</td></tr>
+                  <tr><td>Gradual evolution</td><td>{{ drift_gradual }}</td><td class="muted">{{ shift_gradual_detail }}</td></tr>
+                  <tr><td>Major pivots</td><td>{{ drift_pivot }}</td><td class="muted">{{ shift_pivot_detail }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="callout" style="margin:0">
+              <strong>Interpretation:</strong> {{ narrative_dynamics_interpretation }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          <h3>Narrative pressure signals</h3>
+          <div class="grid-2">
+            <div>
+              <h4 style="margin:0 0 4px;font-size:12px">High pressure</h4>
+              <ul class="bullets" style="font-size:12px">
+                {{ high_pressure_html }}
+              </ul>
+              <h4 style="margin:8px 0 4px;font-size:12px">Building pressure</h4>
+              <ul class="bullets" style="font-size:12px">
+                {{ building_pressure_html }}
+              </ul>
+            </div>
+            <div class="callout" style="margin:0">
+              <strong>Interpretation:</strong> {{ pressure_interpretation }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          <h3>Strategic watch summary</h3>
+          <div class="grid-2">
+            <div>
+              <table>
+                <tbody>
+                  <tr><td><strong>Priority watch</strong></td><td>{{ watchlist_priority_count }}</td></tr>
+                  <tr><td><strong>Monitor closely</strong></td><td>{{ watchlist_monitor_count }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="callout" style="margin:0">
+              <strong>Interpretation:</strong> {{ watchlist_summary_interpretation }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          <h3>Community precursors <span style="font-size:11px;font-weight:500;color:#888;background:#f0f0f0;border-radius:4px;padding:2px 7px;margin-left:8px;vertical-align:middle;letter-spacing:.04em">COMING SOON</span></h3>
+          <p class="muted" style="font-size:12px;margin-bottom:10px">Real Reddit and community signal ingestion is planned. The data below is synthetic and for structural preview only.</p>
+          {{ community_precursors_html }}
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>2. Narrative Forecast</h2>
+      <p class="muted" style="font-size:12px;margin-bottom:16px">Where is narrative energy going next? Three buckets: act now, watch closely, manage risk.</p>
+      {{ forecast_panel_html }}
+    </div>
+
+    <div class="section" style="margin-top:20px;margin-bottom:0">
+      <h2>2B. Narrative Actions</h2>
+      <p class="muted" style="font-size:12px;margin-bottom:16px">Signal → interpretation → action → risk. One card per forecasted storm.</p>
+      {{ action_cards_html }}
+    </div>
+
+    <div class="section" style="margin-top:20px;margin-bottom:0">
+      <h2>3. Strategic Watchlist</h2>
+      <p class="muted" style="margin-bottom:12px">Ranked by 0.5 × momentum + 0.3 × gravity + 0.2 × velocity. Top 3 actor and top 3 ecosystem narratives.</p>
+
+      <div class="viz" style="margin-bottom:14px">
+        <img src="{{ pressure_leadership_matrix_path }}" alt="Pressure × Leadership Matrix" />
+        <div class="caption">Pressure × Leadership matrix. Top-right = strategic priority. Bubble size = event count. Color = narrative role.</div>
+      </div>
+
+      <p class="muted" style="font-size:12px;margin-bottom:10px">{{ watchlist_summary_interpretation }}</p>
+      {{ watchlist_lineage_html }}
+      {{ inflection_signals_html }}
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>4. Narrative Phase Map</h2>
+      <p class="muted" style="font-size:12px;margin-bottom:12px">Gravity × velocity for all lineages. Bubble size = total events. Blue = actor lineage, orange = ecosystem lineage. Dashed outline = low velocity confidence. Top 8 by score are labeled.</p>
+      <div class="viz" style="margin:0">
+        <img src="{{ phase_map_lineages_path }}" alt="Narrative Phase Map" />
+        <div class="caption">Top-right (high gravity, positive velocity) = Strategic Expansion. Top-left = Emerging Signals. Bottom-right = Cooling but Important. Bottom-left = Background.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>5. Narrative Lineages</h2>
+      <p class="muted" style="font-size:12px;margin-bottom:16px">Persistent narrative threads tracked across storm windows, ranked by gravitational weight.</p>
+      {{ lineage_section_html }}
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>6. Narrative leadership</h2>
+      <p class="muted" style="margin-bottom:12px">Actor roles derived from {{ leadership_chains_count }} propagation chains across {{ leadership_actors_count }} actors. Roles reflect where actors typically appear in narrative diffusion flows.</p>
+      
+      <div class="grid-2">
+        <div class="card">
+          <h3>Role assignments</h3>
+          <table>
+            <thead><tr><th>Actor</th><th>Role</th><th>Centrality</th><th>Chains</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              {{ leadership_rows_html }}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:12px">
+            <h3>Role summary</h3>
+            <table>
+              <tbody>
+                <tr><td><strong>Leaders</strong></td><td>{{ leader_actors }}</td><td class="muted">Originate narrative flows</td></tr>
+                <tr><td><strong>Amplifiers</strong></td><td>{{ amplifier_actors }}</td><td class="muted">Expand narratives mid-chain</td></tr>
+                <tr><td><strong>Bridges</strong></td><td>{{ bridge_actors }}</td><td class="muted">Connect different narrative streams</td></tr>
+                <tr><td><strong>Receivers</strong></td><td>{{ receiver_actors }}</td><td class="muted">Appear downstream</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h3>Theme-level leadership</h3>
+            <table>
+              <thead><tr><th>Theme</th><th>Leader</th><th>Amplifier</th><th>Bridge</th><th>Receiver</th></tr></thead>
+              <tbody>
+                {{ theme_leadership_html }}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>7. Ecosystem view</h2>
+      
+      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start">
+        <div class="viz" style="margin:0">
+          <img src="{{ ecosystem_visual_path }}" alt="Ecosystem field visualization" />
+          <div class="caption">Ecosystem-level field view. Use this to discuss cross-actor context, not company-specific detail.</div>
+        </div>
+
+        <div>
+          <h3 style="margin-top:0">Top narratives by gravity</h3>
+          {{ eco_lineage_narratives_html }}
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <h3>Ecosystem Lineages</h3>
+        <p style="font-size:12px;color:var(--muted);margin-top:0">Top 4 cross-actor narrative lineages by gravity. Each lineage groups ecosystem storms sharing semantic and thematic continuity.</p>
+        {{ eco_lineage_theme_evidence_html }}
+      </div>
+
+      <div style="margin-top:20px">
+        <h3>Ecosystem Diagnostics</h3>
+        <div class="grid-2">
+          <div class="card">
+            <table style="font-size:13px">
+              <tbody>
+                <tr><td><strong>Total ecosystem storms:</strong></td><td>{{ eco_total_storms }}</td></tr>
+                <tr><td><strong>Cross-actor storms:</strong></td><td>{{ eco_cross_actor_count }}</td></tr>
+                <tr><td><strong>Single-actor storms:</strong></td><td>{{ eco_single_actor_count }}</td></tr>
+                <tr><td><strong>Average actors per storm:</strong></td><td>{{ eco_avg_actors }}</td></tr>
+                <tr><td><strong>Average actor entropy:</strong></td><td>{{ eco_avg_entropy }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h4 style="margin-top:0;font-size:14px">Actor-Dominant Narratives</h4>
+            <p class="muted" style="font-size:12px;margin-bottom:10px">Single-actor storms visible in ecosystem field (belong in actor sections)</p>
+            <table style="font-size:11px">
+              <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Actor</th><th>Momentum</th></tr></thead>
+              <tbody>
+                {{ actor_dominant_storms_html }}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>8. Actor Narrative Snapshots</h2>
+      <p class="muted">Recommended: include 3–4 actors for a printed briefing, one block per actor, and keep the rest in an appendix.</p>
+
+      <div class="section card">
+        <h3>{{ actor_1_name }}</h3>
+        <div class="grid-2">
+          <div class="viz">
+            <img src="{{ actor_1_visual_path }}" alt="{{ actor_1_name }} field visualization" />
+            <div class="caption">{{ actor_1_name }} field view with storm regions and trajectories.</div>
+          </div>
+          <div>
+            <div class="storm">
+              <div class="storm-header">
+                <div class="storm-title">{{ actor_1_top_storm_headline }}</div>
+                <span class="badge state-{{ actor_1_top_storm_state_class }}">{{ actor_1_top_storm_state }}</span>
+              </div>
+              <div class="mini-meta">
+                <span>Events: {{ actor_1_top_storm_events }}</span>
+                <span>Peak ratio: {{ actor_1_top_storm_peak_ratio }}</span>
+                <span>Coherence: {{ actor_1_top_storm_coherence }}</span>
+                <span>Narrative role: {{ actor_1_narrative_role }}</span>
+              </div>
+              <p>{{ actor_1_top_storm_one_liner }}</p>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Details</div>
+                <ul class="details-grid">
+                  <li><strong>State:</strong> {{ actor_1_top_storm_state }}</li>
+                  <li><strong>Event count:</strong> {{ actor_1_top_storm_events }}</li>
+                  <li><strong>Peak ratio:</strong> {{ actor_1_top_storm_peak_ratio }}</li>
+                  <li><strong>Narrative momentum:</strong> {{ actor_1_momentum_score }} <span class="muted">{{ actor_1_momentum_class }}</span></li>
+                  <li style="list-style:none;padding-left:0;margin-top:4px">{{ actor_1_momentum_components_html }}</li>
+                  <li><strong>Acceleration:</strong> {{ actor_1_top_storm_acceleration }}</li>
+                  <li><strong>Coherence:</strong> {{ actor_1_top_storm_coherence }}</li>
+                  <li><strong>Pressure:</strong> {{ actor_1_pressure }}</li>
+                  <li><strong>Narrative importance:</strong> {{ actor_1_top_storm_gravity }}</li>
+                  <li><strong>Dominant themes:</strong> {{ actor_1_dominant_themes }}</li>
+                  <li><strong>Domain phrases:</strong> {{ actor_1_domain_phrases }}</li>
+                  <li><strong>Related actors:</strong> {{ actor_1_related_actors }}</li>
+                </ul>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Evolution</div>
+                <div style="font-size:12px;margin-bottom:8px">
+                  <strong>Drift:</strong> {{ actor_1_drift }} <span class="muted">{{ actor_1_drift_class }}</span>
+                  <span style="margin-left:12px"><strong>Shift type:</strong> {{ actor_1_shift_type }}</span>
+                  <span style="margin-left:12px"><strong>Narrative state:</strong> {{ actor_1_narrative_state }}</span>
+                  <div class="muted" style="font-size:11px;margin-top:3px">{{ actor_1_narrative_state_interp }}</div>
+                </div>
+                <div style="font-size:13px;line-height:1.5">
+                  {{ actor_1_evolution_text }}
+                </div>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Representative Evidence</div>
+                <ul class="bullets" style="font-size:12px;color:var(--muted)">
+                  {{ actor_1_evidence_html }}
+                </ul>
+              </div>
+              {{ actor_1_community_html }}
+            </div>
+            
+            <div style="margin-top:14px">
+              <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
+              <table style="font-size:12px">
+                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <tbody>
+                  {{ actor_1_additional_storms_html }}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section card">
+        <h3>{{ actor_2_name }}</h3>
+        <div class="grid-2">
+          <div class="viz">
+            <img src="{{ actor_2_visual_path }}" alt="{{ actor_2_name }} field visualization" />
+            <div class="caption">{{ actor_2_name }} field view with storm regions and trajectories.</div>
+          </div>
+          <div>
+            <div class="storm">
+              <div class="storm-header">
+                <div class="storm-title">{{ actor_2_top_storm_headline }}</div>
+                <span class="badge state-{{ actor_2_top_storm_state_class }}">{{ actor_2_top_storm_state }}</span>
+              </div>
+              <div class="mini-meta">
+                <span>Events: {{ actor_2_top_storm_events }}</span>
+                <span>Peak ratio: {{ actor_2_top_storm_peak_ratio }}</span>
+                <span>Coherence: {{ actor_2_top_storm_coherence }}</span>
+                <span>Narrative role: {{ actor_2_narrative_role }}</span>
+              </div>
+              <p>{{ actor_2_top_storm_one_liner }}</p>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Details</div>
+                <ul class="details-grid">
+                  <li><strong>State:</strong> {{ actor_2_top_storm_state }}</li>
+                  <li><strong>Event count:</strong> {{ actor_2_top_storm_events }}</li>
+                  <li><strong>Peak ratio:</strong> {{ actor_2_top_storm_peak_ratio }}</li>
+                  <li><strong>Narrative momentum:</strong> {{ actor_2_momentum_score }} <span class="muted">{{ actor_2_momentum_class }}</span></li>
+                  <li style="list-style:none;padding-left:0;margin-top:4px">{{ actor_2_momentum_components_html }}</li>
+                  <li><strong>Acceleration:</strong> {{ actor_2_top_storm_acceleration }}</li>
+                  <li><strong>Coherence:</strong> {{ actor_2_top_storm_coherence }}</li>
+                  <li><strong>Pressure:</strong> {{ actor_2_pressure }}</li>
+                  <li><strong>Narrative importance:</strong> {{ actor_2_top_storm_gravity }}</li>
+                  <li><strong>Dominant themes:</strong> {{ actor_2_dominant_themes }}</li>
+                  <li><strong>Domain phrases:</strong> {{ actor_2_domain_phrases }}</li>
+                  <li><strong>Related actors:</strong> {{ actor_2_related_actors }}</li>
+                </ul>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Evolution</div>
+                <div style="font-size:12px;margin-bottom:4px">
+                  <strong>Drift:</strong> {{ actor_2_drift }} <span class="muted">{{ actor_2_drift_class }}</span>
+                  <span style="margin-left:12px"><strong>Shift type:</strong> {{ actor_2_shift_type }}</span>
+                  <span style="margin-left:12px"><strong>Narrative state:</strong> {{ actor_2_narrative_state }}</span>
+                  <div class="muted" style="font-size:11px;margin-top:3px">{{ actor_2_narrative_state_interp }}</div>
+                </div>
+                <div style="font-size:13px;line-height:1.5">
+                  {{ actor_2_evolution_text }}
+                </div>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Representative Evidence</div>
+                <ul class="bullets" style="font-size:12px;color:var(--muted)">
+                  {{ actor_2_evidence_html }}
+                </ul>
+              </div>
+              {{ actor_2_community_html }}
+            </div>
+            
+            <div style="margin-top:14px">
+              <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
+              <table style="font-size:12px">
+                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <tbody>
+                  {{ actor_2_additional_storms_html }}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section card">
+        <h3>{{ actor_3_name }}</h3>
+        <div class="grid-2">
+          <div class="viz">
+            <img src="{{ actor_3_visual_path }}" alt="{{ actor_3_name }} field visualization" />
+            <div class="caption">{{ actor_3_name }} field view with storm regions and trajectories.</div>
+          </div>
+          <div>
+            <div class="storm">
+              <div class="storm-header">
+                <div class="storm-title">{{ actor_3_top_storm_headline }}</div>
+                <span class="badge state-{{ actor_3_top_storm_state_class }}">{{ actor_3_top_storm_state }}</span>
+              </div>
+              <div class="mini-meta">
+                <span>Events: {{ actor_3_top_storm_events }}</span>
+                <span>Peak ratio: {{ actor_3_top_storm_peak_ratio }}</span>
+                <span>Coherence: {{ actor_3_top_storm_coherence }}</span>
+                <span>Narrative role: {{ actor_3_narrative_role }}</span>
+              </div>
+              <p>{{ actor_3_top_storm_one_liner }}</p>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Details</div>
+                <ul class="details-grid">
+                  <li><strong>State:</strong> {{ actor_3_top_storm_state }}</li>
+                  <li><strong>Event count:</strong> {{ actor_3_top_storm_events }}</li>
+                  <li><strong>Peak ratio:</strong> {{ actor_3_top_storm_peak_ratio }}</li>
+                  <li><strong>Narrative momentum:</strong> {{ actor_3_momentum_score }} <span class="muted">{{ actor_3_momentum_class }}</span></li>
+                  <li style="list-style:none;padding-left:0;margin-top:4px">{{ actor_3_momentum_components_html }}</li>
+                  <li><strong>Acceleration:</strong> {{ actor_3_top_storm_acceleration }}</li>
+                  <li><strong>Coherence:</strong> {{ actor_3_top_storm_coherence }}</li>
+                  <li><strong>Pressure:</strong> {{ actor_3_pressure }}</li>
+                  <li><strong>Narrative importance:</strong> {{ actor_3_top_storm_gravity }}</li>
+                  <li><strong>Dominant themes:</strong> {{ actor_3_dominant_themes }}</li>
+                  <li><strong>Domain phrases:</strong> {{ actor_3_domain_phrases }}</li>
+                  <li><strong>Related actors:</strong> {{ actor_3_related_actors }}</li>
+                </ul>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Evolution</div>
+                <div style="font-size:12px;margin-bottom:4px">
+                  <strong>Drift:</strong> {{ actor_3_drift }} <span class="muted">{{ actor_3_drift_class }}</span>
+                  <span style="margin-left:12px"><strong>Shift type:</strong> {{ actor_3_shift_type }}</span>
+                  <span style="margin-left:12px"><strong>Narrative state:</strong> {{ actor_3_narrative_state }}</span>
+                  <div class="muted" style="font-size:11px;margin-top:3px">{{ actor_3_narrative_state_interp }}</div>
+                </div>
+                <div style="font-size:13px;line-height:1.5">
+                  {{ actor_3_evolution_text }}
+                </div>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Representative Evidence</div>
+                <ul class="bullets" style="font-size:12px;color:var(--muted)">
+                  {{ actor_3_evidence_html }}
+                </ul>
+              </div>
+              {{ actor_3_community_html }}
+            </div>
+            
+            <div style="margin-top:14px">
+              <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
+              <table style="font-size:12px">
+                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <tbody>
+                  {{ actor_3_additional_storms_html }}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section card">
+        <h3>{{ actor_4_name }}</h3>
+        <div class="grid-2">
+          <div class="viz">
+            <img src="{{ actor_4_visual_path }}" alt="{{ actor_4_name }} field visualization" />
+            <div class="caption">{{ actor_4_name }} field view with storm regions and trajectories.</div>
+          </div>
+          <div>
+            <div class="storm">
+              <div class="storm-header">
+                <div class="storm-title">{{ actor_4_top_storm_headline }}</div>
+                <span class="badge state-{{ actor_4_top_storm_state_class }}">{{ actor_4_top_storm_state }}</span>
+              </div>
+              <div class="mini-meta">
+                <span>Events: {{ actor_4_top_storm_events }}</span>
+                <span>Peak ratio: {{ actor_4_top_storm_peak_ratio }}</span>
+                <span>Coherence: {{ actor_4_top_storm_coherence }}</span>
+                <span>Narrative role: {{ actor_4_narrative_role }}</span>
+              </div>
+              <p>{{ actor_4_top_storm_one_liner }}</p>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Details</div>
+                <ul class="details-grid">
+                  <li><strong>State:</strong> {{ actor_4_top_storm_state }}</li>
+                  <li><strong>Event count:</strong> {{ actor_4_top_storm_events }}</li>
+                  <li><strong>Peak ratio:</strong> {{ actor_4_top_storm_peak_ratio }}</li>
+                  <li><strong>Narrative momentum:</strong> {{ actor_4_momentum_score }} <span class="muted">{{ actor_4_momentum_class }}</span></li>
+                  <li style="list-style:none;padding-left:0;margin-top:4px">{{ actor_4_momentum_components_html }}</li>
+                  <li><strong>Acceleration:</strong> {{ actor_4_top_storm_acceleration }}</li>
+                  <li><strong>Coherence:</strong> {{ actor_4_top_storm_coherence }}</li>
+                  <li><strong>Pressure:</strong> {{ actor_4_pressure }}</li>
+                  <li><strong>Narrative importance:</strong> {{ actor_4_top_storm_gravity }}</li>
+                  <li><strong>Dominant themes:</strong> {{ actor_4_dominant_themes }}</li>
+                  <li><strong>Domain phrases:</strong> {{ actor_4_domain_phrases }}</li>
+                  <li><strong>Related actors:</strong> {{ actor_4_related_actors }}</li>
+                </ul>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Evolution</div>
+                <div style="font-size:12px;margin-bottom:4px">
+                  <strong>Drift:</strong> {{ actor_4_drift }} <span class="muted">{{ actor_4_drift_class }}</span>
+                  <span style="margin-left:12px"><strong>Shift type:</strong> {{ actor_4_shift_type }}</span>
+                  <span style="margin-left:12px"><strong>Narrative state:</strong> {{ actor_4_narrative_state }}</span>
+                  <div class="muted" style="font-size:11px;margin-top:3px">{{ actor_4_narrative_state_interp }}</div>
+                </div>
+                <div style="font-size:13px;line-height:1.5">
+                  {{ actor_4_evolution_text }}
+                </div>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Representative Evidence</div>
+                <ul class="bullets" style="font-size:12px;color:var(--muted)">
+                  {{ actor_4_evidence_html }}
+                </ul>
+              </div>
+              {{ actor_4_community_html }}
+            </div>
+            
+            <div style="margin-top:14px">
+              <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
+              <table style="font-size:12px">
+                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <tbody>
+                  {{ actor_4_additional_storms_html }}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section card">
+        <h3>{{ actor_5_name }}</h3>
+        <div class="grid-2">
+          <div class="viz">
+            <img src="{{ actor_5_visual_path }}" alt="{{ actor_5_name }} field visualization" />
+            <div class="caption">{{ actor_5_name }} field view with storm regions and trajectories.</div>
+          </div>
+          <div>
+            <div class="storm">
+              <div class="storm-header">
+                <div class="storm-title">{{ actor_5_top_storm_headline }}</div>
+                <span class="badge state-{{ actor_5_top_storm_state_class }}">{{ actor_5_top_storm_state }}</span>
+              </div>
+              <div class="mini-meta">
+                <span>Events: {{ actor_5_top_storm_events }}</span>
+                <span>Peak ratio: {{ actor_5_top_storm_peak_ratio }}</span>
+                <span>Coherence: {{ actor_5_top_storm_coherence }}</span>
+                <span>Narrative role: {{ actor_5_narrative_role }}</span>
+              </div>
+              <p>{{ actor_5_top_storm_one_liner }}</p>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Details</div>
+                <ul class="details-grid">
+                  <li><strong>State:</strong> {{ actor_5_top_storm_state }}</li>
+                  <li><strong>Event count:</strong> {{ actor_5_top_storm_events }}</li>
+                  <li><strong>Peak ratio:</strong> {{ actor_5_top_storm_peak_ratio }}</li>
+                  <li><strong>Narrative momentum:</strong> {{ actor_5_momentum_score }} <span class="muted">{{ actor_5_momentum_class }}</span></li>
+                  <li style="list-style:none;padding-left:0;margin-top:4px">{{ actor_5_momentum_components_html }}</li>
+                  <li><strong>Acceleration:</strong> {{ actor_5_top_storm_acceleration }}</li>
+                  <li><strong>Coherence:</strong> {{ actor_5_top_storm_coherence }}</li>
+                  <li><strong>Pressure:</strong> {{ actor_5_pressure }}</li>
+                  <li><strong>Narrative importance:</strong> {{ actor_5_top_storm_gravity }}</li>
+                  <li><strong>Dominant themes:</strong> {{ actor_5_dominant_themes }}</li>
+                  <li><strong>Domain phrases:</strong> {{ actor_5_domain_phrases }}</li>
+                  <li><strong>Related actors:</strong> {{ actor_5_related_actors }}</li>
+                </ul>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Evolution</div>
+                <div style="font-size:12px;margin-bottom:4px">
+                  <strong>Drift:</strong> {{ actor_5_drift }} <span class="muted">{{ actor_5_drift_class }}</span>
+                  <span style="margin-left:12px"><strong>Shift type:</strong> {{ actor_5_shift_type }}</span>
+                  <span style="margin-left:12px"><strong>Narrative state:</strong> {{ actor_5_narrative_state }}</span>
+                  <div class="muted" style="font-size:11px;margin-top:3px">{{ actor_5_narrative_state_interp }}</div>
+                </div>
+                <div style="font-size:13px;line-height:1.5">
+                  {{ actor_5_evolution_text }}
+                </div>
+              </div>
+              
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Representative Evidence</div>
+                <ul class="bullets" style="font-size:12px;color:var(--muted)">
+                  {{ actor_5_evidence_html }}
+                </ul>
+              </div>
+              {{ actor_5_community_html }}
+            </div>
+            
+            <div style="margin-top:14px">
+              <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
+              <table style="font-size:12px">
+                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <tbody>
+                  {{ actor_5_additional_storms_html }}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>9. Convergence and propagation</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Convergence candidates</h3>
+          <table>
+            <thead><tr><th>Pair</th><th>Score</th><th>Shared theme</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              {{ merge_rows_html }}
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Propagation / narrative pathways</h3>
+          <table>
+            <thead><tr><th>Pathway</th><th>Lag</th><th>Theme corridor</th><th>Comment</th></tr></thead>
+            <tbody>
+              {{ path_rows_html }}
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>Interpretation:</strong> Use this section cautiously. Treat propagation as narrative flow, not causality.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>10. Narrative Lead–Lag Map</h2>
+      <p class="muted" style="margin-bottom:14px">Which actors consistently trigger narratives that others follow. Computed from propagation edge timing at event level.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Actor Lead–Lag Pairs</h3>
+          <p class="muted" style="margin-bottom:8px">Pairs with ≥5 edges and positive lag only. Average lag = how many hours earlier the source actor's narrative appeared.</p>
+          <table>
+            <thead><tr><th>Source → Target</th><th style="text-align:right">Edges</th><th style="text-align:right">Avg lag</th><th style="text-align:right">Median lag</th><th>Lanes</th></tr></thead>
+            <tbody>
+              {{ lead_lag_rows_html }}
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Lane Transitions</h3>
+          <p class="muted" style="margin-bottom:8px">How narratives flow between content lanes across propagation edges.</p>
+          <table>
+            <thead><tr><th>Transition</th><th style="text-align:right">Count</th><th style="text-align:right">Avg lag</th><th>Top actors</th></tr></thead>
+            <tbody>
+              {{ lane_transition_rows_html }}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3>Narrative Flow Summary</h3>
+        {{ lead_lag_summary_html }}
+        <div class="callout" style="margin-top:10px">
+          <strong>Top lane transition:</strong> {{ top_lane_transition_text }}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>10. Methodology &amp; Analytical Framework</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Pipeline</h3>
+          <ol class="bullets">
+            <li><strong>Event ingestion &amp; normalization</strong> — Events collected from multiple sources and standardized into a common schema.</li>
+            <li><strong>Semantic embedding</strong> — Events embedded in vector space for similarity analysis.</li>
+            <li><strong>Storm formation</strong> — Time-aware clustering groups semantically related events into short-lived "storms."</li>
+            <li><strong>Lane classification</strong> — Events assigned to thematic lanes (tech, market, policy, corporate).</li>
+            <li><strong>Narrative lineage formation</strong> — Related storms across time are grouped into persistent narrative threads.</li>
+            <li><strong>Macro-phase detection</strong> — Lineages are segmented into phases when themes or actor participation shifts.</li>
+            <li><strong>Ecosystem lineage detection</strong> — Cross-actor storms are grouped to reveal multi-company narratives across the tech ecosystem.</li>
+            <li><strong>Narrative propagation analysis</strong> — Event-level edges reveal how narratives spread between actors.</li>
+            <li><strong>Lead–lag estimation</strong> — Average timing differences identify which actors tend to lead or follow narrative shifts.</li>
+            <li><strong>Retail &amp; community signal overlay</strong> — Retail and community discussions are attached to institutional narratives when similarity and actor overlap thresholds are met.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>What to be careful about</h3>
+          <ul class="bullets">
+            <li><strong>Propagation is not causality</strong> — Propagation paths show narrative diffusion patterns across actors but do not imply that one company's actions caused another narrative to emerge.</li>
+            <li><strong>Storm boundaries are approximate</strong> — Storm clustering is time- and similarity-based. Closely related discussions may occasionally split across storms during high-volume periods.</li>
+            <li><strong>Ecosystem aggregation may blur distinct stories</strong> — Cross-actor storms and ecosystem lineages can merge related but distinct narratives when actor overlap is high.</li>
+            <li><strong>Low-coherence storms often reflect mixed coverage</strong> — Some storms contain a blend of technical, market, and commentary articles. These should be interpreted as noisy narrative clusters rather than clean themes.</li>
+            <li><strong>Lane classification is directional, not definitive</strong> — Keyword-based lane assignment (tech, market, policy, corporate) improves structural analysis but may under-classify nuanced topics.</li>
+            <li><strong>Long lineages may represent narrative cycles</strong> — Large lineages can include multiple thematic phases within a broader macro narrative rather than a single uninterrupted storyline.</li>
+            <li><strong>Retail/community overlays are signal-seeking</strong> — Retail or community discussions are attached using similarity thresholds and actor overlap; these should be interpreted as amplification signals rather than independent validation.</li>
+            <li><strong>Human review remains important</strong> — Narrative labels and interpretations improve with iteration but should still be treated as analytical summaries rather than authoritative classifications.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>Appendix: Storm Index</h2>
+      <p class="muted" style="margin-bottom:14px">All detected storms grouped by narrative lineage. Storms not belonging to a lineage appear under Unassigned.</p>
+      {{ storm_index_html }}
+    </div>
+  </section>
+
+</body>
+</html>
