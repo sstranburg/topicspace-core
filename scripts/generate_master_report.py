@@ -2474,6 +2474,14 @@ def main(reset_registry=False):
         _mom_colors = {'Surging': '#d62728', 'Expanding': '#ff7f0e',
                        'Building': '#2ca02c', 'Stable': '#888', 'Cooling': '#aaa'}
 
+        def _eco_status(storm):
+            v = displayed_velocity_state(storm).lower()
+            if 'accelerating' in v:                   return 'Accelerating', 'accel'
+            elif 'declining' in v or 'fading' in v:   return 'Declining',    'decl'
+            elif 'reversing' in v:                     return 'Reversing',    'rev'
+            elif 'stabilizing' in v or 'stable' in v: return 'Stabilizing',  'stable'
+            else:                                      return v.title() or 'Stable', 'neutral'
+
         blocks = []
         for rec in top:
             storms_in_lin = sorted(rec['storms'], key=lambda s: s.get('created_at', ''))
@@ -2493,6 +2501,30 @@ def main(reset_registry=False):
                 f'</span>'
                 for s in storms_in_lin
             )
+
+            # Signal strip: status, strength, prev→now
+            _now_lbl, _now_cls = _eco_status(storms_in_lin[-1]) if storms_in_lin else ('Stable', 'stable')
+            _grav = rec.get('lineage_max_gravity', 0)
+            if _grav > 0.15:   _strength = 'Strong'
+            elif _grav > 0.06: _strength = 'Moderate'
+            elif _grav > 0.02: _strength = 'Weak'
+            else:              _strength = 'Emerging'
+            if len(storms_in_lin) >= 2:
+                _prev_lbl, _ = _eco_status(storms_in_lin[-2])
+                _window_cmp = f'Prev: {_prev_lbl} → Now: {_now_lbl}'
+            else:
+                _window_cmp = f'First window · Now: {_now_lbl}'
+            signal_strip = (
+                f'<div class="signal-strip">'
+                f'<span class="sig-lbl">Status</span>'
+                f'<span class="sig-val sig-{_now_cls}">{_now_lbl}</span>'
+                f'<span class="sig-sep">·</span>'
+                f'<span class="sig-lbl">Strength</span>'
+                f'<span class="sig-val">{_strength}</span>'
+                f'<span class="sig-window">{_window_cmp}</span>'
+                f'</div>'
+            )
+
             blocks.append(
                 f'<div class="storm" style="margin-bottom:14px">'
                 f'<div class="storm-header">'
@@ -2505,6 +2537,7 @@ def main(reset_registry=False):
                 f'<span><strong>Events:</strong> {rec["lineage_event_count"]}</span>'
                 f'<span><strong>Gravity:</strong> {rec["lineage_max_gravity"]:.3f}</span>'
                 f'</div>'
+                f'{signal_strip}'
                 f'<div style="margin-top:5px;font-size:11px;color:var(--muted)">{summary}</div>'
                 f'<div style="margin-top:6px;font-size:11px;color:var(--muted)">'
                 f'<strong>Storm windows:</strong> {pills}'
