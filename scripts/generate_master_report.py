@@ -575,8 +575,8 @@ def main(reset_registry=False):
     for storm in actor_storms:
         actor_counts[storm['actor']] += 1
     
-    # Force AVGO to be included
-    priority_actors = ['AMZN', 'TSM', 'GOOGL', 'AVGO', 'ASML']
+    # Track the six actors shown on the homepage map
+    priority_actors = ['NVDA', 'INTC', 'AMZN', 'OPENAI', 'ANTHROPIC', 'META']
     top_actors = [(a, actor_counts[a]) for a in priority_actors if a in actor_counts]
     
     # Get diverse ecosystem storms (filter for cross-actor narratives)
@@ -3170,7 +3170,7 @@ def main(reset_registry=False):
     vars['eco_storm_index_html'] = ''  # now merged into storm_index_html
     
     # Fill missing vars with defaults
-    for i in range(1, 6):
+    for i in range(1, 7):
         for key in ['name', 'visual_path', 'top_storm_headline', 'top_storm_state', 'top_storm_state_class',
                     'top_storm_events', 'top_storm_peak_ratio', 'top_storm_momentum', 'top_storm_acceleration',
                     'top_storm_coherence', 'top_storm_gravity', 'top_storm_one_liner', 'dominant_themes', 'domain_phrases', 'related_actors',

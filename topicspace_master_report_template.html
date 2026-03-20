@@ -997,6 +997,88 @@
         </div>
       </div>
 
+      <div class="section card">
+        <h3>{{ actor_6_name }}</h3>
+        <div class="grid-2">
+          <div class="viz">
+            <img src="{{ actor_6_visual_path }}" alt="{{ actor_6_name }} field visualization" />
+            <div class="caption">{{ actor_6_name }} field view with storm regions and trajectories.</div>
+          </div>
+          <div>
+            <div class="storm">
+              <div class="storm-header">
+                <div class="storm-title">{{ actor_6_top_storm_headline }}</div>
+                <span class="badge state-{{ actor_6_top_storm_state_class }}">{{ actor_6_top_storm_state }}</span>
+              </div>
+              <div class="mini-meta">
+                <span>Events: {{ actor_6_top_storm_events }}</span>
+                <span>Peak ratio: {{ actor_6_top_storm_peak_ratio }}</span>
+                <span>Coherence: {{ actor_6_top_storm_coherence }}</span>
+                <span>Narrative role: {{ actor_6_narrative_role }}</span>
+              </div>
+              <div class="signal-strip">
+                <span class="sig-lbl">Status</span>
+                <span class="sig-val sig-{{ actor_6_top_storm_status_class }}">{{ actor_6_top_storm_status }}</span>
+                <span class="sig-sep">·</span>
+                <span class="sig-lbl">Strength</span>
+                <span class="sig-val">{{ actor_6_top_storm_strength }}</span>
+                <span class="sig-window">{{ actor_6_window_comparison }}</span>
+              </div>
+              <p>{{ actor_6_top_storm_one_liner }}</p>
+
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Details</div>
+                <ul class="details-grid">
+                  <li><strong>State:</strong> {{ actor_6_top_storm_state }}</li>
+                  <li><strong>Event count:</strong> {{ actor_6_top_storm_events }}</li>
+                  <li><strong>Peak ratio:</strong> {{ actor_6_top_storm_peak_ratio }}</li>
+                  <li><strong>Narrative momentum:</strong> {{ actor_6_momentum_score }} <span class="muted">{{ actor_6_momentum_class }}</span></li>
+                  <li style="list-style:none;padding-left:0;margin-top:4px">{{ actor_6_momentum_components_html }}</li>
+                  <li><strong>Acceleration:</strong> {{ actor_6_top_storm_acceleration }}</li>
+                  <li><strong>Coherence:</strong> {{ actor_6_top_storm_coherence }}</li>
+                  <li><strong>Pressure:</strong> {{ actor_6_pressure }}</li>
+                  <li><strong>Narrative importance:</strong> {{ actor_6_top_storm_gravity }}</li>
+                  <li><strong>Dominant themes:</strong> {{ actor_6_dominant_themes }}</li>
+                  <li><strong>Domain phrases:</strong> {{ actor_6_domain_phrases }}</li>
+                  <li><strong>Related actors:</strong> {{ actor_6_related_actors }}</li>
+                </ul>
+              </div>
+
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Narrative Evolution</div>
+                <div style="font-size:12px;margin-bottom:4px">
+                  <strong>Drift:</strong> {{ actor_6_drift }} <span class="muted">{{ actor_6_drift_class }}</span>
+                  <span style="margin-left:12px"><strong>Shift type:</strong> {{ actor_6_shift_type }}</span>
+                  <span style="margin-left:12px"><strong>Narrative state:</strong> {{ actor_6_narrative_state }}</span>
+                  <div class="muted" style="font-size:11px;margin-top:3px">{{ actor_6_narrative_state_interp }}</div>
+                </div>
+                <div style="font-size:13px;line-height:1.5">
+                  {{ actor_6_evolution_text }}
+                </div>
+              </div>
+
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-weight:700">Representative Evidence</div>
+                <ul class="bullets" style="font-size:12px;color:var(--muted)">
+                  {{ actor_6_evidence_html }}
+                </ul>
+              </div>
+              {{ actor_6_community_html }}
+            </div>
+
+            <div style="margin-top:14px">
+              <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
+              <table style="font-size:12px">
+                <thead><tr><th>Storm</th><th>State</th><th>Status</th><th>Events</th><th>Coherence</th></tr></thead>
+                <tbody>
+                  {{ actor_6_additional_storms_html }}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
