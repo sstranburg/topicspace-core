@@ -2467,91 +2467,161 @@ def main(reset_registry=False):
     # Ecosystem lineage narratives — top 4 ecosystem lineages by gravity
     def _eco_lineage_narratives_html(lineages_sorted, top_n=4):
         eco = [r for r in lineages_sorted if r.get('lineage_type') == 'ecosystem']
-        top = sorted(eco, key=lambda r: -r.get('lineage_max_momentum', 0))[:top_n]
+        top = sorted(eco, key=lambda r: -r.get('lineage_max_gravity', 0))[:top_n]
         if not top:
             return '<p class="muted">No ecosystem lineages detected in this report window.</p>'
 
-        _mom_colors = {'Surging': '#d62728', 'Expanding': '#ff7f0e',
-                       'Building': '#2ca02c', 'Stable': '#888', 'Cooling': '#aaa'}
-
-        def _eco_status(storm):
-            v = displayed_velocity_state(storm).lower()
-            if 'accelerating' in v:                   return 'Accelerating', 'accel'
-            elif 'declining' in v or 'fading' in v:   return 'Declining',    'decl'
-            elif 'reversing' in v:                     return 'Reversing',    'rev'
-            elif 'stabilizing' in v or 'stable' in v: return 'Stabilizing',  'stable'
-            else:                                      return v.title() or 'Stable', 'neutral'
+        def _state_score(s):
+            return {'growing': 1.0, 'peaking': 0.4, 'stable': 0.0, 'fading': -1.0}.get(s.get('state', 'unknown'), -0.3)
 
         blocks = []
         for rec in top:
             storms_in_lin = sorted(rec['storms'], key=lambda s: s.get('created_at', ''))
-            actors_str = ', '.join(rec['lineage_actor_set'])
-            summary = _lineage_narrative_summary(rec)
-            mom = rec.get('lineage_max_momentum', 0)
-            mom_class = classify_momentum(mom)
-            mom_color = _mom_colors.get(mom_class, '#888')
-            mom_tag = (f'<span style="color:{mom_color};font-weight:700">{mom_class}</span>'
-                       f'<span class="muted"> · {mom:.0f}</span>')
-            def _pill_status(s):
-                # Use lifecycle state (growing/peaking/stable/fading) — always present, always meaningful
-                state = s.get('state', 'unknown')
-                state_map = {
-                    'growing':  ('Growing',     'var(--good)'),
-                    'peaking':  ('Peaking',     'var(--warn)'),
-                    'stable':   ('Stable',      'var(--muted)'),
-                    'fading':   ('Fading',      'var(--danger)'),
-                    'emerging': ('Emerging',    '#0891b2'),
-                }
-                lbl, col = state_map.get(state, (state.title(), 'var(--ink)'))
-                date = s.get('created_at', '')[:10]
-                return (
-                    f'<span style="display:inline-block;background:var(--soft);border:1px solid var(--line);'
-                    f'border-radius:4px;padding:2px 7px;font-size:10px;margin-right:3px;margin-bottom:2px">'
-                    f'<span style="font-weight:700;color:{col}">{lbl}</span>'
-                    f'<span style="color:var(--muted);margin-left:4px">{date}</span>'
-                    f'</span>'
-                )
-            pills = ''.join(_pill_status(s) for s in storms_in_lin)
+            n = len(storms_in_lin)
+            recent   = storms_in_lin[max(0, n - 4):]
+            earlier  = storms_in_lin[:max(0, n - 4)]
 
-            # Signal strip: status, strength, prev→now
-            _now_lbl, _now_cls = _eco_status(storms_in_lin[-1]) if storms_in_lin else ('Stable', 'stable')
-            _grav = rec.get('lineage_max_gravity', 0)
-            if _grav > 0.15:   _strength = 'Strong'
-            elif _grav > 0.06: _strength = 'Moderate'
-            elif _grav > 0.02: _strength = 'Weak'
-            else:              _strength = 'Emerging'
-            if len(storms_in_lin) >= 2:
-                _prev_lbl, _ = _eco_status(storms_in_lin[-2])
-                _window_cmp = f'Prev: {_prev_lbl} → Now: {_now_lbl}'
+            # Direction from lifecycle state trajectory
+            recent_avg  = sum(_state_score(s) for s in recent)  / len(recent)  if recent  else 0
+            earlier_avg = sum(_state_score(s) for s in earlier) / len(earlier) if earlier else recent_avg
+
+            if   recent_avg >=  0.4:                                       direction, dir_color = 'Accelerating', 'var(--good)'
+            elif recent_avg <= -0.4:                                       direction, dir_color = 'Declining',    'var(--danger)'
+            elif earlier_avg < -0.2 and recent_avg > earlier_avg + 0.3:   direction, dir_color = 'Reversing',    '#7e22ce'
+            elif earlier_avg >  0.2 and recent_avg < earlier_avg - 0.3:   direction, dir_color = 'Reversing',    '#7e22ce'
+            else:                                                           direction, dir_color = 'Stable',       'var(--muted)'
+
+            # Strength — constrained so declining != Strong
+            grav   = rec.get('lineage_max_gravity', 0)
+            events = rec.get('lineage_event_count', 0)
+            if direction == 'Declining':
+                strength = 'Moderate' if (grav > 0.2 or events > 150) else 'Weak'
+            elif direction == 'Accelerating':
+                strength = 'Strong' if (grav > 0.15 or events > 200) else ('Moderate' if grav > 0.06 else 'Weak')
+            elif direction == 'Reversing':
+                strength = 'Moderate'
             else:
-                _window_cmp = f'First window · Now: {_now_lbl}'
-            signal_strip = (
-                f'<div class="signal-strip">'
-                f'<span class="sig-lbl">Status</span>'
-                f'<span class="sig-val sig-{_now_cls}">{_now_lbl}</span>'
+                strength = 'Moderate' if grav > 0.12 else 'Weak'
+
+            # Confidence from data breadth
+            n_weeks = len({s.get('created_at', '')[:10] for s in storms_in_lin})
+            conf_vals = [s.get('velocity_confidence', 'low') for s in storms_in_lin]
+            high_c = sum(1 for c in conf_vals if c == 'high')
+            med_c  = sum(1 for c in conf_vals if c in ('medium', 'moderate'))
+            if   high_c >= n * 0.4 or (n_weeks >= 5 and n >= 8): confidence = 'High'
+            elif med_c + high_c >= n * 0.25 or n_weeks >= 3:      confidence = 'Medium'
+            else:                                                   confidence = 'Low'
+
+            # What this is — concrete theme synthesis
+            from collections import Counter as _Ctr
+            theme_counts = _Ctr()
+            dp_counts    = _Ctr()
+            for s in storms_in_lin[-6:]:
+                for t in s.get('themes', []):         theme_counts[t] += 1
+                for p in s.get('domain_phrases', []): dp_counts[p]    += 1
+            top_terms = [p for p, _ in dp_counts.most_common(2)] + [t for t, _ in theme_counts.most_common(2)]
+            top_terms = list(dict.fromkeys(top_terms))[:3]
+            actors_short = rec['lineage_actor_set'][:4]
+            extra = len(rec['lineage_actor_set']) - 3
+            actor_mention = ', '.join(actors_short[:3]) + (f', +{extra}' if extra > 0 else '')
+            if top_terms:
+                what_this_is = f"{', '.join(t.replace('_',' ') for t in top_terms).capitalize()} across {actor_mention}"
+            else:
+                what_this_is = f"{rec['label']} across {actor_mention}"
+
+            # What changed — directional trajectory
+            first_date = storms_in_lin[0].get('created_at', '')[:10]
+            last_date  = storms_in_lin[-1].get('created_at', '')[:10]
+            n_windows  = len(storms_in_lin)
+            if direction == 'Declining':
+                consec_fading = 0
+                for s in reversed(storms_in_lin):
+                    if s.get('state') == 'fading': consec_fading += 1
+                    else: break
+                if consec_fading >= n_windows * 0.8:
+                    what_changed = f"Fading across all {n_windows} windows ({first_date} to {last_date}). No recovery signal."
+                else:
+                    what_changed = f"Declining in {consec_fading} of the most recent windows. Attention is contracting."
+            elif direction == 'Accelerating':
+                consec_growing = 0
+                for s in reversed(storms_in_lin):
+                    if s.get('state') in ('growing', 'peaking'): consec_growing += 1
+                    else: break
+                what_changed = f"Growing across {consec_growing} consecutive recent windows. Momentum is building."
+            elif direction == 'Reversing':
+                if recent_avg > earlier_avg:
+                    what_changed = "Recovering — shifted from fading in earlier windows to growing recently."
+                else:
+                    what_changed = "Turning — earlier growth has given way to fading in the most recent windows."
+            else:
+                what_changed = f"Mixed signals across {n_windows} windows ({first_date} to {last_date}). No clear trend."
+
+            # Why it matters — ecosystem-level inference
+            n_actors = len(rec['lineage_actor_set'])
+            if direction == 'Declining' and n_actors >= 3:
+                why_matters = f"Coordinated decline across {n_actors} actors signals this theme is exiting the active ecosystem narrative set."
+            elif direction == 'Declining':
+                why_matters = "High-gravity narrative losing traction — watch for rotation into adjacent themes."
+            elif direction == 'Accelerating' and n_actors >= 3:
+                why_matters = f"Broadening across {n_actors} actors increases the chance this becomes a dominant cross-sector narrative."
+            elif direction == 'Accelerating':
+                why_matters = "Narrative pressure building — expansion to additional actors would amplify significantly."
+            elif direction == 'Reversing' and recent_avg > earlier_avg:
+                why_matters = "Early-stage recovery in a previously fading narrative — potential re-entry signal."
+            elif direction == 'Reversing':
+                why_matters = "Narrative instability — prior momentum has reversed without a clear new catalyst."
+            else:
+                why_matters = f"Sustained presence across {n_actors} actors suggests this theme is structurally embedded in the ecosystem."
+
+            # What to watch — forward-looking signals
+            watch_items = []
+            if top_terms:
+                t0 = top_terms[0].replace('_', ' ')
+                if direction in ('Accelerating', 'Reversing') and recent_avg > 0:
+                    watch_items.append(f"Whether {t0} expands beyond current actors or stays concentrated")
+                else:
+                    watch_items.append(f"Any new event signal around {t0} that could restart momentum")
+            if len(actors_short) >= 2:
+                if direction == 'Accelerating':
+                    watch_items.append(f"Cross-actor amplification between {actors_short[0]} and {actors_short[1]}")
+                elif direction == 'Declining':
+                    watch_items.append(f"Whether {actors_short[0]} or {actors_short[1]} breaks from the fading trend")
+                else:
+                    watch_items.append(f"Divergence between {actors_short[0]} and {actors_short[1]} as a leading indicator")
+            if len(top_terms) >= 2:
+                watch_items.append(f"Rotation from {top_terms[0].replace('_',' ')} toward {top_terms[1].replace('_',' ')}")
+            watch_items = watch_items[:3]
+
+            # Render
+            actors_str = ', '.join(rec['lineage_actor_set'])
+            str_color  = {'Strong': 'var(--ink)', 'Moderate': '#5b6673', 'Weak': '#5b6673'}.get(strength, '#5b6673')
+            signal_line = (
+                f'<div class="signal-strip" style="margin-bottom:6px">'
+                f'<span class="sig-val" style="color:{dir_color}">{direction}</span>'
                 f'<span class="sig-sep">·</span>'
-                f'<span class="sig-lbl">Strength</span>'
-                f'<span class="sig-val">{_strength}</span>'
-                f'<span class="sig-window">{_window_cmp}</span>'
+                f'<span class="sig-val" style="color:{str_color}">{strength}</span>'
+                f'<span class="sig-sep">·</span>'
+                f'<span class="sig-val" style="color:var(--muted);font-weight:400">{confidence} confidence</span>'
                 f'</div>'
             )
-
+            watch_html = ''.join(f'<li style="margin-bottom:2px">{w}</li>' for w in watch_items)
             blocks.append(
                 f'<div class="storm" style="margin-bottom:14px">'
-                f'<div class="storm-header">'
+                f'<div class="storm-header" style="margin-bottom:4px">'
                 f'<div class="storm-title" style="font-size:13px">{rec["label"]}</div>'
-                f'<span style="font-size:11px">{mom_tag}</span>'
                 f'</div>'
-                f'<div class="mini-meta">'
+                f'<div class="mini-meta" style="margin-bottom:4px">'
                 f'<span><strong>Actors:</strong> {actors_str}</span>'
-                f'<span><strong>Storms:</strong> {rec["lineage_storm_count"]}</span>'
+                f'<span><strong>Windows:</strong> {rec["lineage_storm_count"]}</span>'
                 f'<span><strong>Events:</strong> {rec["lineage_event_count"]}</span>'
-                f'<span><strong>Gravity:</strong> {rec["lineage_max_gravity"]:.3f}</span>'
                 f'</div>'
-                f'{signal_strip}'
-                f'<div style="margin-top:5px;font-size:11px;color:var(--muted)">{summary}</div>'
-                f'<div style="margin-top:6px;font-size:11px;color:var(--muted)">'
-                f'<strong>Storm windows:</strong> {pills}'
+                f'{signal_line}'
+                f'<p style="font-size:12px;margin:0 0 4px;color:var(--ink)">{what_this_is}</p>'
+                f'<p style="font-size:12px;margin:0 0 4px;color:var(--muted)"><strong style="color:var(--ink)">What changed:</strong> {what_changed}</p>'
+                f'<p style="font-size:12px;margin:0 0 6px;color:var(--muted)"><strong style="color:var(--ink)">Why it matters:</strong> {why_matters}</p>'
+                f'<div style="font-size:11px;color:var(--muted)">'
+                f'<strong style="color:var(--ink);text-transform:uppercase;letter-spacing:.05em;font-size:10px">What to watch</strong>'
+                f'<ul class="bullets" style="margin-top:3px">{watch_html}</ul>'
                 f'</div>'
                 f'</div>'
             )
