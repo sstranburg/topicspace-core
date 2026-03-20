@@ -27,6 +27,11 @@ ACTOR_ALIASES = {
     "CRM":  ["salesforce", "crm "],
     "SNOW": ["snowflake"],
     "TSLA": ["tesla", "tsla"],
+    # Enterprise AI software
+    "PLTR": ["palantir", "pltr", "palantir aip"],
+    # AI model labs (private companies — tracked by name only)
+    "OPENAI":    ["openai", "chatgpt", "gpt-4", "gpt-5", "openai api"],
+    "ANTHROPIC": ["anthropic", "claude ai", "anthropic claude"],
 }
 
 TAG_KEYWORDS = {

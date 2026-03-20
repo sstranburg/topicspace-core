@@ -28,6 +28,8 @@ NEW_COMPANIES = [
     ('MU',   None),
     ('CRWV', None),
     ('NBIS', None),
+    ('PLTR', None),
+    # OPENAI and ANTHROPIC are private — NewsAPI only, no Finnhub/SEC
 ]
 
 NEWSAPI_QUERIES = [
@@ -44,6 +46,9 @@ NEWSAPI_QUERIES = [
     ('SKHX',  '"SK Hynix" HBM memory AI',                  ['SKHX']),
     ('CRWV',  'CoreWeave GPU cloud AI infrastructure',      ['CRWV']),
     ('NBIS',  'Nebius AI cloud infrastructure',             ['NBIS']),
+    ('PLTR',  'Palantir OR PLTR OR "Palantir AIP"',         ['PLTR']),
+    ('OPENAI','OpenAI OR "ChatGPT" OR "GPT-5"',             ['OPENAI']),
+    ('ANTHROPIC', 'Anthropic OR "Claude AI"',               ['ANTHROPIC']),
 ]
 
 output_path = Path('data/normalized/tech_ecosystem.jsonl')
@@ -107,5 +112,6 @@ actor_counts = Counter(a for e in deduped for a in e.actors)
 print('\nActor event counts after backfill:')
 for actor in ['NVDA', 'AMD', 'TSM', 'MSFT', 'AMZN', 'GOOGL', 'ASML', 'AVGO',
               'META', 'ORCL', 'ADBE', 'CRM', 'SNOW', 'TSLA',
-              'ARM', 'SMCI', 'DELL', 'INTC', 'MU', 'CRWV', 'NBIS', 'SKHX']:
+              'ARM', 'SMCI', 'DELL', 'INTC', 'MU', 'CRWV', 'NBIS', 'SKHX',
+              'PLTR', 'OPENAI', 'ANTHROPIC']:
     print(f'  {actor:<6} {actor_counts.get(actor, 0):>5}')

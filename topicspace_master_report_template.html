@@ -194,6 +194,16 @@
       font-size:11px;
       margin-bottom:4px;
     }
+    .signal-strip{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--soft);border-radius:6px;font-size:11px;margin:5px 0 8px;flex-wrap:wrap}
+    .sig-lbl{text-transform:uppercase;letter-spacing:.05em;font-size:10px;color:var(--muted);font-weight:700}
+    .sig-val{font-weight:700}
+    .sig-sep{color:var(--line)}
+    .sig-window{color:var(--muted);margin-left:auto;font-size:10px}
+    .sig-accel{color:var(--good)}
+    .sig-decl{color:var(--danger)}
+    .sig-rev{color:#7e22ce}
+    .sig-stable{color:var(--muted)}
+    .sig-neutral{color:var(--ink)}
     .bullets{margin:4px 0 0 14px;padding:0}
     .bullets li{margin:0 0 2px}
     .details-grid{
@@ -277,14 +287,15 @@
           <div class="value">{{ actor_list }}</div>
         </div>
         <div class="meta-card">
-          <div class="label">Prepared for</div>
-          <div class="value">{{ audience_name }}</div>
+          <div class="label">Prepared by</div>
+          <div class="value">TopicSpace</div>
         </div>
       </div>
 
       <div class="toc">
         <div class="row"><div><span class="num">1.</span> Executive overview</div><div class="muted">p. 2</div></div>
-        <div class="row"><div><span class="num">2.</span> Narrative forecast</div><div class="muted">p. 3</div></div>
+        <div class="row"><div><span class="num">1B.</span> Narrative map</div><div class="muted">p. 3</div></div>
+        <div class="row"><div><span class="num">2.</span> Narrative forecast</div><div class="muted">p. 4</div></div>
         <div class="row"><div><span class="num">2B.</span> Narrative actions</div><div class="muted">p. 3</div></div>
         <div class="row"><div><span class="num">3.</span> Strategic watchlist</div><div class="muted">p. 3</div></div>
         <div class="row"><div><span class="num">4.</span> Narrative phase map</div><div class="muted">p. 4</div></div>
@@ -298,9 +309,6 @@
       </div>
     </div>
 
-    <div class="footer-note">
-      Suggested use: print as a discussion memo. Keep visuals and top narratives on the first pages; move method and diagnostics to the end.
-    </div>
   </section>
 
   <section class="page" style="page-break-before:always">
@@ -421,14 +429,17 @@
         </div>
       </div>
 
-      <div class="section" style="margin-top:14px">
-        <div class="card">
-          <h3>Community precursors <span style="font-size:11px;font-weight:500;color:#888;background:#f0f0f0;border-radius:4px;padding:2px 7px;margin-left:8px;vertical-align:middle;letter-spacing:.04em">COMING SOON</span></h3>
-          <p class="muted" style="font-size:12px;margin-bottom:10px">Real Reddit and community signal ingestion is planned. The data below is synthetic and for structural preview only.</p>
-          {{ community_precursors_html }}
-        </div>
-      </div>
 
+    </div>
+  </section>
+
+  <section class="page page-break">
+    <div class="section" style="margin-bottom:0">
+      <h2>1B. Narrative Map</h2>
+      <p class="muted" style="font-size:12px;margin-bottom:16px">Where narratives are positioned today — momentum on the x-axis, velocity (acceleration) on the y-axis.</p>
+      <div class="card" style="padding:20px 24px">
+        {{ narrative_map_html }}
+      </div>
     </div>
   </section>
 
@@ -471,7 +482,7 @@
     </div>
   </section>
 
-  <section class="page page-break">
+  <section class="page page-break" style="padding-top:0.2in">
     <div class="section" style="margin-bottom:0">
       <h2>5. Narrative Lineages</h2>
       <p class="muted" style="font-size:12px;margin-bottom:16px">Persistent narrative threads tracked across storm windows, ranked by gravitational weight.</p>
@@ -595,6 +606,14 @@
                 <span>Coherence: {{ actor_1_top_storm_coherence }}</span>
                 <span>Narrative role: {{ actor_1_narrative_role }}</span>
               </div>
+              <div class="signal-strip">
+                <span class="sig-lbl">Status</span>
+                <span class="sig-val sig-{{ actor_1_top_storm_status_class }}">{{ actor_1_top_storm_status }}</span>
+                <span class="sig-sep">·</span>
+                <span class="sig-lbl">Strength</span>
+                <span class="sig-val">{{ actor_1_top_storm_strength }}</span>
+                <span class="sig-window">{{ actor_1_window_comparison }}</span>
+              </div>
               <p>{{ actor_1_top_storm_one_liner }}</p>
               
               <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
@@ -640,7 +659,7 @@
             <div style="margin-top:14px">
               <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
               <table style="font-size:12px">
-                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <thead><tr><th>Storm</th><th>State</th><th>Status</th><th>Events</th><th>Coherence</th></tr></thead>
                 <tbody>
                   {{ actor_1_additional_storms_html }}
                 </tbody>
@@ -668,6 +687,14 @@
                 <span>Peak ratio: {{ actor_2_top_storm_peak_ratio }}</span>
                 <span>Coherence: {{ actor_2_top_storm_coherence }}</span>
                 <span>Narrative role: {{ actor_2_narrative_role }}</span>
+              </div>
+              <div class="signal-strip">
+                <span class="sig-lbl">Status</span>
+                <span class="sig-val sig-{{ actor_2_top_storm_status_class }}">{{ actor_2_top_storm_status }}</span>
+                <span class="sig-sep">·</span>
+                <span class="sig-lbl">Strength</span>
+                <span class="sig-val">{{ actor_2_top_storm_strength }}</span>
+                <span class="sig-window">{{ actor_2_window_comparison }}</span>
               </div>
               <p>{{ actor_2_top_storm_one_liner }}</p>
               
@@ -714,7 +741,7 @@
             <div style="margin-top:14px">
               <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
               <table style="font-size:12px">
-                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <thead><tr><th>Storm</th><th>State</th><th>Status</th><th>Events</th><th>Coherence</th></tr></thead>
                 <tbody>
                   {{ actor_2_additional_storms_html }}
                 </tbody>
@@ -742,6 +769,14 @@
                 <span>Peak ratio: {{ actor_3_top_storm_peak_ratio }}</span>
                 <span>Coherence: {{ actor_3_top_storm_coherence }}</span>
                 <span>Narrative role: {{ actor_3_narrative_role }}</span>
+              </div>
+              <div class="signal-strip">
+                <span class="sig-lbl">Status</span>
+                <span class="sig-val sig-{{ actor_3_top_storm_status_class }}">{{ actor_3_top_storm_status }}</span>
+                <span class="sig-sep">·</span>
+                <span class="sig-lbl">Strength</span>
+                <span class="sig-val">{{ actor_3_top_storm_strength }}</span>
+                <span class="sig-window">{{ actor_3_window_comparison }}</span>
               </div>
               <p>{{ actor_3_top_storm_one_liner }}</p>
               
@@ -788,7 +823,7 @@
             <div style="margin-top:14px">
               <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
               <table style="font-size:12px">
-                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <thead><tr><th>Storm</th><th>State</th><th>Status</th><th>Events</th><th>Coherence</th></tr></thead>
                 <tbody>
                   {{ actor_3_additional_storms_html }}
                 </tbody>
@@ -816,6 +851,14 @@
                 <span>Peak ratio: {{ actor_4_top_storm_peak_ratio }}</span>
                 <span>Coherence: {{ actor_4_top_storm_coherence }}</span>
                 <span>Narrative role: {{ actor_4_narrative_role }}</span>
+              </div>
+              <div class="signal-strip">
+                <span class="sig-lbl">Status</span>
+                <span class="sig-val sig-{{ actor_4_top_storm_status_class }}">{{ actor_4_top_storm_status }}</span>
+                <span class="sig-sep">·</span>
+                <span class="sig-lbl">Strength</span>
+                <span class="sig-val">{{ actor_4_top_storm_strength }}</span>
+                <span class="sig-window">{{ actor_4_window_comparison }}</span>
               </div>
               <p>{{ actor_4_top_storm_one_liner }}</p>
               
@@ -862,7 +905,7 @@
             <div style="margin-top:14px">
               <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
               <table style="font-size:12px">
-                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <thead><tr><th>Storm</th><th>State</th><th>Status</th><th>Events</th><th>Coherence</th></tr></thead>
                 <tbody>
                   {{ actor_4_additional_storms_html }}
                 </tbody>
@@ -890,6 +933,14 @@
                 <span>Peak ratio: {{ actor_5_top_storm_peak_ratio }}</span>
                 <span>Coherence: {{ actor_5_top_storm_coherence }}</span>
                 <span>Narrative role: {{ actor_5_narrative_role }}</span>
+              </div>
+              <div class="signal-strip">
+                <span class="sig-lbl">Status</span>
+                <span class="sig-val sig-{{ actor_5_top_storm_status_class }}">{{ actor_5_top_storm_status }}</span>
+                <span class="sig-sep">·</span>
+                <span class="sig-lbl">Strength</span>
+                <span class="sig-val">{{ actor_5_top_storm_strength }}</span>
+                <span class="sig-window">{{ actor_5_window_comparison }}</span>
               </div>
               <p>{{ actor_5_top_storm_one_liner }}</p>
               
@@ -936,7 +987,7 @@
             <div style="margin-top:14px">
               <h4 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Additional storms visible in this actor field</h4>
               <table style="font-size:12px">
-                <thead><tr><th>Storm</th><th>State</th><th>Events</th><th>Coherence</th></tr></thead>
+                <thead><tr><th>Storm</th><th>State</th><th>Status</th><th>Events</th><th>Coherence</th></tr></thead>
                 <tbody>
                   {{ actor_5_additional_storms_html }}
                 </tbody>

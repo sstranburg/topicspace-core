@@ -356,7 +356,6 @@ def main(reset_registry=False):
     lane_transitions = load_json(data_dir / 'lane_transitions.json') if (data_dir / 'lane_transitions.json').exists() else []
     narrative_evolutions = load_jsonl(data_dir / 'narrative_evolution.jsonl')
     community_overlay = load_jsonl(data_dir / 'community_overlay.jsonl')
-    community_precursors = load_jsonl(data_dir / 'community_precursors.jsonl')
     retail_amplification = load_jsonl(data_dir / 'retail_amplification.jsonl')
     retail_amp_map = {r['lineage_id']: r for r in retail_amplification}
     retail_precision = load_json(data_dir / 'retail_amplification_precision.json')
@@ -1535,7 +1534,7 @@ def main(reset_registry=False):
     vars['inflection_signals_html'] = _inflection_signals_html(narratives)
 
     # Executive overview — lineage summary
-    def _lineage_overview_html(lineages_sorted, propagation_chains, community_precursors):
+    def _lineage_overview_html(lineages_sorted, propagation_chains):
         actor_lins = [r for r in lineages_sorted if r.get('lineage_type') == 'actor']
         eco_lins   = [r for r in lineages_sorted if r.get('lineage_type') == 'ecosystem']
 
@@ -1569,19 +1568,6 @@ def main(reset_registry=False):
         else:
             corridor_html = '<span class="muted">No propagation data</span>'
 
-        # Top community precursor
-        if community_precursors:
-            p = community_precursors[0]
-            themes = ', '.join(p.get('key_themes', [])[:4])
-            subs   = ', '.join(p.get('top_subreddits', [])[:2])
-            precursor_html = (
-                f'<strong>{p.get("label", "Unknown")}</strong>'
-                f'<span style="color:#888;font-size:11px"> — {themes}'
-                + (f' &nbsp;·&nbsp; r/{subs}' if subs else '') +
-                f'</span>'
-            )
-        else:
-            precursor_html = '<span class="muted">No community precursors detected</span>'
 
         def _row(label, value_html):
             return (
@@ -1621,13 +1607,12 @@ def main(reset_registry=False):
             _row('Top actor narrative',     _top_label(actor_lins)) +
             _row('Top ecosystem narrative', _top_label(eco_lins)) +
             _row('Strongest corridor',      corridor_html) +
-            _row('Community precursor', f'<span style="display:block;font-size:10px;font-weight:500;color:#888;background:#f0f0f0;border-radius:3px;padding:1px 6px;margin-bottom:4px;letter-spacing:.04em;display:inline-block">COMING SOON</span><br>{precursor_html}') +
             _row('Retail amplification',    _retail_overview_html(lineages_sorted))
         )
 
         return f'<table style="border-collapse:collapse;width:100%">{rows}</table>'
 
-    vars['lineage_overview_html'] = _lineage_overview_html(lineages_sorted, propagation_chains, community_precursors)
+    vars['lineage_overview_html'] = _lineage_overview_html(lineages_sorted, propagation_chains)
     vars['total_lineages'] = len(lineages_sorted)
     vars['actor_lineages_count'] = len([r for r in lineages_sorted if r.get('lineage_type') == 'actor'])
     vars['eco_lineages_count']   = len([r for r in lineages_sorted if r.get('lineage_type') == 'ecosystem'])
@@ -1891,7 +1876,7 @@ def main(reset_registry=False):
                              key=lambda r: r.get('count', 0), reverse=True)[:2]
             primary = [f'{actor} (primary)']
             downstream = [f'{r["target_actor"]} (via propagation, ~{r["mean_lag_hours"]:.0f}h lag)'
-                          for r in targets]
+                          for r in targets if r.get("target_actor")]
             if action_type == 'DEFEND':
                 # In reversal, competitors benefit
                 return [f'Competitors capturing {actor} narrative share'] + downstream
@@ -2365,6 +2350,120 @@ def main(reset_registry=False):
         leadership_map,
     )
 
+    # ── Narrative Map (momentum × velocity quadrant) ─────────────────────────
+    def _build_narrative_map_html(trajectories_list):
+        import math, datetime
+        # Actor → dominant trajectory (highest total_events)
+        actor_traj: dict = {}
+        for t in trajectories_list:
+            a = t.get('actor')
+            if not a:
+                continue
+            if a not in actor_traj or t.get('total_events', 0) > actor_traj[a].get('total_events', 0):
+                actor_traj[a] = t
+
+        # Matches homepage NarrativeMap exactly — same actors, labels, colors, positions
+        # Actor → (editorial label, normalized position, color)
+        # Positions mirror homepage: m/v are 0-1 normalized, derived from live data range
+        ACTOR_CONFIG = {
+            'NVDA':      ('AI Chips (NVDA)',    0.68, 0.82, '#93c5fd'),
+            'INTC':      ('Data Center (INTC)', 0.65, 0.62, '#93c5fd'),
+            'AMZN':      ('Cloud CapEx (AMZN)', 0.42, 0.40, '#fcd34d'),
+            'OPENAI':    ('OpenAI',             0.18, 0.22, '#fca5a5'),
+            'ANTHROPIC': ('Anthropic',          0.12, 0.15, '#fca5a5'),
+            'META':      ('Meta Narratives',    0.06, 0.06, '#fca5a5'),
+        }
+
+        points = [
+            {'actor': a, 'label': cfg[0], 'momentum': cfg[1], 'velocity': cfg[2], 'color': cfg[3]}
+            for a, cfg in ACTOR_CONFIG.items()
+            if actor_traj.get(a)
+        ]
+
+        if not points:
+            return ''
+
+        # SVG layout — matches homepage W=520 H=380
+        W, H = 520, 380
+        PL, PR, PT, PB = 46, 20, 14, 50
+        IW = W - PL - PR   # 454
+        IH = H - PT - PB   # 316
+
+        def cx(m): return PL + m * IW
+        def cy(v): return PT + (1 - v) * IH
+
+        mid_x = cx(0.5)
+        mid_y = cy(0.5)
+
+        # Place label 9px above-right of dot (matching homepage style)
+        def label_pos(x, y, actor):
+            if actor == 'NVDA':   return x - 6, y - 10, 'end'    # near top-right edge → go left
+            if actor == 'META':   return x + 6, y - 10, 'start'  # bottom-left → go right+above
+            return x + 6, y - 10, 'start'
+
+        lines_svg = []
+
+        # Quadrant fills
+        lines_svg.append(f'<rect x="{PL}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
+        lines_svg.append(f'<rect x="{PL+IW/2:.1f}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#eff6ff"/>')
+        lines_svg.append(f'<rect x="{PL}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
+        lines_svg.append(f'<rect x="{PL+IW/2:.1f}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#f9fafb"/>')
+
+        # Dividers
+        lines_svg.append(f'<line x1="{mid_x:.1f}" y1="{PT}" x2="{mid_x:.1f}" y2="{PT+IH}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 3"/>')
+        lines_svg.append(f'<line x1="{PL}" y1="{mid_y:.1f}" x2="{PL+IW}" y2="{mid_y:.1f}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 3"/>')
+
+        # Axes
+        lines_svg.append(f'<line x1="{PL}" y1="{PT+IH}" x2="{PL+IW}" y2="{PT+IH}" stroke="#d1d5db" stroke-width="1"/>')
+        lines_svg.append(f'<line x1="{PL}" y1="{PT}" x2="{PL}" y2="{PT+IH}" stroke="#d1d5db" stroke-width="1"/>')
+
+        # Axis labels
+        lines_svg.append(f'<text x="{PL+IW/2:.1f}" y="{H-8}" text-anchor="middle" font-size="10" fill="#c4c4c4" letter-spacing="0.08em">MOMENTUM →</text>')
+        lines_svg.append(f'<text x="13" y="{PT+IH/2:.1f}" text-anchor="middle" font-size="10" fill="#c4c4c4" letter-spacing="0.08em" transform="rotate(-90,13,{PT+IH/2:.1f})">VELOCITY →</text>')
+
+        # Data points + labels (matching homepage style)
+        for p in points:
+            x = cx(p['momentum'])
+            y = cy(p['velocity'])
+            lx, ly, anchor = label_pos(x, y, p['actor'])
+            color = p['color']
+            lines_svg.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5" fill="{color}" opacity="0.9"/>')
+            lines_svg.append(
+                f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}" font-size="10" '
+                f'fill="#6b7280" font-weight="500">{p["label"]}</text>'
+            )
+
+        report_date = datetime.date.today().strftime('%-d %B %Y')
+        svg_body = '\n        '.join(lines_svg)
+        svg = (
+            f'<svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
+            f'style="display:block;font-family:inherit">\n        '
+            f'{svg_body}\n      </svg>'
+        )
+
+        legend_items = [
+            ('#93c5fd', 'Positive momentum + accelerating'),
+            ('#fcd34d', 'Negative but recovering'),
+            ('#fca5a5', 'Regime reversal'),
+            ('#e5e7eb', 'Fading'),
+        ]
+        legend_html = ' &nbsp;·&nbsp; '.join(
+            f'<span style="display:inline-flex;align-items:center;gap:4px">'
+            f'<span style="width:8px;height:8px;border-radius:50%;background:{c};display:inline-block"></span>'
+            f'<span>{lbl}</span></span>'
+            for c, lbl in legend_items
+        )
+
+        return (
+            f'<div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#999;'
+            f'text-transform:uppercase;margin-bottom:6px">Where narratives are moving</div>'
+            f'<p style="font-size:11px;color:#aaa;margin:0 0 14px">Momentum (x) vs. velocity / acceleration (y) — {report_date}</p>'
+            f'{svg}'
+            f'<div style="margin-top:10px;font-size:10px;color:#aaa">{legend_html}</div>'
+        )
+
+    vars['narrative_map_html'] = _build_narrative_map_html(trajectories)
+
     # Ecosystem lineage narratives — top 4 ecosystem lineages by gravity
     def _eco_lineage_narratives_html(lineages_sorted, top_n=4):
         eco = [r for r in lineages_sorted if r.get('lineage_type') == 'ecosystem']
@@ -2477,22 +2576,6 @@ def main(reset_registry=False):
 
     vars['eco_lineage_theme_evidence_html'] = _eco_lineage_theme_evidence_html(lineages_sorted)
 
-    # Community precursors HTML for exec overview
-    _coming_soon_badge = (
-        '<span style="font-size:11px;font-weight:500;color:#888;background:#f0f0f0;'
-        'border-radius:4px;padding:2px 7px;margin-left:6px;vertical-align:middle;'
-        'letter-spacing:.04em">COMING SOON — synthetic data</span>'
-    )
-    if community_precursors:
-        prec_parts = [f'<p class="muted" style="font-size:12px;margin-bottom:8px">Community signal is currently synthetic.{_coming_soon_badge}</p>']
-        prec_parts.append('<ul class="bullets" style="font-size:12px">')
-        for p in community_precursors[:3]:
-            prec_parts.append(f'<li><strong>{p["label"]}</strong> <span class="muted">({p["post_count"]} posts) — {p["interpretation"][:100]}</span></li>')
-        prec_parts.append('</ul>')
-        vars['community_precursors_html'] = ''.join(prec_parts)
-    else:
-        vars['community_precursors_html'] = '<p class="muted">No community precursor topics detected. Run build_community_overlay.py to populate.</p>'
-    
     # Narrative dynamics for executive overview — storm-level (not window-level)
     n_storms = len(_actor_storms_merged)
     drift_stable = sum(1 for s in _actor_storms_merged if s.get('drift', 0) < 0.08)
@@ -2671,6 +2754,49 @@ def main(reset_registry=False):
         vars[f'actor_{i}_top_storm_velocity_state'] = top_storm.get('velocity_state', 'stable').title()
         vars[f'actor_{i}_top_storm_velocity_confidence'] = top_storm.get('velocity_confidence', 'low').title()
         vars[f'actor_{i}_top_storm_displayed_velocity_state'] = displayed_velocity_state(top_storm).title()
+
+        # Signal strip: status label + CSS class
+        _vel_disp = displayed_velocity_state(top_storm).lower()
+        if 'accelerating' in _vel_disp:
+            _status_label, _status_cls = 'Accelerating', 'accel'
+        elif 'declining' in _vel_disp or 'fading' in _vel_disp:
+            _status_label, _status_cls = 'Declining', 'decl'
+        elif 'reversing' in _vel_disp:
+            _status_label, _status_cls = 'Reversing', 'rev'
+        elif 'stabilizing' in _vel_disp or 'stable' in _vel_disp:
+            _status_label, _status_cls = 'Stabilizing', 'stable'
+        else:
+            _status_label, _status_cls = _vel_disp.title() or 'Stable', 'neutral'
+        vars[f'actor_{i}_top_storm_status'] = _status_label
+        vars[f'actor_{i}_top_storm_status_class'] = _status_cls
+
+        # Strength: derived from gravity + momentum class
+        _grav = top_storm.get('gravity_score', 0)
+        _mc_s = top_storm.get('momentum_class', '')
+        if _grav > 0.15 or _mc_s == 'Surging':
+            _strength = 'Strong'
+        elif _grav > 0.06 or _mc_s in ('Expanding', 'Building'):
+            _strength = 'Moderate'
+        elif _grav > 0.02 or top_storm.get('event_count', 0) >= 5:
+            _strength = 'Weak'
+        else:
+            _strength = 'Emerging'
+        vars[f'actor_{i}_top_storm_strength'] = _strength
+
+        # Prev → Now: compare chronologically adjacent storm windows
+        _all_sorted = sorted(actor_storms_filtered, key=lambda s: s.get('created_at', ''))
+        _others_sorted = [s for s in _all_sorted if s.get('storm_id') != top_storm.get('storm_id')]
+        if _others_sorted:
+            _prev_v = displayed_velocity_state(_others_sorted[-1]).lower()
+            if 'accelerating' in _prev_v:   _prev_lbl = 'Accelerating'
+            elif 'declining' in _prev_v or 'fading' in _prev_v: _prev_lbl = 'Declining'
+            elif 'reversing' in _prev_v:    _prev_lbl = 'Reversing'
+            elif 'stabilizing' in _prev_v or 'stable' in _prev_v: _prev_lbl = 'Stabilizing'
+            else: _prev_lbl = _prev_v.title() or 'Stable'
+            vars[f'actor_{i}_window_comparison'] = f"Prev: {_prev_lbl} → Now: {_status_label}"
+        else:
+            vars[f'actor_{i}_window_comparison'] = f"First window · Now: {_status_label}"
+
         vars[f'actor_{i}_top_storm_priority_bucket'] = top_storm.get('priority_bucket', 'low_gravity_low_velocity')
         vars[f'actor_{i}_top_storm_priority_label']  = top_storm.get('priority_label', 'Background')
         vars[f'actor_{i}_top_storm_is_breakout_candidate'] = str(top_storm.get('is_breakout_candidate', False)).lower()
@@ -2801,12 +2927,18 @@ def main(reset_registry=False):
         for add_storm in additional_storms:
             storm_label = _dh(add_storm, 40)
             storm_state = add_storm.get('state', 'unknown')
+            _add_vel = displayed_velocity_state(add_storm).lower()
+            if 'accelerating' in _add_vel:   storm_status_lbl = 'Accelerating'
+            elif 'declining' in _add_vel or 'fading' in _add_vel: storm_status_lbl = 'Declining'
+            elif 'reversing' in _add_vel:    storm_status_lbl = 'Reversing'
+            elif 'stabilizing' in _add_vel or 'stable' in _add_vel: storm_status_lbl = 'Stabilizing'
+            else: storm_status_lbl = _add_vel.title() or '—'
             storm_events = add_storm.get('event_count', 0)
             storm_coherence = format_coherence(add_storm.get('coherence', 0))
             additional_storms_html.append(
-                f"<tr><td>{storm_label}</td><td>{storm_state}</td><td>{storm_events}</td><td>{storm_coherence}</td></tr>"
+                f"<tr><td>{storm_label}</td><td>{storm_state}</td><td>{storm_status_lbl}</td><td>{storm_events}</td><td>{storm_coherence}</td></tr>"
             )
-        vars[f'actor_{i}_additional_storms_html'] = ''.join(additional_storms_html) if additional_storms_html else '<tr><td colspan="4" class="muted">No additional storms detected</td></tr>'
+        vars[f'actor_{i}_additional_storms_html'] = ''.join(additional_storms_html) if additional_storms_html else '<tr><td colspan="5" class="muted">No additional storms detected</td></tr>'
         
         themes = top_storm.get('themes', [])[:3]
         for j in range(1, 4):
@@ -3044,7 +3176,8 @@ def main(reset_registry=False):
                     'top_storm_coherence', 'top_storm_gravity', 'top_storm_one_liner', 'dominant_themes', 'domain_phrases', 'related_actors',
                     'drift', 'drift_class', 'shift_type', 'narrative_role', 'pressure', 'pressure_interp',
                     'has_evolution', 'evolution_text', 'additional_storms_html', 'evidence_html', 'community_html',
-                    'momentum_score', 'momentum_class', 'momentum_explanation']:
+                    'momentum_score', 'momentum_class', 'momentum_explanation',
+                    'top_storm_status', 'top_storm_status_class', 'top_storm_strength', 'window_comparison']:
             if f'actor_{i}_{key}' not in vars:
                 vars[f'actor_{i}_{key}'] = 'N/A'
         for j in range(1, 6):

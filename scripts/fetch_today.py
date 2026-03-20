@@ -17,7 +17,8 @@ print(f"Date range: {yesterday} to {today}")
 # Fetch from Finnhub
 actors = ['NVDA', 'AMD', 'TSM', 'MSFT', 'AMZN', 'GOOGL', 'ASML', 'AVGO',
           'META', 'ORCL', 'ADBE', 'CRM', 'SNOW', 'TSLA',
-          'ARM', 'SMCI', 'DELL', 'INTC', 'MU', 'CRWV', 'NBIS']
+          'ARM', 'SMCI', 'DELL', 'INTC', 'MU', 'CRWV', 'NBIS',
+          'PLTR']
 finnhub_events = []
 for actor in actors:
     events = fetch_finnhub_company_news(actor, str(yesterday), str(today))
@@ -45,6 +46,9 @@ queries = [
     ('"SK Hynix" OR "SK hynix HBM" OR "SK hynix memory"',        ['SKHX']),
     ('CoreWeave OR "AI cloud" OR "GPU cloud"',                    ['CRWV']),
     ('Nebius OR "Nebius AI" OR "Nebius cloud"',                   ['NBIS']),
+    ('Palantir OR PLTR OR "Palantir AIP" OR "Palantir AI"',       ['PLTR']),
+    ('OpenAI OR "ChatGPT" OR "GPT-5" OR "OpenAI API"',            ['OPENAI']),
+    ('Anthropic OR "Claude AI" OR "Anthropic Claude"',             ['ANTHROPIC']),
     # Cross-actor ecosystem queries — explicitly link supply and demand sides
     ('"AI infrastructure" AND (Meta OR Oracle OR Salesforce OR Adobe)',    ['META', 'ORCL', 'CRM', 'ADBE']),
     ('"AI chips" OR "GPU demand" AND (Meta OR Oracle OR Tesla OR Salesforce)', ['META', 'ORCL', 'TSLA', 'CRM']),
