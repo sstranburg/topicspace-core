@@ -2351,43 +2351,27 @@ def main(reset_registry=False):
     )
 
     # ── Narrative Map (momentum × velocity quadrant) ─────────────────────────
-    def _build_narrative_map_html(trajectories_list):
-        import math, datetime
-        # Actor → dominant trajectory (highest total_events)
-        actor_traj: dict = {}
-        for t in trajectories_list:
-            a = t.get('actor')
-            if not a:
-                continue
-            if a not in actor_traj or t.get('total_events', 0) > actor_traj[a].get('total_events', 0):
-                actor_traj[a] = t
-
-        # Matches homepage NarrativeMap exactly — same actors, labels, colors, positions
-        # Actor → (editorial label, normalized position, color)
-        # Positions mirror homepage: m/v are 0-1 normalized, derived from live data range
-        ACTOR_CONFIG = {
-            'NVDA':      ('AI Chips (NVDA)',    0.68, 0.82, '#93c5fd'),
-            'INTC':      ('Data Center (INTC)', 0.65, 0.62, '#93c5fd'),
-            'AMZN':      ('Cloud CapEx (AMZN)', 0.42, 0.40, '#fcd34d'),
-            'OPENAI':    ('OpenAI',             0.18, 0.22, '#fca5a5'),
-            'ANTHROPIC': ('Anthropic',          0.12, 0.15, '#fca5a5'),
-            'META':      ('Meta Narratives',    0.06, 0.06, '#fca5a5'),
-        }
-
-        points = [
-            {'actor': a, 'label': cfg[0], 'momentum': cfg[1], 'velocity': cfg[2], 'color': cfg[3]}
-            for a, cfg in ACTOR_CONFIG.items()
-            if actor_traj.get(a)
-        ]
-
-        if not points:
-            return ''
-
-        # SVG layout — matches homepage W=520 H=380
+    def _build_narrative_map_html(_trajectories_list):
+        import datetime
+        # Editorial 8-actor map — mirrors homepage NarrativeMap.tsx exactly.
+        # Positions are role-based (not derived from live data) so they stay stable across runs.
+        # W=520 H=380  PL=46 PR=20 PT=14 PB=50  IW=454 IH=316
+        # cx(m)=46+m*454   cy(v)=14+(1-v)*316
         W, H = 520, 380
-        PL, PR, PT, PB = 46, 20, 14, 50
-        IW = W - PL - PR   # 454
-        IH = H - PT - PB   # 316
+        PL, PT = 46, 14
+        IW, IH = 454, 316
+
+        POINTS = [
+            # (label,                              m,    v,    lx,  ly,  anchor,   color)
+            ('Intel',                             0.50, 0.84, 283,  59, 'start', '#93c5fd'),  # Accelerating
+            ('NVIDIA',                            0.73, 0.50, 366, 166, 'end',   '#fcd34d'),  # Unstable
+            ('Amazon',                            0.48, 0.36, 274, 212, 'start', '#fcd34d'),  # Stable anchor
+            ('Google',                            0.67, 0.30, 339, 230, 'end',   '#d1d5db'),  # Fading amplifier
+            ('Micron',                            0.40, 0.24, 238, 249, 'start', '#86efac'),  # Early recovery
+            ('ASML',                              0.30, 0.18, 171, 268, 'end',   '#86efac'),  # Early recovery
+            ('Meta',                              0.22, 0.12, 156, 286, 'start', '#fca5a5'),  # Declining
+            ('Model layer (OpenAI · Anthropic)',  0.07, 0.05,  88, 308, 'start', '#fca5a5'),  # Declining
+        ]
 
         def cx(m): return PL + m * IW
         def cy(v): return PT + (1 - v) * IH
@@ -2395,57 +2379,49 @@ def main(reset_registry=False):
         mid_x = cx(0.5)
         mid_y = cy(0.5)
 
-        # Place label 9px above-right of dot (matching homepage style)
-        def label_pos(x, y, actor):
-            if actor == 'NVDA':   return x - 6, y - 10, 'end'    # near top-right edge → go left
-            if actor == 'META':   return x + 6, y - 10, 'start'  # bottom-left → go right+above
-            return x + 6, y - 10, 'start'
-
-        lines_svg = []
+        svg_parts = []
 
         # Quadrant fills
-        lines_svg.append(f'<rect x="{PL}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
-        lines_svg.append(f'<rect x="{PL+IW/2:.1f}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#eff6ff"/>')
-        lines_svg.append(f'<rect x="{PL}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
-        lines_svg.append(f'<rect x="{PL+IW/2:.1f}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#f9fafb"/>')
+        svg_parts.append(f'<rect x="{PL}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
+        svg_parts.append(f'<rect x="{PL+IW/2:.1f}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#f0f7ff"/>')
+        svg_parts.append(f'<rect x="{PL}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
+        svg_parts.append(f'<rect x="{PL+IW/2:.1f}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
 
         # Dividers
-        lines_svg.append(f'<line x1="{mid_x:.1f}" y1="{PT}" x2="{mid_x:.1f}" y2="{PT+IH}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 3"/>')
-        lines_svg.append(f'<line x1="{PL}" y1="{mid_y:.1f}" x2="{PL+IW}" y2="{mid_y:.1f}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 3"/>')
+        svg_parts.append(f'<line x1="{mid_x:.1f}" y1="{PT}" x2="{mid_x:.1f}" y2="{PT+IH}" stroke="#ececec" stroke-width="1" stroke-dasharray="3 3"/>')
+        svg_parts.append(f'<line x1="{PL}" y1="{mid_y:.1f}" x2="{PL+IW}" y2="{mid_y:.1f}" stroke="#ececec" stroke-width="1" stroke-dasharray="3 3"/>')
 
         # Axes
-        lines_svg.append(f'<line x1="{PL}" y1="{PT+IH}" x2="{PL+IW}" y2="{PT+IH}" stroke="#d1d5db" stroke-width="1"/>')
-        lines_svg.append(f'<line x1="{PL}" y1="{PT}" x2="{PL}" y2="{PT+IH}" stroke="#d1d5db" stroke-width="1"/>')
+        svg_parts.append(f'<line x1="{PL}" y1="{PT+IH}" x2="{PL+IW}" y2="{PT+IH}" stroke="#e5e7eb" stroke-width="1"/>')
+        svg_parts.append(f'<line x1="{PL}" y1="{PT}" x2="{PL}" y2="{PT+IH}" stroke="#e5e7eb" stroke-width="1"/>')
 
         # Axis labels
-        lines_svg.append(f'<text x="{PL+IW/2:.1f}" y="{H-8}" text-anchor="middle" font-size="10" fill="#c4c4c4" letter-spacing="0.08em">MOMENTUM →</text>')
-        lines_svg.append(f'<text x="13" y="{PT+IH/2:.1f}" text-anchor="middle" font-size="10" fill="#c4c4c4" letter-spacing="0.08em" transform="rotate(-90,13,{PT+IH/2:.1f})">VELOCITY →</text>')
+        svg_parts.append(f'<text x="{PL+IW/2:.1f}" y="{H-9}" text-anchor="middle" font-size="9" fill="#c4c4c4" letter-spacing="0.09em">NARRATIVE MOMENTUM →</text>')
+        svg_parts.append(f'<text x="12" y="{PT+IH/2:.1f}" text-anchor="middle" font-size="9" fill="#c4c4c4" letter-spacing="0.09em" transform="rotate(-90,12,{PT+IH/2:.1f})">NARRATIVE VELOCITY →</text>')
 
-        # Data points + labels (matching homepage style)
-        for p in points:
-            x = cx(p['momentum'])
-            y = cy(p['velocity'])
-            lx, ly, anchor = label_pos(x, y, p['actor'])
-            color = p['color']
-            lines_svg.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5" fill="{color}" opacity="0.9"/>')
-            lines_svg.append(
-                f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}" font-size="10" '
-                f'fill="#6b7280" font-weight="500">{p["label"]}</text>'
+        # Data points + labels
+        for label, m, v, lx, ly, anchor, color in POINTS:
+            x = cx(m)
+            y = cy(v)
+            svg_parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="{color}"/>')
+            svg_parts.append(
+                f'<text x="{lx}" y="{ly}" text-anchor="{anchor}" font-size="8.5" '
+                f'fill="#9ca3af" font-weight="500">{label}</text>'
             )
 
-        report_date = datetime.date.today().strftime('%-d %B %Y')
-        svg_body = '\n        '.join(lines_svg)
         svg = (
             f'<svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
-            f'style="display:block;font-family:inherit">\n        '
-            f'{svg_body}\n      </svg>'
+            f'style="display:block;font-family:inherit">'
+            + ''.join(svg_parts)
+            + '</svg>'
         )
 
         legend_items = [
-            ('#93c5fd', 'Positive momentum + accelerating'),
-            ('#fcd34d', 'Negative but recovering'),
-            ('#fca5a5', 'Regime reversal'),
-            ('#e5e7eb', 'Fading'),
+            ('#93c5fd', 'Accelerating'),
+            ('#fcd34d', 'Unstable or stable anchor'),
+            ('#86efac', 'Early recovery'),
+            ('#d1d5db', 'Fading'),
+            ('#fca5a5', 'Declining'),
         ]
         legend_html = ' &nbsp;·&nbsp; '.join(
             f'<span style="display:inline-flex;align-items:center;gap:4px">'
@@ -2454,10 +2430,12 @@ def main(reset_registry=False):
             for c, lbl in legend_items
         )
 
+        report_date = datetime.date.today().strftime('%-d %B %Y')
         return (
             f'<div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#999;'
-            f'text-transform:uppercase;margin-bottom:6px">Where narratives are moving</div>'
-            f'<p style="font-size:11px;color:#aaa;margin:0 0 14px">Momentum (x) vs. velocity / acceleration (y) — {report_date}</p>'
+            f'text-transform:uppercase;margin-bottom:6px">Where key AI actors are positioned right now</div>'
+            f'<p style="font-size:11px;color:#aaa;margin:0 0 14px">'
+            f'Each actor positioned by narrative momentum (attention / persistence) and velocity (change / acceleration) — {report_date}</p>'
             f'{svg}'
             f'<div style="margin-top:10px;font-size:10px;color:#aaa">{legend_html}</div>'
         )

@@ -1,6 +1,6 @@
 # Strategic Watchlist Report
 
-**Generated**: 2026-03-17 11:14:11
+**Generated**: 2026-03-20 15:46:55
 
 ---
 
@@ -13,15 +13,7 @@
 ## 2. Monitor Closely
 
 ### Unnamed
-- **Actor**: ecosystem  **Role**: Unknown  **Pressure**: High (0.84)  **Strategic**: 0.67
-- High-pressure narrative led by an unknown actor.
-
-### Unnamed
 - **Actor**: ecosystem  **Role**: Unknown  **Pressure**: High (0.81)  **Strategic**: 0.65
-- High-pressure narrative led by an unknown actor.
-
-### Growing earnings narrative around Broadcom
-- **Actor**: AVGO  **Role**: Unknown  **Pressure**: High (0.78)  **Strategic**: 0.63
 - High-pressure narrative led by an unknown actor.
 
 ### Unnamed
@@ -31,6 +23,14 @@
 ### Unnamed
 - **Actor**: ecosystem  **Role**: Unknown  **Pressure**: High (0.75)  **Strategic**: 0.61
 - High-pressure narrative led by an unknown actor.
+
+### Emerging demand around artificial intelligence stocks
+- **Actor**: INTC  **Role**: Amplifier  **Pressure**: Building (0.60)  **Strategic**: 0.59
+- Building narrative associated with an amplifier actor; watch for acceleration.
+
+### Unnamed
+- **Actor**: ecosystem  **Role**: Unknown  **Pressure**: Building (0.72)  **Strategic**: 0.59
+- Building narrative associated with an unknown actor; watch for acceleration.
 
 ### Unnamed
 - **Actor**: ecosystem  **Role**: Unknown  **Pressure**: Building (0.72)  **Strategic**: 0.58
@@ -49,16 +49,16 @@
 ## 3. Role-Based Breakdown
 
 - **Leader**: 1
-- **Amplifier**: 3
+- **Amplifier**: 4
 - **Bridge**: 2
-- **Receiver**: 6
-- **Unknown**: 38
+- **Receiver**: 8
+- **Unknown**: 61
 
 ## 4. Shift-Type Breakdown
 
-- **unclear**: 50
+- **unclear**: 76
 
 ## 5. Key Interpretation
 
 8 additional narrative(s) are building and worth monitoring.
-Role mix across watchlist: 1 leaders, 3 amplifiers, 2 bridges, 6 receivers.
+Role mix across watchlist: 1 leaders, 4 amplifiers, 2 bridges, 8 receivers.
