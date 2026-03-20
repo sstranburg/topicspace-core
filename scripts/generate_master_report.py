@@ -2492,15 +2492,26 @@ def main(reset_registry=False):
             mom_color = _mom_colors.get(mom_class, '#888')
             mom_tag = (f'<span style="color:{mom_color};font-weight:700">{mom_class}</span>'
                        f'<span class="muted"> · {mom:.0f}</span>')
-            pills = ' '.join(
-                f'<span style="display:inline-block;background:var(--line);border-radius:3px;'
-                f'padding:1px 6px;font-size:10px;margin-right:3px">'
-                f'{s.get("created_at","")[:10]}'
-                f'<span class="state-badge {state_to_class(s.get("state","unknown"))}" '
-                f'style="margin-left:4px;font-size:9px">{s.get("state","unknown")}</span>'
-                f'</span>'
-                for s in storms_in_lin
-            )
+            def _pill_status(s):
+                # Use lifecycle state (growing/peaking/stable/fading) — always present, always meaningful
+                state = s.get('state', 'unknown')
+                state_map = {
+                    'growing':  ('Growing',     'var(--good)'),
+                    'peaking':  ('Peaking',     'var(--warn)'),
+                    'stable':   ('Stable',      'var(--muted)'),
+                    'fading':   ('Fading',      'var(--danger)'),
+                    'emerging': ('Emerging',    '#0891b2'),
+                }
+                lbl, col = state_map.get(state, (state.title(), 'var(--ink)'))
+                date = s.get('created_at', '')[:10]
+                return (
+                    f'<span style="display:inline-block;background:var(--soft);border:1px solid var(--line);'
+                    f'border-radius:4px;padding:2px 7px;font-size:10px;margin-right:3px;margin-bottom:2px">'
+                    f'<span style="font-weight:700;color:{col}">{lbl}</span>'
+                    f'<span style="color:var(--muted);margin-left:4px">{date}</span>'
+                    f'</span>'
+                )
+            pills = ''.join(_pill_status(s) for s in storms_in_lin)
 
             # Signal strip: status, strength, prev→now
             _now_lbl, _now_cls = _eco_status(storms_in_lin[-1]) if storms_in_lin else ('Stable', 'stable')
