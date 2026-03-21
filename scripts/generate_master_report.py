@@ -2365,11 +2365,14 @@ def main(reset_registry=False):
         ACTORS = [
             # name          role            sub                          m     v     nx   ny   anchor    color
             ('Intel',       'accelerating', None,                       0.50, 0.85, 310,  73, 'start', '#93c5fd'),
+            ('Marvell',     'accelerating', None,                       0.63, 0.72, 373, 120, 'start', '#93c5fd'),
             ('NVIDIA',      'unstable',     None,                       0.74, 0.52, 402, 191, 'end',   '#fcd34d'),
             ('Amazon',      'anchor',       None,                       0.48, 0.37, 300, 244, 'start', '#fcd34d'),
+            ('Apple',       'fading',       None,                       0.39, 0.44, 232, 219, 'end',   '#d1d5db'),
             ('Google',      'fading',       None,                       0.66, 0.30, 363, 269, 'end',   '#d1d5db'),
             ('Micron',      'recovery',     None,                       0.42, 0.24, 271, 291, 'start', '#86efac'),
             ('ASML',        'recovery',     None,                       0.32, 0.17, 198, 316, 'end',   '#86efac'),
+            ('Samsung',     'fading',       None,                       0.14, 0.28, 135, 276, 'start', '#d1d5db'),
             ('Meta',        'declining',    None,                       0.22, 0.11, 150, 337, 'end',   '#fca5a5'),
             ('Model layer', 'declining',    '(OpenAI + Anthropic)',     0.04, 0.04,  86, 360, 'start', '#fca5a5'),
         ]
