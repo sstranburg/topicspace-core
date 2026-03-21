@@ -2354,23 +2354,24 @@ def main(reset_registry=False):
     def _build_narrative_map_html(_trajectories_list):
         import datetime
         # Editorial 8-actor map — mirrors homepage NarrativeMap.tsx exactly.
-        # Positions are role-based (not derived from live data) so they stay stable across runs.
-        # W=520 H=380  PL=46 PR=20 PT=14 PB=50  IW=454 IH=316
-        # cx(m)=46+m*454   cy(v)=14+(1-v)*316
-        W, H = 520, 380
-        PL, PT = 46, 14
-        IW, IH = 454, 316
+        # W=560 H=440  PL=55 PR=20 PT=24 PB=60  IW=485 IH=356
+        # cx(m)=55+m*485   cy(v)=24+(1-v)*356
+        # Each actor: (name, role, sub_label_or_None, m, v, nx, ny, anchor, color)
+        # nx/ny = name baseline; role rendered 11px below; sub (if any) between name and role.
+        W, H = 560, 440
+        PL, PT = 55, 24
+        IW, IH = 485, 356
 
-        POINTS = [
-            # (label,                              m,    v,    lx,  ly,  anchor,   color)
-            ('Intel',                             0.50, 0.84, 283,  59, 'start', '#93c5fd'),  # Accelerating
-            ('NVIDIA',                            0.73, 0.50, 366, 166, 'end',   '#fcd34d'),  # Unstable
-            ('Amazon',                            0.48, 0.36, 274, 212, 'start', '#fcd34d'),  # Stable anchor
-            ('Google',                            0.67, 0.30, 339, 230, 'end',   '#d1d5db'),  # Fading amplifier
-            ('Micron',                            0.40, 0.24, 238, 249, 'start', '#86efac'),  # Early recovery
-            ('ASML',                              0.30, 0.18, 171, 268, 'end',   '#86efac'),  # Early recovery
-            ('Meta',                              0.22, 0.12, 156, 286, 'start', '#fca5a5'),  # Declining
-            ('Model layer (OpenAI · Anthropic)',  0.07, 0.05,  88, 308, 'start', '#fca5a5'),  # Declining
+        ACTORS = [
+            # name          role            sub                          m     v     nx   ny   anchor    color
+            ('Intel',       'accelerating', None,                       0.50, 0.85, 310,  73, 'start', '#93c5fd'),
+            ('NVIDIA',      'unstable',     None,                       0.74, 0.52, 402, 191, 'end',   '#fcd34d'),
+            ('Amazon',      'anchor',       None,                       0.48, 0.37, 300, 244, 'start', '#fcd34d'),
+            ('Google',      'fading',       None,                       0.66, 0.30, 363, 269, 'end',   '#d1d5db'),
+            ('Micron',      'recovery',     None,                       0.42, 0.24, 271, 291, 'start', '#86efac'),
+            ('ASML',        'recovery',     None,                       0.32, 0.17, 198, 316, 'end',   '#86efac'),
+            ('Meta',        'declining',    None,                       0.22, 0.11, 150, 337, 'end',   '#fca5a5'),
+            ('Model layer', 'declining',    '(OpenAI + Anthropic)',     0.04, 0.04,  86, 360, 'start', '#fca5a5'),
         ]
 
         def cx(m): return PL + m * IW
@@ -2378,35 +2379,49 @@ def main(reset_registry=False):
 
         mid_x = cx(0.5)
         mid_y = cy(0.5)
+        axis_bottom = PT + IH
 
         svg_parts = []
 
-        # Quadrant fills
-        svg_parts.append(f'<rect x="{PL}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
-        svg_parts.append(f'<rect x="{PL+IW/2:.1f}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#f0f7ff"/>')
-        svg_parts.append(f'<rect x="{PL}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
-        svg_parts.append(f'<rect x="{PL+IW/2:.1f}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#fafafa"/>')
+        # Quadrant fills — top-right faintly highlighted
+        svg_parts.append(f'<rect x="{PL}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#f9fafb"/>')
+        svg_parts.append(f'<rect x="{PL+IW/2:.1f}" y="{PT}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#eff6ff"/>')
+        svg_parts.append(f'<rect x="{PL}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#f9fafb"/>')
+        svg_parts.append(f'<rect x="{PL+IW/2:.1f}" y="{PT+IH/2:.1f}" width="{IW/2:.1f}" height="{IH/2:.1f}" fill="#f9fafb"/>')
 
         # Dividers
-        svg_parts.append(f'<line x1="{mid_x:.1f}" y1="{PT}" x2="{mid_x:.1f}" y2="{PT+IH}" stroke="#ececec" stroke-width="1" stroke-dasharray="3 3"/>')
-        svg_parts.append(f'<line x1="{PL}" y1="{mid_y:.1f}" x2="{PL+IW}" y2="{mid_y:.1f}" stroke="#ececec" stroke-width="1" stroke-dasharray="3 3"/>')
+        svg_parts.append(f'<line x1="{mid_x:.1f}" y1="{PT}" x2="{mid_x:.1f}" y2="{axis_bottom}" stroke="#e8eaed" stroke-width="1" stroke-dasharray="3 4"/>')
+        svg_parts.append(f'<line x1="{PL}" y1="{mid_y:.1f}" x2="{PL+IW}" y2="{mid_y:.1f}" stroke="#e8eaed" stroke-width="1" stroke-dasharray="3 4"/>')
 
         # Axes
-        svg_parts.append(f'<line x1="{PL}" y1="{PT+IH}" x2="{PL+IW}" y2="{PT+IH}" stroke="#e5e7eb" stroke-width="1"/>')
-        svg_parts.append(f'<line x1="{PL}" y1="{PT}" x2="{PL}" y2="{PT+IH}" stroke="#e5e7eb" stroke-width="1"/>')
+        svg_parts.append(f'<line x1="{PL}" y1="{axis_bottom}" x2="{PL+IW}" y2="{axis_bottom}" stroke="#e5e7eb" stroke-width="1"/>')
+        svg_parts.append(f'<line x1="{PL}" y1="{PT}" x2="{PL}" y2="{axis_bottom}" stroke="#e5e7eb" stroke-width="1"/>')
 
         # Axis labels
-        svg_parts.append(f'<text x="{PL+IW/2:.1f}" y="{H-9}" text-anchor="middle" font-size="9" fill="#c4c4c4" letter-spacing="0.09em">NARRATIVE MOMENTUM →</text>')
-        svg_parts.append(f'<text x="12" y="{PT+IH/2:.1f}" text-anchor="middle" font-size="9" fill="#c4c4c4" letter-spacing="0.09em" transform="rotate(-90,12,{PT+IH/2:.1f})">NARRATIVE VELOCITY →</text>')
+        svg_parts.append(f'<text x="{PL+IW/2:.1f}" y="{H-10}" text-anchor="middle" font-size="8.5" fill="#c4c4c4" letter-spacing="0.1em">NARRATIVE MOMENTUM (ATTENTION) →</text>')
+        svg_parts.append(f'<text x="13" y="{PT+IH/2:.1f}" text-anchor="middle" font-size="8.5" fill="#c4c4c4" letter-spacing="0.1em" transform="rotate(-90,13,{PT+IH/2:.1f})">NARRATIVE VELOCITY (CHANGE) →</text>')
 
-        # Data points + labels
-        for label, m, v, lx, ly, anchor, color in POINTS:
+        # Data points + two-line labels (name bold + optional sub + role italic)
+        for name, role, sub, m, v, nx, ny, anchor, color in ACTORS:
             x = cx(m)
             y = cy(v)
-            svg_parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="{color}"/>')
+            svg_parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4.5" fill="{color}"/>')
+            # Actor name
             svg_parts.append(
-                f'<text x="{lx}" y="{ly}" text-anchor="{anchor}" font-size="8.5" '
-                f'fill="#9ca3af" font-weight="500">{label}</text>'
+                f'<text x="{nx}" y="{ny}" text-anchor="{anchor}" font-size="9" '
+                f'fill="#4b5563" font-weight="600">{name}</text>'
+            )
+            # Sub-label (Model layer only)
+            if sub:
+                svg_parts.append(
+                    f'<text x="{nx}" y="{ny+11}" text-anchor="{anchor}" font-size="7.5" '
+                    f'fill="#b0b8c4">{sub}</text>'
+                )
+            # Role tag — italic, muted
+            role_y = ny + (22 if sub else 11)
+            svg_parts.append(
+                f'<text x="{nx}" y="{role_y}" text-anchor="{anchor}" font-size="7.5" '
+                f'fill="#b0b8c4" font-style="italic">{role}</text>'
             )
 
         svg = (
@@ -2418,7 +2433,7 @@ def main(reset_registry=False):
 
         legend_items = [
             ('#93c5fd', 'Accelerating'),
-            ('#fcd34d', 'Unstable or stable anchor'),
+            ('#fcd34d', 'Active (unstable or anchoring)'),
             ('#86efac', 'Early recovery'),
             ('#d1d5db', 'Fading'),
             ('#fca5a5', 'Declining'),
@@ -2432,12 +2447,13 @@ def main(reset_registry=False):
 
         report_date = datetime.date.today().strftime('%-d %B %Y')
         return (
-            f'<div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#999;'
-            f'text-transform:uppercase;margin-bottom:6px">Where key AI actors are positioned right now</div>'
-            f'<p style="font-size:11px;color:#aaa;margin:0 0 14px">'
-            f'Each actor positioned by narrative momentum (attention / persistence) and velocity (change / acceleration) — {report_date}</p>'
+            f'<div style="font-size:16px;font-weight:600;color:#1f2937;margin-bottom:4px">'
+            f'AI ecosystem — where key players are moving right now</div>'
+            f'<p style="font-size:12px;color:#9ca3af;margin:0 0 16px">'
+            f'Top-right = gaining attention fast &nbsp;·&nbsp; Bottom-left = losing relevance'
+            f'&nbsp;&nbsp;—&nbsp;&nbsp;{report_date}</p>'
             f'{svg}'
-            f'<div style="margin-top:10px;font-size:10px;color:#aaa">{legend_html}</div>'
+            f'<div style="margin-top:12px;font-size:10px;color:#aaa">{legend_html}</div>'
         )
 
     vars['narrative_map_html'] = _build_narrative_map_html(trajectories)
