@@ -10,8 +10,11 @@ ACTOR_ALIASES = {
     "ARM":  ["arm holdings", "arm chips", "arm architecture", "arm ltd"],
     "INTC": ["intel", "intc", "intel foundry", "intel arc"],
     "MU":   ["micron", " mu ", "dram", "nand flash", "hbm memory"],
+    "MRVL": ["marvell", "marvell technology", "mrvl", "marvell semiconductor"],
     "SMCI": ["super micro", "supermicro", "smci"],
     "DELL": ["dell", "dell technologies", "dell server"],
+    "SAMSNG": ["samsung", "samsung semiconductor", "samsung foundry", "samsung hbm"],
+    "AAPL": ["apple", "aapl", "apple intelligence", "apple silicon", "apple ai"],
     # AI cloud / infra providers
     "CRWV": ["coreweave", "core weave", "gpu cloud"],
     "NBIS": ["nebius", "nebius ai", "nebius cloud"],
@@ -45,6 +48,37 @@ TAG_KEYWORDS = {
 }
 
 import os
+
+# ---------------------------------------------------------------------------
+# Reddit classification rules
+#
+# Reddit is an overlay signal — useful for detecting early narrative formation,
+# attention spikes, and spread. It is NOT structural confirmation.
+#
+# Bucket defaults when Reddit is the dominant source:
+#   - Reddit-dominant + cross-source reinforcement  → BE_CAREFUL (at most)
+#   - Reddit-dominant + no cross-source             → BE_CAREFUL or IGNORE
+#   - Reddit-dominant + LOW reinforcement           → IGNORE (volume ≠ importance)
+#   - Reddit-dominant + HIGH reinforcement          → BE_CAREFUL (never LEAN_IN alone)
+#
+# LEAN_IN requires cross-source confirmation.
+# STEP_BACK requires prior structural weight — not applicable to pure Reddit volume.
+# ---------------------------------------------------------------------------
+
+# Threshold for treating a cluster as Reddit-dominant (% of events from reddit)
+REDDIT_DOMINANT_PCT     = 70        # >= this pct → "Reddit-heavy"
+REDDIT_CROSS_SRC_MIN    = 2         # minimum distinct source types to escape Reddit-only floor
+REDDIT_RELIABILITY      = 0.50      # event-level reliability prior for Reddit events
+
+# Source reliability priors (higher = more trusted)
+SOURCE_RELIABILITY: dict[str, float] = {
+    "filing":       0.95,
+    "transcript":   0.90,
+    "newsapi":      0.75,
+    "finnhub":      0.75,
+    "cryptopanic":  0.65,
+    "reddit":       0.50,
+}
 
 # LLM Naming Configuration
 USE_LLM_NAMING = os.getenv('USE_LLM_NAMING', 'True').lower() == 'true'
