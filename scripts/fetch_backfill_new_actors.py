@@ -21,6 +21,8 @@ NEW_COMPANIES = [
     ('ADBE', '0000796343'),
     ('CRM',  '0001108524'),
     ('TSLA', '0001318605'),
+    ('AAPL', '0000320193'),
+    ('MRVL', '0001058057'),
     ('ARM',  None),
     ('SMCI', None),
     ('DELL', None),
@@ -29,26 +31,38 @@ NEW_COMPANIES = [
     ('CRWV', None),
     ('NBIS', None),
     ('PLTR', None),
+    ('SAMSNG', None),  # Korean company — no US SEC filings, NewsAPI only
+    ('VRT',  None),   # Vertiv — power/thermal infrastructure
+    ('ANET', None),   # Arista Networks — AI-cluster networking
+    ('CEG',  None),   # Constellation Energy — nuclear power for AI data centers
+    ('VST',  None),   # Vistra Energy — gas/nuclear power operator
     # OPENAI and ANTHROPIC are private — NewsAPI only, no Finnhub/SEC
 ]
 
 NEWSAPI_QUERIES = [
-    ('META',  'Meta Platforms AI',                          ['META']),
-    ('ORCL',  'Oracle cloud AI',                            ['ORCL']),
-    ('ADBE',  'Adobe AI generative',                        ['ADBE']),
-    ('CRM',   'Salesforce AI CRM',                          ['CRM']),
-    ('TSLA',  'Tesla AI autonomous',                        ['TSLA']),
-    ('ARM',   'ARM Holdings AI chips semiconductor',        ['ARM']),
-    ('SMCI',  '"Super Micro" OR Supermicro AI server',      ['SMCI']),
-    ('DELL',  'Dell AI server infrastructure',              ['DELL']),
-    ('INTC',  'Intel AI chip foundry semiconductor',        ['INTC']),
-    ('MU',    'Micron HBM memory AI chip',                  ['MU']),
-    ('SKHX',  '"SK Hynix" HBM memory AI',                  ['SKHX']),
-    ('CRWV',  'CoreWeave GPU cloud AI infrastructure',      ['CRWV']),
-    ('NBIS',  'Nebius AI cloud infrastructure',             ['NBIS']),
-    ('PLTR',  'Palantir OR PLTR OR "Palantir AIP"',         ['PLTR']),
-    ('OPENAI','OpenAI OR "ChatGPT" OR "GPT-5"',             ['OPENAI']),
-    ('ANTHROPIC', 'Anthropic OR "Claude AI"',               ['ANTHROPIC']),
+    ('META',    'Meta Platforms AI',                                ['META']),
+    ('ORCL',    'Oracle cloud AI',                                  ['ORCL']),
+    ('ADBE',    'Adobe AI generative',                              ['ADBE']),
+    ('CRM',     'Salesforce AI CRM',                                ['CRM']),
+    ('TSLA',    'Tesla AI autonomous',                              ['TSLA']),
+    ('AAPL',    'Apple AI "Apple Intelligence" OR "Apple silicon"', ['AAPL']),
+    ('MRVL',    'Marvell Technology AI chip ASIC custom silicon',   ['MRVL']),
+    ('SAMSNG',  'Samsung semiconductor AI HBM foundry chip',        ['SAMSNG']),
+    ('ARM',     'ARM Holdings AI chips semiconductor',              ['ARM']),
+    ('SMCI',    '"Super Micro" OR Supermicro AI server',            ['SMCI']),
+    ('DELL',    'Dell AI server infrastructure',                    ['DELL']),
+    ('INTC',    'Intel AI chip foundry semiconductor',              ['INTC']),
+    ('MU',      'Micron HBM memory AI chip',                        ['MU']),
+    ('SKHX',    '"SK Hynix" HBM memory AI',                        ['SKHX']),
+    ('CRWV',    'CoreWeave GPU cloud AI infrastructure',            ['CRWV']),
+    ('NBIS',    'Nebius AI cloud infrastructure',                   ['NBIS']),
+    ('PLTR',    'Palantir OR PLTR OR "Palantir AIP"',               ['PLTR']),
+    ('OPENAI',  'OpenAI OR "ChatGPT" OR "GPT-5"',                  ['OPENAI']),
+    ('ANTHROPIC','Anthropic OR "Claude AI"',                        ['ANTHROPIC']),
+    ('VRT',     'Vertiv power cooling "data center" thermal AI',    ['VRT']),
+    ('ANET',    'Arista Networks AI ethernet switching datacenter', ['ANET']),
+    ('CEG',     '"Constellation Energy" nuclear "data center" OR AI power', ['CEG']),
+    ('VST',     'Vistra energy nuclear "data center" OR "AI power"',         ['VST']),
 ]
 
 output_path = Path('data/normalized/tech_ecosystem.jsonl')
@@ -113,5 +127,6 @@ print('\nActor event counts after backfill:')
 for actor in ['NVDA', 'AMD', 'TSM', 'MSFT', 'AMZN', 'GOOGL', 'ASML', 'AVGO',
               'META', 'ORCL', 'ADBE', 'CRM', 'SNOW', 'TSLA',
               'ARM', 'SMCI', 'DELL', 'INTC', 'MU', 'CRWV', 'NBIS', 'SKHX',
-              'PLTR', 'OPENAI', 'ANTHROPIC']:
+              'PLTR', 'OPENAI', 'ANTHROPIC',
+              'VRT', 'ANET', 'CEG', 'VST']:
     print(f'  {actor:<6} {actor_counts.get(actor, 0):>5}')

@@ -22,7 +22,7 @@ embedding_lookup, embeddings = load_embeddings()
 
 # Filter to Feb 1 - March 11, 2026
 cutoff_date = dt(2026, 2, 1)
-events = [e for e in events if dt.fromisoformat(e['timestamp'].rstrip('Z')) >= cutoff_date]
+events = [e for e in events if dt.fromisoformat(e['timestamp'].rstrip('Z')).replace(tzinfo=None) >= cutoff_date]
 storms = [s for s in storms if dt.fromisoformat(s['start_ts'].rstrip('Z')).replace(tzinfo=None) >= cutoff_date]
 
 print(f"  Filtered to {len(events)} events, {len(storms)} storms (Feb 1 - March 11)")

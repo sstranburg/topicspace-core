@@ -1,7 +1,10 @@
 pydantic>=2.0
 python-dotenv
 requests
+feedparser
 sentence-transformers
 numpy
 scikit-learn
 matplotlib
+anthropic
+openai

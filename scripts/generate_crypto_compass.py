@@ -22,9 +22,6 @@ import argparse
 from collections import defaultdict, Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal
-
-from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -41,6 +38,14 @@ from src.llm_naming import (
     validate_llm_label,
     validate_llm_label_faithfulness,
     _get_client,
+)
+from src.classify_narrative import (
+    CompassClassification,
+    _attention_level,
+    build_system_prompt,
+    post_process_classify_results,
+    render_compass_text,
+    render_compass_json,
 )
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -112,35 +117,95 @@ def actor_counts(events: list[Event]) -> dict[str, int]:
 # ── Pre-tagging ───────────────────────────────────────────────────────────────
 
 _BUCKET_RULES: list[tuple[str, list[str]]] = [
-    ("btc_institutional", [
-        "etf", "blackrock", "cftc", "sec ", "morgan stanley", "vanguard", "fidelity",
-        "treasury", "strategy acquires", "saylor", "microstrategy", "state reserve",
-        "senate", "congress", "legislature", "regulation", "commodity", "msbt",
+    # BTC-primary events are routed through these rules first (most specific → least specific)
+    ("btc_institutional_accumulation", [
+        "etf", "blackrock", "fidelity", "vanguard", "morgan stanley",
+        "treasury", "strategy acquires", "saylor", "microstrategy",
+        "state reserve", "reserve bill", "senate bitcoin", "congress bitcoin",
+        "bitcoin reserve", "btc reserve", "institutional buys", "h100 bitcoin",
+        "bitcoin etf", "bitcoin fund", "accumulation",
     ]),
-    ("btc_macro", [
-        " fed ", "federal reserve", "rate cut", "interest rate", "inflation", "bonds",
-        "gold", "macro", "recession", "iran", "geopolit", "war", "oil crisis",
-        "private credit", "yield curve", "dollar",
+    ("btc_macro_hedge", [
+        " fed ", "federal reserve", "rate cut", "interest rate", "inflation",
+        " bond", "gilt", "gold", "macro", "recession", "geopolit", "war",
+        "oil crisis", "yield curve", "dollar", "sovereign alternative",
+        "bond panic", "safe haven", "hard asset", "store of value",
     ]),
-    ("btc_sentiment", [
-        "panic", "fear", "am i screwed", "what do i do", "should i sell", "stop panicking",
-        "emotionally", "bear trap", "bull run", "wen moon", "hodl", "dca",
-        "am i too late", "just bought", "first time", "beginner",
+    ("btc_security_custody", [
+        "samourai", "domain hijack", "fbi seiz", "fbi took", "privacy wallet",
+        "mixer", "tornado", "lost wallet", "cold storage recover", "custody risk",
+        "multisig", "private key", "hardware wallet", "wallet seized",
+        "address poison", "scam site",
+    ]),
+    ("btc_sentiment_noise", [
+        "panic", "fear", "am i screwed", "should i sell", "stop panicking",
+        "bear trap", "bull run", "wen moon", "hodl", "dca", "am i too late",
+        "first time", "beginner", "i regret", "i sold too", "should have bought",
+        "missed the dip", "paper hands", "diamond hands",
     ]),
     ("btc_technical", [
-        "quantum", "genesis block", "optech", "mining difficulty", "hash rate",
-        "lightning", "taproot", "ordinal", "inscription", "cold storage", "multisig",
-        "wallet recover", "lost wallet", "private key",
+        "quantum", "mining difficulty", "hash rate", "lightning network",
+        "taproot", "ordinal", "inscription", "genesis block", "optech",
     ]),
 ]
 
 _OTHER_BUCKETS: list[tuple[str, list[str]]] = [
-    ("tao_bittensor", ["bittensor", " tao ", "subnet", "templar", "sn3"]),
-    ("eth_ecosystem",  ["ethereum", " eth ", "erc-", "eip-", "vitalik", "l2 ", "layer 2",
-                        "arbitrum", "optimism", "base chain", "rollup"]),
-    ("sol_ecosystem",  ["solana", " sol ", "phantom", "backpack", "sealevel"]),
-    ("defi_security",  ["hack", "exploit", "scam", "stolen", "vulnerability", "drain",
-                        "fake stablecoin", "address poison"]),
+    # AI-crypto crossover — check first, these actors are distinctive
+    ("crypto_ai_crossover", [
+        "bittensor", " tao ", "subnet", "sn3",
+        "render network", " rndr ", "render token",
+        "fetch.ai", " fet ", "fetchai",
+        "akash", " akt ", "akash network",
+        "ai crossover", "ai token", "depin", "decentralized ai",
+        " near protocol", "near ai",
+    ]),
+    # ETH — specific before general
+    ("eth_l2_fragmentation", [
+        "l2 fragmentation", "ethereum fragmentation", "layer 2 fragmentation",
+        "arbitrum", "optimism", "base chain", " rollup", "op mainnet",
+        "l2 ecosystem", "ethereum bridge", "bridge time", "l2 fees",
+        "ethereum scaling", "zk rollup", "zkevm",
+    ]),
+    ("eth_institutional_accumulation", [
+        "bitmine", "eth treasury", "ethereum treasury", "institutional eth",
+        "eth accumulation", "tom lee eth", "eth etf", "ethereum etf",
+        "ethereum fund", "eth institutional",
+    ]),
+    ("eth_security_exploit", [
+        "hack", "exploit", "stolen", "vulnerability", "drain wallet",
+        "fake stablecoin", "hacker mints", "phishing", "rug pull",
+        "protocol exploit", "defi exploit", "smart contract bug",
+    ]),
+    # SOL — specific before general
+    ("sol_narrative_reset", [
+        "solana foundation", "gaming is dead", "solana pivot",
+        "sol future", "sol positioning", "solana 2026",
+        "solana leadership", "real world assets solana",
+        "solana strategic", "solana narrative",
+    ]),
+    ("sol_activity_speculation", [
+        "solana bull", "sol price", "solana gambling", "solana dapp",
+        "solana defi", "backpack wallet", "bonk", "solana meme",
+        "phantom wallet", "solana nft", "pump.fun",
+    ]),
+    # Cross-asset structural
+    ("regulatory_pressure", [
+        "sec crypto", "cftc crypto", "crypto ban", "government bitcoin",
+        "crypto bill", "crypto law", "crypto regulation", "crypto policy",
+        "doj crypto", "crypto enforcement", "wash trading crypto",
+    ]),
+    ("macro_spillover", [
+        "crypto market", "crypto winter", "crypto rally", "crypto crash",
+        "market cap crypto", "crypto cycle", "bull market crypto",
+        "bear market crypto", "total crypto", "crypto portfolio",
+    ]),
+    # Catch-alls — must come last
+    ("eth_ecosystem_general", [
+        "ethereum", " eth ", "erc-", "eip-", "vitalik", "ethereum ecosystem",
+    ]),
+    ("sol_ecosystem_general", [
+        "solana", " sol ", "sealevel",
+    ]),
 ]
 
 
@@ -163,15 +228,22 @@ def pre_tag_event(event: Event) -> str:
 
 
 _BUCKET_TO_FAMILY: dict[str, str] = {
-    "btc_institutional": "institutional",
-    "btc_macro":         "macro",
-    "btc_sentiment":     "retail_sentiment",
-    "btc_technical":     "technical_product",
-    "tao_bittensor":     "ecosystem_structure",
-    "eth_ecosystem":     "ecosystem_structure",
-    "sol_ecosystem":     "ecosystem_structure",
-    "defi_security":     "security_exploit",
-    "other":             "general",
+    "btc_institutional_accumulation": "institutional",
+    "btc_macro_hedge":                "macro",
+    "btc_security_custody":           "security_exploit",
+    "btc_sentiment_noise":            "retail_sentiment",
+    "btc_technical":                  "technical_product",
+    "crypto_ai_crossover":            "ecosystem_structure",
+    "eth_l2_fragmentation":           "ecosystem_structure",
+    "eth_institutional_accumulation": "institutional",
+    "eth_security_exploit":           "security_exploit",
+    "sol_narrative_reset":            "ecosystem_structure",
+    "sol_activity_speculation":       "retail_sentiment",
+    "regulatory_pressure":            "macro",
+    "macro_spillover":                "macro",
+    "eth_ecosystem_general":          "ecosystem_structure",
+    "sol_ecosystem_general":          "ecosystem_structure",
+    "other":                          "general",
 }
 
 
@@ -325,231 +397,8 @@ def label_cluster(cluster: dict, use_llm: bool = True) -> dict:
 
 
 # ── Compass classification ────────────────────────────────────────────────────
-
-CLASSIFICATION_SYSTEM_PROMPT = """\
-ROLE
-
-You are a narrative classification engine, not an analyst.
-
-Your job is to:
-1. Interpret pre-clustered event groups as narratives
-2. Score each narrative using fixed rules
-3. Assign a classification:
-   - LEAN_IN
-   - STEP_BACK
-   - BE_CAREFUL
-   - IGNORE
-
-You must be:
-- consistent
-- decisive
-- non-verbose
-
-Do NOT explain reasoning.
-Do NOT hedge.
-Do NOT restate inputs.
-
-
-STEP 1 — VALIDATE NARRATIVE
-
-Before scoring, determine:
-
-Is this a real narrative or just grouped events?
-
-A valid narrative must:
-- express one clear shared idea
-- be directionally consistent
-- not be a generic topic (e.g. "Bitcoin news")
-
-If not a real narrative:
-→ classify as IGNORE
-
-
-STEP 2 — SCORE EACH NARRATIVE
-
-1. Attention Score (event_count)
-- LOW: <5
-- MEDIUM: 5–20
-- HIGH: >20
-
-2. Reinforcement Score (consistency of idea)
-Estimate % of events expressing the same idea:
-- HIGH: >60%
-- MEDIUM: 30–60%
-- LOW: <30%
-
-If events conflict → LOW
-
-3. Momentum Score (direction over time)
-- RISING: strong increase in recent window
-- FALLING: clear decrease
-- FLAT: otherwise
-
-
-STEP 3 — APPLY SOURCE CONTEXT
-
-Interpret source quality:
-
-High-trust sources:
-- filings
-- official announcements
-- transcripts
-- major news
-
-Mid-trust:
-- curated aggregators
-
-Low-trust:
-- reddit
-- social chatter
-
-Source rules:
-
-- A Reddit-heavy cluster alone is not sufficient for LEAN_IN
-- Cross-source reinforcement (multiple source types saying same thing) increases confidence
-- A small number of high-trust events can outweigh large low-trust volume
-
-Reddit classification rules (CRITICAL):
-
-When Reddit is the dominant source (dominant_source = reddit OR reddit >= 70%):
-- Default toward BE_CAREFUL, STEP_BACK, or IGNORE
-- Require cross-source reinforcement before LEAN_IN is permitted
-- If Reddit volume is HIGH but reinforcement is LOW → classify as IGNORE, not STEP_BACK
-  (High Reddit volume without structural reinforcement is noise, not a declining important narrative.
-   STEP_BACK implies "this was structurally important and is now fading." That logic does not apply
-   to pure Reddit volume spikes.)
-- If Reddit is the only source and reinforcement is MEDIUM → BE_CAREFUL at most
-
-Reddit IS useful for detecting:
-- Early narrative emergence (appropriate bucket: BE_CAREFUL with rising momentum)
-- Emotionally reactive or crowded narratives (appropriate bucket: BE_CAREFUL or IGNORE)
-- Attention spreading across adjacent actors (useful signal context, not classification basis)
-
-Reddit is NOT sufficient alone for:
-- HIGH confidence structural calls
-- LEAN_IN (requires cross-source confirmation)
-- STEP_BACK (requires that the narrative had prior structural weight)
-
-
-STEP 4 — CLASSIFY (STRICT RULES)
-
-LEAN_IN:
-- Attention = MEDIUM or HIGH
-- Reinforcement = HIGH
-- Momentum = RISING or very recently peaked
-- AND not dominated by low-trust sources alone
-
-STEP_BACK:
-- Attention = HIGH
-- Reinforcement = LOW
-- Momentum = FLAT or FALLING
-- AND narrative had prior structural weight (not pure Reddit volume)
-
-BE_CAREFUL:
-
-Case A — Fragmented:
-- Attention = MEDIUM or HIGH
-- Reinforcement = LOW
-
-Case B — Transition:
-- Attention = LOW → MEDIUM
-- Reinforcement = MEDIUM
-- Momentum = RISING
-
-Case C — Early structural signal:
-- Strong high-trust events
-- But not yet widely reinforced
-
-Case D — Reddit-dominant early signal:
-- dominant_source = reddit
-- Momentum = RISING
-- Reinforcement = MEDIUM
-- Use BE_CAREFUL, not LEAN_IN — requires cross-source confirmation
-
-IGNORE:
-- Attention = LOW
-- OR not a real narrative
-- OR dominated by low-signal chatter
-- OR dominant_source = reddit AND reinforcement = LOW (volume without formation = noise)
-
-
-HARD CONSTRAINTS
-
-- If momentum = FALLING → cannot be LEAN_IN
-- If reinforcement = LOW → cannot be LEAN_IN
-- If dominant_source = reddit AND cross_source_count < 2 → cannot be LEAN_IN
-- If dominant_source = reddit AND reinforcement = LOW → must be IGNORE
-- If dominant_source = reddit AND cross_source_count < 2 → default to BE_CAREFUL or IGNORE
-- If insufficient_data = true → cannot be LEAN_IN
-- If unclear → default to BE_CAREFUL or IGNORE
-
-
-STEP 5 — CONFIDENCE
-
-Assign:
-
-HIGH:
-- strong reinforcement
-- multiple sources
-- sufficient data
-
-MEDIUM:
-- partial reinforcement
-- moderate data
-
-LOW:
-- weak data
-- early or unclear signal
-
-
-WRITING STYLE (CRITICAL)
-
-- Max 12 words per summary
-- 1 sentence per field
-- No jargon
-- No metrics
-- No explanation of scoring
-- No uncertainty language ("might", "possibly")
-
-Use:
-- concrete phrasing
-- clear descriptors ("retail panic", "institutional flows", "conflicting narratives")
-
-Avoid:
-- "interest is fading"
-- "momentum declining"
-- "this suggests"
-
-The "action" field must be a plain imperative sentence telling the reader what to do.
-Examples: "Pay close attention.", "Skip this.", "Wait before acting.", "Watch for confirmation."
-Do NOT use the classification name (LEAN_IN, BE_CAREFUL, etc.) as the action.
-
-
-GOAL
-
-The output must be understandable in under 5 seconds.
-
-It must feel like a decision, not analysis.
-"""
-
-
-class CompassEntry(BaseModel):
-    narrative: str
-    summary: str
-    action: str
-    confidence: Literal["HIGH", "MEDIUM", "LOW"]
-
-
-class CompassClassification(BaseModel):
-    lean_in: list[CompassEntry]
-    step_back: list[CompassEntry]
-    be_careful: list[CompassEntry]
-    ignore: list[CompassEntry]
-
-
-def _attention_level(n: int) -> str:
-    return "HIGH" if n > 20 else ("MEDIUM" if n >= 5 else "LOW")
-
+# CompassEntry, CompassClassification, _attention_level, build_system_prompt,
+# and post_process_classify_results all live in src/classify_narrative.py.
 
 def _momentum_label(cluster: dict, early_density: dict, late_density: dict,
                     early_counts: dict, min_early: int = 3) -> str:
@@ -571,15 +420,12 @@ def _momentum_label(cluster: dict, early_density: dict, late_density: dict,
 
 def classify_with_llm(clusters: list[dict], early_density: dict, late_density: dict,
                       early_counts: dict | None = None) -> dict:
-    """Classify narrative clusters using LLM with strict compass rules."""
-    # Format each cluster as input for the LLM
+    """Classify narrative clusters using LLM + shared post-processing spine."""
+    # ── Format cluster inputs for LLM ─────────────────────────────────────────
     cluster_inputs = []
     for c in clusters:
-        attention = _attention_level(c["size"])
         momentum = _momentum_label(c, early_density, late_density, early_counts or {})
         events = c.get("events", [])
-        sample_size = min(15, len(events))
-        # For large clusters sample from start, middle, and end to show diversity
         if len(events) > 15:
             step = len(events) // 15
             sampled = events[::step][:15]
@@ -607,106 +453,31 @@ def classify_with_llm(clusters: list[dict], early_density: dict, late_density: d
 
     user_message = "Classify the following narrative clusters:\n\n" + "\n\n---\n\n".join(cluster_inputs)
 
+    # ── LLM call ──────────────────────────────────────────────────────────────
     client = _get_client()
     response = client.beta.chat.completions.parse(
         model="gpt-4o-mini",
         max_tokens=1500,
         messages=[
-            {"role": "system", "content": CLASSIFICATION_SYSTEM_PROMPT},
+            {"role": "system", "content": build_system_prompt("crypto")},
             {"role": "user", "content": user_message},
         ],
         response_format=CompassClassification,
     )
     result = response.choices[0].message.parsed
 
-    # Build per-narrative lookup tables for post-processing
-    # Keyed by lowercase stripped name to tolerate minor LLM rephrasing
-    attention_by_narrative = {c["narrative"].lower().strip(): _attention_level(c["size"]) for c in clusters}
-    momentum_by_narrative  = {
-        c["narrative"].lower().strip(): _momentum_label(c, early_density, late_density, early_counts or {})
-        for c in clusters
-    }
-    dominant_src_by_narrative = {c["narrative"].lower().strip(): c.get("dominant_source", "unknown") for c in clusters}
-    cross_src_by_narrative    = {c["narrative"].lower().strip(): c.get("cross_source_count", 1) for c in clusters}
-
-    def _lookup(d: dict, narrative: str, default):
-        key = narrative.lower().strip()
-        if key in d:
-            return d[key]
-        # Partial match fallback: find the cluster whose name shares the most words
-        words = set(key.split())
-        best, best_score = default, 0
-        for k, v in d.items():
-            overlap = len(words & set(k.split()))
-            if overlap > best_score:
-                best, best_score = v, overlap
-        return best
-
-    def _force_be_careful(entry, reason: str) -> dict:
-        d = entry.model_dump()
-        d["confidence"] = "LOW"
-        d["_forced"] = reason   # internal debug tag, stripped before render
-        return d
-
-    lean_in_final  = []
-    step_back_final = []
-    be_careful_extra = []
-
-    # Post-processing rules applied to all sections including ignore
-    all_entries = (
-        [(e, "lean_in")    for e in result.lean_in] +
-        [(e, "step_back")  for e in result.step_back] +
-        [(e, "be_careful") for e in result.be_careful] +
-        [(e, "ignore")     for e in result.ignore]
+    # ── Build lookup dicts for post-processing ─────────────────────────────────
+    key = lambda c: c["narrative"].lower().strip()
+    return post_process_classify_results(
+        result,
+        momentum_by   = {key(c): _momentum_label(c, early_density, late_density, early_counts or {}) for c in clusters},
+        attention_by  = {key(c): _attention_level(c["size"]) for c in clusters},
+        dom_src_by    = {key(c): c.get("dominant_source", "unknown") for c in clusters},
+        cross_src_by  = {key(c): c.get("cross_source_count", 1) for c in clusters},
+        reddit_pct_by = {key(c): c.get("source_pct", {}).get("reddit", 0) for c in clusters},
+        size_by       = {key(c): c["size"] for c in clusters},
+        ecosystem     = "crypto",
     )
-    ignore_final = []
-    for e, section in all_entries:
-        momentum   = _lookup(momentum_by_narrative,    e.narrative, "FLAT")
-        attn       = _lookup(attention_by_narrative,   e.narrative, "MEDIUM")
-        dom_src    = _lookup(dominant_src_by_narrative, e.narrative, "unknown")
-        cross_src  = _lookup(cross_src_by_narrative,   e.narrative, 1)
-        is_reddit_dominant = (dom_src == "reddit" and cross_src < 2)
-
-        # Rule 1: INSUFFICIENT_DATA → force BE_CAREFUL / LOW regardless of LLM decision
-        if momentum == "INSUFFICIENT_DATA" and section in ("lean_in", "step_back", "ignore"):
-            be_careful_extra.append(_force_be_careful(e, "insufficient_data"))
-        # Rule 2: STEP_BACK requires HIGH attention
-        elif section == "step_back" and attn != "HIGH":
-            be_careful_extra.append(_force_be_careful(e, "step_back_not_high_attn"))
-        # Rule 3: Reddit-dominant + no cross-source → enforce hard floor
-        # LEAN_IN: downgrade to BE_CAREFUL (Reddit cannot confirm structural narratives alone)
-        elif is_reddit_dominant and section == "lean_in":
-            be_careful_extra.append(_force_be_careful(e, "reddit_dominant_no_cross_source"))
-        # STEP_BACK: downgrade to IGNORE if low confidence
-        # (STEP_BACK implies "was structurally important"; pure Reddit volume spikes don't qualify)
-        elif is_reddit_dominant and section == "step_back" and e.confidence == "LOW":
-            ignore_final.append(e.model_dump())
-        elif section == "lean_in":
-            lean_in_final.append(e.model_dump())
-        elif section == "step_back":
-            step_back_final.append(e.model_dump())
-        elif section == "be_careful":
-            be_careful_extra.append(e.model_dump())
-        else:
-            ignore_final.append(e.model_dump())
-
-    # Deduplicate: keep first occurrence by priority order (lean_in > step_back > be_careful > ignore)
-    seen: set[str] = set()
-    def dedup(items: list[dict]) -> list[dict]:
-        out = []
-        for item in items:
-            key = item["narrative"].lower().strip()
-            if key not in seen:
-                seen.add(key)
-                out.append({k: v for k, v in item.items() if not k.startswith("_")})
-        return out
-
-    return {
-        "lean_in":    dedup(lean_in_final),
-        "step_back":  dedup(step_back_final),
-        "be_careful": dedup(be_careful_extra),
-        "ignore":     dedup(ignore_final),
-    }
 
 
 def classify_compass_fallback(clusters: list[dict], early_density: dict, late_density: dict,
@@ -725,6 +496,7 @@ def classify_compass_fallback(clusters: list[dict], early_density: dict, late_de
             "summary": f"Actors: {', '.join(c['actors'][:3])}. Source: {c.get('source_mix', 'Mixed')}.",
             "action": "Review manually.",
             "confidence": "LOW",
+            "event_count": c["size"],
         }
 
         if is_reddit_dominant:
@@ -745,44 +517,14 @@ def classify_compass_fallback(clusters: list[dict], early_density: dict, late_de
     return sections
 
 
-# ── Rendering ─────────────────────────────────────────────────────────────────
+# ── Rendering (shared via src/classify_narrative) ─────────────────────────────
 
 def render_text(sections: dict, date: str) -> str:
-    w = 64
-    lines = [
-        '╔' + '═' * w + '╗',
-        '║' + f'  CRYPTO COMPASS  ·  {date}'.ljust(w) + '║',
-        '╚' + '═' * w + '╝',
-        '',
-    ]
-    defs = [
-        ('lean_in',    '1  LEAN IN'),
-        ('step_back',  '2  STEP BACK'),
-        ('be_careful', '3  BE CAREFUL'),
-        ('ignore',     '4  IGNORE'),
-    ]
-    for key, header in defs:
-        items = sections.get(key, [])
-        lines.append(header)
-        lines.append('─' * len(header))
-        if not items:
-            lines.append('   (none)')
-        else:
-            for item in items:
-                lines.append(f'   {item["narrative"]}  [{item["confidence"]}]')
-                lines.append(f'      {item["summary"]}')
-                lines.append(f'      → {item["action"]}')
-                lines.append('')
-
-    return '\n'.join(lines)
+    return render_compass_text(sections, date, title="CRYPTO COMPASS")
 
 
 def render_json(sections: dict, date: str) -> str:
-    clean = {
-        k: [{f: v for f, v in item.items() if not f.startswith("_")} for item in items]
-        for k, items in sections.items()
-    }
-    return json.dumps({"ecosystem": "crypto", "date": date, "compass": clean}, indent=2)
+    return render_compass_json(sections, date, ecosystem="crypto")
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

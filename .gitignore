@@ -7,3 +7,4 @@ data/
 venv/
 master_report.html
 *.pdf
+.vercel

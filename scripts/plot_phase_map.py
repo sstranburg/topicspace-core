@@ -126,16 +126,44 @@ def generate_phase_map(all_storms, leadership_map, output_dir):
     sc = ax.scatter(xs, ys, s=sizes, c=colors, alpha=0.80,
                     edgecolors='#ffffff', linewidths=0.4, zorder=3)
 
-    # Storm labels (only for gravity >= 0.35 to avoid clutter)
+    # Storm labels — all plotted storms, direction-aware offset to reduce overlap.
+    CANDIDATE_OFFSETS = [
+        ( 6,  6), (-8,  6), ( 6, -10), (-8, -10),
+        (13,  3), (-15,  3), (13, -7),  (-15, -7),
+        ( 6, 14), (-8,  14), ( 6, -18), (-8, -18),
+    ]
+    CLUSTER_R_X = 0.08   # data-space proximity thresholds
+    CLUSTER_R_Y = 0.20
+
+    label_anchors = []  # (x, y) of already-placed labels
+
+    def _phase_offset(px, py, placed):
+        nearby = [(qx, qy) for qx, qy in placed
+                  if abs(qx - px) < CLUSTER_R_X and abs(qy - py) < CLUSTER_R_Y]
+        if not nearby:
+            return CANDIDATE_OFFSETS[0]
+        cx_ = sum(q[0] for q in nearby) / len(nearby)
+        cy_ = sum(q[1] for q in nearby) / len(nearby)
+        dx, dy = px - cx_, py - cy_
+        best, best_dot = CANDIDATE_OFFSETS[0], -1e9
+        for ox, oy in CANDIDATE_OFFSETS:
+            dot = ox * dx + oy * dy
+            if dot > best_dot:
+                best_dot, best = dot, (ox, oy)
+        return best
+
     for s, x, y in zip(plotted, xs, ys):
-        if x >= 0.35 or abs(y) >= 0.80:
-            ax.annotate(
-                _storm_label(s),
-                (x, y),
-                textcoords='offset points', xytext=(6, 4),
-                fontsize=6.5, color='#cccccc', alpha=0.85,
-                clip_on=True,
-            )
+        lbl = _storm_label(s)
+        if not lbl:
+            continue
+        ox, oy = _phase_offset(x, y, label_anchors)
+        label_anchors.append((x, y))
+        ax.annotate(
+            lbl, (x, y),
+            textcoords='offset points', xytext=(ox, oy),
+            fontsize=6.5, color='#cccccc', alpha=0.85,
+            clip_on=True,
+        )
 
     # Axes
     ax.set_xlim(0, 1)
@@ -266,8 +294,8 @@ def generate_phase_map_lineages(lineages_sorted, leadership_map, output_dir):
         quadrant_counts[_quadrant_name(x, y)] += 1
         type_counts[rec.get('lineage_type', 'actor')] += 1
 
-    # Top 8 by lineage_score get labels
-    scored = sorted(enumerate(plotted), key=lambda t: -_lineage_score(t[1]))[:8]
+    # All lineages get labels (direction-aware offset; highest-score ones placed first)
+    scored = sorted(enumerate(plotted), key=lambda t: -_lineage_score(t[1]))
     label_indices = {i for i, _ in scored}
 
     fig, ax = plt.subplots(figsize=(12, 9))
@@ -295,22 +323,42 @@ def generate_phase_map_lineages(lineages_sorted, leadership_map, output_dir):
                    edgecolors=ec, linewidths=ew,
                    linestyle=es, zorder=3)
 
-    # Labels for top-8, with small positional jitter to reduce overlap
-    rng = np.random.default_rng(42)
-    label_positions = {}  # track placed positions for rough collision nudge
-    for i, rec in enumerate(plotted):
+    # Labels for all lineages — direction-aware, placed highest-score first.
+    LIN_CANDIDATE_OFFSETS = [
+        ( 7,  7), (-9,  7), ( 7, -11), (-9, -11),
+        (15,  3), (-17,  3), (15, -8),  (-17, -8),
+        ( 7, 16), (-9,  16), ( 7, -20), (-9, -20),
+    ]
+    LIN_CLUSTER_R_X, LIN_CLUSTER_R_Y = 0.08, 0.20
+
+    lin_label_anchors = []
+
+    def _lin_offset(px, py, placed):
+        nearby = [(qx, qy) for qx, qy in placed
+                  if abs(qx - px) < LIN_CLUSTER_R_X and abs(qy - py) < LIN_CLUSTER_R_Y]
+        if not nearby:
+            return LIN_CANDIDATE_OFFSETS[0]
+        cx_ = sum(q[0] for q in nearby) / len(nearby)
+        cy_ = sum(q[1] for q in nearby) / len(nearby)
+        dx, dy = px - cx_, py - cy_
+        best, best_dot = LIN_CANDIDATE_OFFSETS[0], -1e9
+        for ox, oy in LIN_CANDIDATE_OFFSETS:
+            dot = ox * dx + oy * dy
+            if dot > best_dot:
+                best_dot, best = dot, (ox, oy)
+        return best
+
+    for i, rec in scored:  # already sorted by lineage_score descending
         if i not in label_indices:
             continue
         x, y = xs[i], ys[i]
         conf = confidences[i]
         short = _shorten_label(rec['label'])
+        if not short:
+            continue
         alpha = 0.65 if conf == 'low' else 0.92
-        # Nudge if another label is very close
-        ox, oy = 8, 5
-        for (px, py) in label_positions.values():
-            if abs(px - x) < 0.06 and abs(py - y) < 0.15:
-                oy += 10
-        label_positions[i] = (x, y)
+        ox, oy = _lin_offset(x, y, lin_label_anchors)
+        lin_label_anchors.append((x, y))
         ax.annotate(
             short, (x, y),
             textcoords='offset points', xytext=(ox, oy),

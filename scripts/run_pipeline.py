@@ -33,6 +33,8 @@ steps = [
     ("plot_watchlist_matrix.py",        "Plot watchlist matrix"),
     ("generate_master_report.py",       "Generate master report"),
     ("generate_leaderboard.py",         "Generate narrative leaderboard"),
+    ("render_leaderboard_image.py",     "Render leaderboard social image"),
+    ("generate_narrative_charts.py",    "Generate narrative vs price charts"),
 ]
 
 print("Storm Pipeline")

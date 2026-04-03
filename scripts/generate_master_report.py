@@ -3,6 +3,7 @@
 Generate master HTML report from all storm system outputs.
 """
 import json
+import re
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
@@ -335,6 +336,36 @@ def _lifecycle_interpretation(state_counts, total):
         return f'Mixed lifecycle: {state_counts.get("growing",0)} growing, {state_counts.get("fading",0)} fading, {state_counts.get("stable",0)+state_counts.get("volatile",0)} stable/volatile.'
 
 
+def _build_source_table_html(source_counts, source_time_ranges, total_raw_events,
+                              transcript_coverage_note, top_subreddits):
+    """Build <tr> rows for the data sources table, one row per source."""
+    rows = []
+    sorted_sources = sorted(source_counts.items(), key=lambda x: x[1], reverse=True)
+    for name, count in sorted_sources:
+        pct = f"{count / total_raw_events * 100:.1f}" if total_raw_events > 0 else '0'
+        tr = source_time_ranges.get(name, {})
+        time_str = f"{tr.get('start', 'N/A')} – {tr.get('end', 'N/A')}" if tr else 'N/A'
+        days = tr.get('days', 0)
+        rate = f"{count / max(days, 1):.1f}/day" if days > 0 else 'N/A'
+
+        # Build sub-detail for special sources
+        subdetail = ''
+        if name == 'transcript' and transcript_coverage_note:
+            subdetail = f'<div style="font-size:10px;color:#999;margin-top:3px;line-height:1.5">{transcript_coverage_note}</div>'
+        elif name == 'reddit' and top_subreddits:
+            subs = ' · '.join(f'r/{s}' for s in top_subreddits)
+            subdetail = f'<div style="font-size:10px;color:#999;margin-top:3px;line-height:1.5">{subs}</div>'
+
+        rows.append(
+            f'<tr><td>{name}{subdetail}</td>'
+            f'<td>{count}</td>'
+            f'<td>{pct}%</td>'
+            f'<td class="muted" style="font-size:11px">{time_str}</td>'
+            f'<td>{rate}</td></tr>'
+        )
+    return '\n'.join(rows)
+
+
 def main(reset_registry=False):
     base_dir = Path(__file__).parent.parent
     data_dir = base_dir / 'data' / 'derived'
@@ -389,6 +420,39 @@ def main(reset_registry=False):
     
     # Load normalized events for source distribution and time range
     normalized_events = load_jsonl(base_dir / 'data' / 'normalized' / 'tech_ecosystem_filtered.jsonl')
+
+    # Load transcript signals — most recent signal per actor; also build coverage summary
+    _sig_dir = base_dir / 'data' / 'derived' / 'transcript_signals'
+    transcript_by_actor: dict = {}
+    _transcript_coverage: dict = {}   # actor → [date, ...]
+    if _sig_dir.exists():
+        for _sig_path in sorted(_sig_dir.glob('*.json')):
+            _parts = _sig_path.stem.split('_', 1)
+            if len(_parts) != 2:
+                continue
+            _ticker, _date = _parts
+            _transcript_coverage.setdefault(_ticker, []).append(_date)
+            try:
+                _sig = json.loads(_sig_path.read_text())
+                _existing = transcript_by_actor.get(_ticker)
+                if _existing is None or _date > _existing.get('_date', ''):
+                    _sig['_date'] = _date
+                    transcript_by_actor[_ticker] = _sig
+            except Exception:
+                continue
+    # Build human-readable coverage note: "AMD (Q4'24, Q3'25) · META (Q3'25, Q4'25) · …"
+    def _quarter_label(d: str) -> str:
+        try:
+            y, m = int(d[:4]), int(d[5:7])
+            q = (m - 1) // 3 + 1
+            return f"Q{q}'{str(y)[2:]}"
+        except Exception:
+            return d
+    _cov_parts = []
+    for _a in sorted(_transcript_coverage):
+        _qs = ', '.join(_quarter_label(_d) for _d in sorted(_transcript_coverage[_a]))
+        _cov_parts.append(f"{_a} ({_qs})")
+    transcript_coverage_note = ' · '.join(_cov_parts) if _cov_parts else ''
     event_ts_map = {e.get('event_id', ''): e.get('timestamp', '') for e in normalized_events}
 
     # Shared reference time for report_latest anchor mode (ecosystem velocity)
@@ -411,7 +475,17 @@ def main(reset_registry=False):
             if ts:
                 source_timestamps[source].append(ts)
     total_raw_events = len(normalized_events)
-    
+
+    # Extract subreddit distribution from reddit event URLs
+    _subreddit_counts: dict = defaultdict(int)
+    for event in normalized_events:
+        if event.get('source', '').lower() == 'reddit':
+            url = event.get('url', '') or event.get('link', '')
+            m = re.search(r'reddit\.com/r/([^/]+)/', url)
+            if m:
+                _subreddit_counts[m.group(1)] += 1
+    top_subreddits = [sub for sub, _ in sorted(_subreddit_counts.items(), key=lambda x: x[1], reverse=True)[:9]]
+
     # Calculate time range per source
     source_time_ranges = {}
     for source, timestamps in source_timestamps.items():
@@ -1332,6 +1406,38 @@ def main(reset_registry=False):
         for r in watchlist_lineages_top:
             f.write(json.dumps(r) + '\n')
 
+    # Build transcript-based watchlist flags
+    def _build_transcript_watchlist_html(tx_by_actor: dict) -> str:
+        """Append sustained-divergence actors to the watchlist as a separate block."""
+        flags = []
+        for actor, sig in sorted(tx_by_actor.items()):
+            xs  = sig.get('cross_signal') or {}
+            cls = xs.get('classification', '')
+            pers = xs.get('persistence', '')
+            gap  = xs.get('alignment_gap') or 0
+            if cls == 'Diverging' and 'Sustained' in pers and gap >= 0.4:
+                flags.append((actor, gap, sig.get('_date', '')))
+        if not flags:
+            return ''
+        flags.sort(key=lambda x: -x[1])
+        rows = ''.join(
+            f'<li style="margin-bottom:5px">'
+            f'<strong>{a}</strong> — Sustained divergence '
+            f'<span style="color:#c0710a">(alignment gap {g:+.2f})</span>'
+            f'<span style="color:#bbb;font-size:10px;margin-left:6px">last transcript {d}</span>'
+            f'</li>'
+            for a, g, d in flags
+        )
+        return (
+            '<div style="margin-top:18px;padding-top:14px;border-top:2px solid #f0e0cc">'
+            '<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
+            'color:#c0710a;margin-bottom:8px">⚠ Transcript Alignment Flags</div>'
+            '<div style="font-size:11.5px;color:#666;margin-bottom:8px">'
+            'Management narratives sustaining confidence against weakening ecosystem signals:</div>'
+            f'<ul style="font-size:12px;color:#444;line-height:1.8;padding-left:18px">{rows}</ul>'
+            '</div>'
+        )
+
     # Build lineage watchlist HTML — two subsections: actor and ecosystem
     def _watchlist_lineage_html(items):
         actor_items = sorted(
@@ -1433,27 +1539,12 @@ def main(reset_registry=False):
         'avg_coherence': f"{avg_coherence:.2f}",
         'avg_storm_size': f"{avg_storm_size:.0f}",
         
-        # Data sources
+        # Data sources — build table HTML dynamically so all sources appear with correct detail rows
         'total_raw_events': total_raw_events,
-        'source_1': sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[0][0] if source_counts else 'N/A',
-        'source_1_count': sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[0][1] if source_counts else 0,
-        'source_1_pct': f"{sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[0][1] / total_raw_events * 100:.1f}" if source_counts and total_raw_events > 0 else '0',
-        'source_1_time': f"{source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[0][0], {}).get('start', 'N/A')} - {source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[0][0], {}).get('end', 'N/A')}" if source_counts else 'N/A',
-        'source_1_rate': f"{sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[0][1] / max(source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[0][0], {}).get('days', 1), 1):.1f}/day" if source_counts and source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[0][0], {}).get('days', 0) > 0 else 'N/A',
-        'source_2': sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[1][0] if len(source_counts) > 1 else 'N/A',
-        'source_2_count': sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[1][1] if len(source_counts) > 1 else 0,
-        'source_2_pct': f"{sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[1][1] / total_raw_events * 100:.1f}" if len(source_counts) > 1 and total_raw_events > 0 else '0',
-        'source_2_time': f"{source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[1][0], {}).get('start', 'N/A')} - {source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[1][0], {}).get('end', 'N/A')}" if len(source_counts) > 1 else 'N/A',
-        'source_2_rate': f"{sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[1][1] / max(source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[1][0], {}).get('days', 1), 1):.1f}/day" if len(source_counts) > 1 and source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[1][0], {}).get('days', 0) > 0 else 'N/A',
-        'source_3': sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[2][0] if len(source_counts) > 2 else 'N/A',
-        'source_3_count': sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[2][1] if len(source_counts) > 2 else 0,
-        'source_3_pct': f"{sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[2][1] / total_raw_events * 100:.1f}" if len(source_counts) > 2 and total_raw_events > 0 else '0',
-        'source_3_time': f"{source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[2][0], {}).get('start', 'N/A')} - {source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[2][0], {}).get('end', 'N/A')}" if len(source_counts) > 2 else 'N/A',
-        'source_3_rate': f"{sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[2][1] / max(source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[2][0], {}).get('days', 1), 1):.1f}/day" if len(source_counts) > 2 and source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[2][0], {}).get('days', 0) > 0 else 'N/A',
-        'source_4': sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[3][0] if len(source_counts) > 3 else 'N/A',
-        'source_4_count': sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[3][1] if len(source_counts) > 3 else 0,
-        'source_4_pct': f"{sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[3][1] / total_raw_events * 100:.1f}" if len(source_counts) > 3 and total_raw_events > 0 else '0',
-        'source_4_time': f"{source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[3][0], {}).get('start', 'N/A')} - {source_time_ranges.get(sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[3][0], {}).get('end', 'N/A')}" if len(source_counts) > 3 else 'N/A',
+        'source_table_html': _build_source_table_html(
+            source_counts, source_time_ranges, total_raw_events,
+            transcript_coverage_note, top_subreddits
+        ),
         
         'key_point_1': f"{len(propagation_edges)} propagation edges detected with stricter thresholds (down from 109)",
         'key_point_2': f"AMD and NVDA identified as originators; TSM as primary receiver",
@@ -1494,7 +1585,7 @@ def main(reset_registry=False):
         'watchlist_priority_count': len(wl_priority),
         'watchlist_monitor_count': len(wl_monitor),
         'watchlist_summary_interpretation': wl_interp,
-        'watchlist_lineage_html': _watchlist_lineage_html(watchlist_lineages_top),
+        'watchlist_lineage_html': _watchlist_lineage_html(watchlist_lineages_top) + _build_transcript_watchlist_html(transcript_by_actor),
         'pressure_leadership_matrix_path': 'data/derived/pressure_leadership_matrix.png',
     }
 
@@ -1811,7 +1902,7 @@ def main(reset_registry=False):
 
     vars['forecast_panel_html'] = _build_forecast_panel(
         _actor_storms_merged + _eco_storms_merged,
-        lead_lag_results,
+        actor_lead_lag,
     )
 
     # ── Narrative Action Cards (Section 2B) ────────────────────────────────────
@@ -2120,8 +2211,113 @@ def main(reset_registry=False):
 
     vars['action_cards_html'] = _build_action_cards(
         _actor_storms_merged + _eco_storms_merged,
-        lead_lag_results,
+        actor_lead_lag,
     )
+
+    # ── Narrative Misalignment (transcript signals) ──────────────────────────────
+    def _build_misalignment_html(tx_by_actor: dict) -> str:
+        """Return HTML for the Narrative Misalignment section.
+
+        Shows actors where:
+          - classification == Diverging
+          - persistence contains 'Sustained'
+          - alignment_gap >= 0.4
+        Returns empty string if no qualifying actors.
+        """
+        qualifying = []
+        for actor, sig in tx_by_actor.items():
+            xs = sig.get('cross_signal') or {}
+            cls  = xs.get('classification', '')
+            pers = xs.get('persistence', '')
+            gap  = xs.get('alignment_gap') or 0
+            if cls == 'Diverging' and 'Sustained' in pers and gap >= 0.4:
+                qualifying.append((actor, sig, xs, gap))
+        if not qualifying:
+            return ''
+        qualifying.sort(key=lambda x: -x[3])   # highest gap first
+
+        rows = []
+        for actor, sig, xs, gap in qualifying:
+            tone   = (sig.get('management_tone') or 'unknown').title()
+            date   = sig.get('_date', '')
+            eco    = xs.get('ecosystem') or {}
+            peak   = eco.get('peak_ratio', 0)
+            accel  = eco.get('acceleration', 0) or 0
+            eco_st = eco.get('state', 'unknown')
+            insight = xs.get('insight', '')
+            # truncate insight to ~120 chars for inline display
+            brief = (insight[:117] + '…') if len(insight) > 120 else insight
+
+            # bar: 10 chars wide, filled proportionally
+            int_s = xs.get('internal_strength', 0) or 0
+            ext_s = xs.get('external_strength', 0) or 0
+            int_bar = '█' * round(int_s * 8) + '░' * (8 - round(int_s * 8))
+            ext_bar = '█' * round(ext_s * 8) + '░' * (8 - round(ext_s * 8))
+
+            rows.append(
+                f'<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #ececec">'
+                f'<div style="margin-bottom:5px;display:flex;align-items:center;gap:8px">'
+                f'<span style="font-size:12.5px;font-weight:700;color:#222">{actor}</span>'
+                f'<span style="font-size:9px;font-weight:700;color:#c0710a;background:#fff4e6;border-radius:3px;padding:1px 7px;letter-spacing:.06em">SUSTAINED DIVERGENCE</span>'
+                f'<span style="font-size:10px;color:#888">gap +{gap:.2f}</span>'
+                f'</div>'
+                f'<div style="font-size:11px;color:#555;line-height:1.7;font-family:monospace">'
+                f'internal&nbsp; {int_bar} {int_s:.2f} &nbsp;({tone} tone)<br>'
+                f'external&nbsp; {ext_bar} {ext_s:.2f} &nbsp;(eco={eco_st}, accel={accel:+d}, peak={peak:.0%})'
+                f'</div>'
+                f'<div style="font-size:12px;color:#444;margin-top:6px;line-height:1.6">'
+                f'<em>{brief}</em>'
+                f'</div>'
+                f'<div style="font-size:10.5px;color:#999;margin-top:4px">Last transcript: {date}</div>'
+                f'</div>'
+            )
+
+        header = (
+            '<div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#c0710a;'
+            'text-transform:uppercase;margin-bottom:12px">⚠ Narrative Misalignment</div>'
+            '<div style="font-size:12px;color:#888;margin-bottom:14px">'
+            'Company narratives no longer reinforced by ecosystem signals — '
+            'management confidence is outpacing external momentum.</div>'
+        )
+        return f'<div style="border-top:3px solid #c0710a;padding-top:16px;margin-top:16px">{header}{"".join(rows)}</div>'
+
+    def _build_actor_transcript_html(actor: str, sig: dict) -> str:
+        """Return a compact 'Earnings Signal' block for a per-actor section."""
+        if not sig:
+            return ''
+        xs    = sig.get('cross_signal') or {}
+        cls   = xs.get('classification', '')
+        pers  = xs.get('persistence', '')
+        gap   = xs.get('alignment_gap') or 0
+        tone  = (sig.get('management_tone') or 'unknown').lower()
+        date  = sig.get('_date', '')
+        if not cls or cls == 'Unknown':
+            return ''
+
+        # badge colors
+        if cls == 'Diverging' and 'Sustained' in pers:
+            badge_bg, badge_fg = '#fff4e6', '#c0710a'
+        elif cls == 'Reinforced':
+            badge_bg, badge_fg = '#eaf6ec', '#1e7e34'
+        elif cls == 'Breakdown':
+            badge_bg, badge_fg = '#fdf0ef', '#c0392b'
+        else:
+            badge_bg, badge_fg = '#f0f0f0', '#555'
+
+        tone_color = '#1e7e34' if tone == 'confident' else ('#c0710a' if tone == 'cautious' else '#555')
+
+        return (
+            f'<div style="margin-top:12px;padding:10px 12px;background:#fafafa;border:1px solid #ececec;border-radius:4px">'
+            f'<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:8px">'
+            f'Earnings Signal &nbsp;<span style="font-weight:400;color:#bbb">{date}</span></div>'
+            f'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+            f'<span style="font-size:10px;font-weight:700;background:{badge_bg};color:{badge_fg};'
+            f'border-radius:3px;padding:1px 7px">{pers}</span>'
+            f'<span style="font-size:11px;color:{tone_color}">{tone} tone</span>'
+            f'<span style="font-size:11px;color:#888">gap {gap:+.2f}</span>'
+            f'</div>'
+            f'</div>'
+        )
 
     # ── What's Actually Changing Right Now ──────────────────────────────────────
     def _build_whats_changing_html(merged_storms, trajectories_list, evol_map, lead_map):
@@ -2163,7 +2359,7 @@ def main(reset_registry=False):
         for e in evol_map.values():
             if e.get('drift_classification') == 'major_pivot':
                 a = e.get('actor')
-                if not a:
+                if not a or a == collapse_actor:   # exclude collapse actor — already used in bullet 1
                     continue
                 accel = actor_traj.get(a, {}).get('latest_acceleration', 0)
                 pivot_actors.append((a, e, accel))
@@ -2268,78 +2464,177 @@ def main(reset_registry=False):
                 f'{confidence} confidence</span>'
             )
 
-        def _bullet(num, tag_label, confidence, headline, signal, implication):
+        _CTX_COLORS = {
+            'Expected cooling':   ('#3a6b8a', '#e4f0f8'),
+            'Structural decline': ('#8b2e00', '#fde8e0'),
+            'Unclear':            ('#777',    '#f2f2f2'),
+        }
+        _DECLINING_STATES = {'fading', 'cooling', 'collapse', 'volatile'}
+        _SPIKE_STATES = {'growing', 'peaking', 'emerging'}
+        _STABLE_STATES = {'stable', 'quiet'}
+
+        def _classify_signal(actor):
+            """
+            Classify actor narrative signal using the three-rule framework:
+
+              STRUCTURAL DECLINE  — accel <= -40 AND history shows declining/volatile states
+                                    before the spike (bounce-within-downtrend pattern), OR
+                                    the actor has been declining for 2+ consecutive windows.
+              EXPECTED COOLING    — spike came from a clean stable/growing baseline
+                                    (no fading/volatile in the 3 windows before current window).
+              UNCLEAR             — all other declining cases.
+
+            Returns None for actors with flat/positive momentum.
+            """
+            t = actor_traj.get(actor, {})
+            accel = t.get('latest_acceleration', 0) or 0
+            if accel >= 0:
+                return None
+            state_hist = t.get('state_history') or []
+
+            # Consecutive declining windows from the current end
+            consec = 0
+            for s in reversed(state_hist):
+                if s in _DECLINING_STATES:
+                    consec += 1
+                else:
+                    break
+
+            # Check the 3 windows before the current one for any troubled states
+            pre_states = state_hist[-4:-1] if len(state_hist) >= 4 else state_hist[:-1]
+            troubled_baseline = any(s in _DECLINING_STATES for s in pre_states)
+
+            recent_spike = any(s in _SPIKE_STATES for s in pre_states)
+            clean_base = not troubled_baseline
+
+            # Rule 1a — Failed acceleration: spike from clean base that collapsed immediately (accel <= -70)
+            # Treated as structural because the acceleration itself was unsustainable, not a normalisation
+            if accel <= -70 and recent_spike and clean_base and consec <= 1:
+                return 'Structural decline'
+
+            # Rule 1b — Structural decline: sustained or bounce-in-downtrend
+            if accel <= -40 and (consec >= 2 or troubled_baseline):
+                return 'Structural decline'
+
+            # Rule 2 — Expected cooling: clean spike from stable baseline, single-window moderate drop
+            if recent_spike and clean_base and consec <= 1:
+                return 'Expected cooling'
+
+            return 'Unclear'
+
+        def _bullet(actor_label, tag_label, signal, implication, context_tag=None):
+            tc, tb = _TAG_COLORS.get(tag_label.upper(), ('#555', '#f5f5f5'))
+            ctx_html = ''
+            if context_tag:
+                cc, cb = _CTX_COLORS.get(context_tag, ('#777', '#f2f2f2'))
+                ctx_html = (
+                    f'<span style="font-size:9px;font-weight:600;color:{cc};background:{cb};'
+                    f'border-radius:3px;padding:1px 6px;letter-spacing:.04em;margin-left:6px">'
+                    f'{context_tag}</span>'
+                )
             return (
-                f'<div style="display:flex;gap:14px;margin-bottom:16px;padding-bottom:16px;'
-                f'border-bottom:1px solid #ececec">'
-                f'<div style="font-size:13px;font-weight:700;color:#ccc;min-width:18px;padding-top:2px">{num}</div>'
-                f'<div style="flex:1">'
-                f'<div style="margin-bottom:5px">{_tag(tag_label, confidence)}</div>'
-                f'<div style="font-size:13px;font-weight:600;margin-bottom:5px">{headline}</div>'
-                f'<div style="font-size:12px;color:#444;line-height:1.65">'
-                f'<div>→ {signal}</div>'
-                f'<div style="margin-top:2px">→ <strong>Implication:</strong> {implication}</div>'
-                f'</div></div></div>'
+                f'<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #ececec">'
+                f'<div style="margin-bottom:4px">'
+                f'<span style="font-size:10px;font-weight:700;color:{tc};background:{tb};'
+                f'border-radius:3px;padding:1px 7px;letter-spacing:.06em;margin-right:8px">'
+                f'{tag_label.upper()}</span>'
+                f'<span style="font-size:12.5px;font-weight:600;color:#222">{actor_label}</span>'
+                f'{ctx_html}'
+                f'</div>'
+                f'<div style="font-size:12px;color:#555;line-height:1.65;padding-left:2px">'
+                f'<div>• {signal}</div>'
+                f'<div style="margin-top:3px">• {implication}</div>'
+                f'</div></div>'
             )
 
         bullets = []
 
         if collapse_actor:
             bullets.append(_bullet(
-                1, 'Collapse', 'High',
-                f"{_label(collapse_actor)}'s narrative has broken down sharply",
-                f"Momentum reversed (delta: −{collapse_delta}), with pressure near-zero and velocity declining",
-                f"{collapse_actor} has exited the active AI narrative set for now; "
-                f"this reflects a structural loss of momentum rather than a short-term pullback",
+                _label(collapse_actor), 'Collapse',
+                f"Momentum reversed sharply (−{collapse_delta}), pressure near zero",
+                f"Exited the active narrative set — structural loss, not a short-term pullback",
+                context_tag=_classify_signal(collapse_actor),
             ))
 
         if instability_actor:
             sign = '−' if instability_accel < 0 else '+'
             bullets.append(_bullet(
-                2, 'Instability', 'High',
-                f"{instability_actor} is undergoing a major narrative pivot while still losing momentum",
-                f"Drift signals a shift in narrative identity (drift: {instability_drift:.2f}), "
-                f"but momentum continues to fall (delta: {sign}{abs(int(instability_accel))}) with declining velocity",
-                f"Narrative instability is elevated — {instability_actor} has not yet established "
-                f"a coherent new position, reducing near-term signal reliability",
+                instability_actor, 'Instability',
+                f"Narrative identity shifting (drift: {instability_drift:.2f}), momentum still falling ({sign}{abs(int(instability_accel))})",
+                f"No coherent new position established — near-term signals unreliable",
+                context_tag=_classify_signal(instability_actor),
             ))
 
         if rev1_actor and rev2_actor:
             bullets.append(_bullet(
-                3, 'Reversal', 'Medium',
-                f"{rev1_actor} and {rev2_actor} are reversing upward simultaneously",
-                f"Both flipped from negative to positive momentum in the same window "
-                f"({rev1_actor} +{int(rev1_accel)}, {rev2_actor} +{int(rev2_accel)}), "
-                f"with {rev1_actor} now carrying the highest pressure",
-                f"This suggests a coordinated rebound across infrastructure and partnership narratives; "
-                f"cross-actor propagation is the next confirmation signal",
+                f"{rev1_actor} + {rev2_actor}", 'Reversal',
+                f"Both flipped from negative to positive momentum in the same window ({rev1_actor} +{int(rev1_accel)}, {rev2_actor} +{int(rev2_accel)})",
+                f"Coordinated rebound — cross-actor propagation is the next confirmation signal",
             ))
 
         if alpha_actor and diverge_actor:
             bullets.append(_bullet(
-                4, 'Divergence', 'High',
-                f"{alpha_actor} continues to set narrative direction while {diverge_actor} loses momentum",
-                f"{diverge_actor} momentum fell (delta: −{diverge_delta}) while "
-                f"{alpha_actor} maintains dominant outbound propagation flow",
-                f"Narrative leadership is diverging — {alpha_actor} is initiating system direction, "
-                f"while {diverge_actor} is increasingly reactive",
+                f"{alpha_actor} vs {diverge_actor}", 'Divergence',
+                f"{diverge_actor} momentum fell (−{diverge_delta}) while {alpha_actor} maintains dominant narrative flow",
+                f"Leadership diverging — {alpha_actor} is initiating direction, {diverge_actor} is increasingly reactive",
+                context_tag=_classify_signal(diverge_actor),
             ))
 
         if bridge_actor:
             bullets.append(_bullet(
-                5, 'Acceleration', 'Medium',
-                f"{bridge_actor} is accelerating as the system's primary narrative bridge",
-                f"High velocity, rising momentum, and centrality across propagation pathways",
-                f"Increased bridge activity suggests faster downstream narrative movement; "
-                f"{downstream_actor or 'downstream actors'} remains the most exposed amplification point",
+                bridge_actor, 'Acceleration',
+                f"High velocity, rising momentum, centrality across propagation pathways",
+                f"Faster downstream narrative movement likely — {downstream_actor or 'downstream actors'} most exposed",
             ))
+
+        # ── Why it matters — system-level one-liner ──────────────────────────
+        neg_count = sum(1 for b in bullets if 'COLLAPSE' in b or 'INSTABILITY' in b)
+        pos_count = sum(1 for b in bullets if 'REVERSAL' in b or 'ACCELERATION' in b)
+        alpha = _alpha_actor_pre or ''
+
+        if neg_count >= 2 and pos_count == 0:
+            why = ("Narrative pressure is broadly negative — multiple actors are losing momentum "
+                   "with no clear recovery signal visible.")
+        elif neg_count >= 2 and pos_count >= 1:
+            why = ("The system is splitting: some actors are reversing while others break down — "
+                   "no single actor is controlling narrative direction.")
+        elif pos_count >= 2 and neg_count == 0:
+            why = (f"Narrative momentum is recovering across multiple actors"
+                   f"{f', with {alpha} leading propagation' if alpha else ''}.")
+        elif bridge_actor and neg_count >= 1:
+            why = (f"Attention is shifting from actors losing momentum toward "
+                   f"{bridge_actor}, which is now driving the system's primary narrative flow.")
+        else:
+            why = ("Narrative leadership is in flux — watch for which actor absorbs "
+                   "fragmented attention and establishes system direction.")
+
+        # Seasonality note: show when system is in broad decline (many actors falling)
+        cooling_actors = [a for a in actor_traj if actor_traj[a].get('latest_acceleration', 0) < 0]
+        seasonality_html = ''
+        if len(cooling_actors) >= 3 or neg_count >= 2:
+            seasonality_html = (
+                f'<div style="margin-top:8px;font-size:11px;color:#888;font-style:italic">'
+                f'Part of this cooling reflects post-peak normalization, but the breadth '
+                f'of decline suggests a structural shift.</div>'
+            )
+
+        why_html = (
+            f'<div style="margin-top:14px;padding-top:12px;border-top:1px solid #ececec">'
+            f'<span style="font-size:10px;font-weight:700;letter-spacing:.06em;'
+            f'text-transform:uppercase;color:#999;margin-right:8px">Why it matters</span>'
+            f'<span style="font-size:12px;color:#444;line-height:1.65">{why}</span>'
+            f'{seasonality_html}'
+            f'</div>'
+        )
 
         inner = ''.join(bullets)
         return (
             f'<div style="border-top:3px solid #222;padding-top:16px;margin-top:4px">'
             f'<div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#999;'
-            f'text-transform:uppercase;margin-bottom:14px">What\'s actually changing right now</div>'
+            f'text-transform:uppercase;margin-bottom:14px">What\'s changing</div>'
             f'{inner}'
+            f'{why_html}'
             f'</div>'
         )
 
@@ -2348,6 +2643,112 @@ def main(reset_registry=False):
         trajectories,
         evolution_map,
         leadership_map,
+    )
+    vars['misalignment_html'] = _build_misalignment_html(transcript_by_actor)
+
+    # ── What changed since last update ────────────────────────────────────────
+    def _build_since_last_update_html(trajectories_list, merged_storms):
+        # Display name lookup: prefer top storm label over raw actor id
+        display: dict = {}
+        for s in merged_storms:
+            a = s.get('actor')
+            if a and a not in display:
+                display[a] = s.get('top_label') or s.get('narrative_label') or a
+
+        # Best acceleration signal per actor (highest absolute value); store full traj record
+        best: dict = {}   # actor → trajectory record
+        for t in trajectories_list:
+            a = t.get('actor')
+            if not a:
+                continue
+            accel = t.get('latest_acceleration') or 0
+            prev_accel = best[a].get('latest_acceleration', 0) if a in best else 0
+            if a not in best or abs(accel) > abs(prev_accel):
+                best[a] = t
+
+        # Sort by absolute acceleration, pick top 5
+        ranked = sorted(best.items(), key=lambda x: -abs(x[1].get('latest_acceleration', 0) or 0))[:5]
+
+        _declining_states = {'fading', 'cooling', 'collapse', 'volatile'}
+        _spike_states = {'growing', 'peaking', 'emerging'}
+
+        def _signal_label(traj):
+            """Classify signal as structural decline, expected cooling, structural growth, or None."""
+            accel = traj.get('latest_acceleration', 0) or 0
+            state_hist = traj.get('state_history') or []
+            if accel > 0:
+                consec_up = 0
+                for s in reversed(state_hist):
+                    if s in _spike_states:
+                        consec_up += 1
+                    else:
+                        break
+                return 'Structural growth' if consec_up >= 2 or accel >= 25 else None
+            # Declining path — mirror the classification logic in _classify_signal
+            consec = 0
+            for s in reversed(state_hist):
+                if s in _declining_states:
+                    consec += 1
+                else:
+                    break
+            pre_states = state_hist[-4:-1] if len(state_hist) >= 4 else state_hist[:-1]
+            troubled_baseline = any(s in _declining_states for s in pre_states)
+            recent_spike = any(s in _spike_states for s in pre_states)
+            clean_base = not troubled_baseline
+            if accel <= -70 and recent_spike and clean_base and consec <= 1:
+                return 'Structural decline — failed acceleration'
+            if accel <= -40 and (consec >= 2 or troubled_baseline):
+                return 'Structural decline'
+            if recent_spike and clean_base and consec <= 1:
+                return 'Expected cooling'
+            return None  # omit label when genuinely unclear
+
+        def _describe(actor, traj):
+            accel = traj.get('latest_acceleration') or 0
+            name = display.get(actor, actor)
+            delta = int(abs(accel))
+            sign = '+' if accel > 0 else '−'
+            if accel >= 60:
+                verb = 'surged'
+            elif accel >= 25:
+                verb = 'rebounded'
+            elif accel >= 10:
+                verb = 'picked up'
+            elif accel <= -60:
+                verb = 'collapsed'
+            elif accel <= -25:
+                verb = 'fell sharply'
+            else:
+                verb = 'faded'
+            label = _signal_label(traj)
+            label_html = (
+                f' <span style="font-size:9px;font-weight:600;color:#555;background:#f0f0f0;'
+                f'border-radius:3px;padding:1px 5px">{label}</span>'
+            ) if label else ''
+            return f'{name} {verb} — momentum {sign}{delta}{label_html}'
+
+        bullets_html = ''.join(
+            f'<li style="margin-bottom:5px">• {_describe(a, traj)}</li>'
+            for a, traj in ranked
+            if abs(traj.get('latest_acceleration', 0) or 0) > 0
+        )
+
+        if not bullets_html:
+            return ''
+
+        return (
+            f'<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;'
+            f'background:linear-gradient(180deg,#fff,var(--soft));margin-bottom:10px">'
+            f'<div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;'
+            f'color:var(--muted);margin-bottom:8px">What changed since last update</div>'
+            f'<ul style="margin:0;padding:0;list-style:none;font-size:12px;line-height:1.7;color:var(--text)">'
+            f'{bullets_html}'
+            f'</ul></div>'
+        )
+
+    vars['since_last_update_html'] = _build_since_last_update_html(
+        trajectories,
+        _actor_storms_merged + _eco_storms_merged,
     )
 
     # ── Narrative Map (momentum × velocity quadrant) ─────────────────────────
@@ -2363,18 +2764,18 @@ def main(reset_registry=False):
         IW, IH = 485, 356
 
         ACTORS = [
-            # name          role            sub                          m     v     nx   ny   anchor    color
-            ('Intel',       'accelerating', None,                       0.50, 0.85, 310,  73, 'start', '#93c5fd'),
-            ('Marvell',     'accelerating', None,                       0.63, 0.72, 373, 120, 'start', '#93c5fd'),
-            ('NVIDIA',      'unstable',     None,                       0.74, 0.52, 402, 191, 'end',   '#fcd34d'),
-            ('Amazon',      'anchor',       None,                       0.48, 0.37, 300, 244, 'start', '#fcd34d'),
-            ('Apple',       'fading',       None,                       0.39, 0.44, 232, 219, 'end',   '#d1d5db'),
-            ('Google',      'fading',       None,                       0.66, 0.30, 363, 269, 'end',   '#d1d5db'),
-            ('Micron',      'recovery',     None,                       0.42, 0.24, 271, 291, 'start', '#86efac'),
-            ('ASML',        'recovery',     None,                       0.32, 0.17, 198, 316, 'end',   '#86efac'),
-            ('Samsung',     'fading',       None,                       0.14, 0.28, 135, 276, 'start', '#d1d5db'),
-            ('Meta',        'declining',    None,                       0.22, 0.11, 150, 337, 'end',   '#fca5a5'),
-            ('Model layer', 'declining',    '(OpenAI + Anthropic)',     0.04, 0.04,  86, 360, 'start', '#fca5a5'),
+            # name           role               sub                      m     v     nx   ny   anchor   color
+            # Positions reflect narrative roles; clarity over raw metric accuracy.
+            # PLTR:  emerging — only actor above midline, sole upward signal
+            # META:  bridge, fading — central, below midline
+            # INTC:  bridge, fading — central-left, below midline
+            # NVDA:  weakening — right side, lower
+            # Model layer: declining — bottom-left collapse
+            ('PLTR',        'emerging',        None,                    0.45, 0.80, 280,  86, 'start', '#86efac'),
+            ('Meta',        'bridge — fading', None,                    0.55, 0.38, 330, 235, 'start', '#fcd34d'),
+            ('Intel',       'bridge — fading', None,                    0.42, 0.28, 252, 293, 'end',   '#fcd34d'),
+            ('NVIDIA',      'weakening',       None,                    0.72, 0.22, 397, 292, 'end',   '#fca5a5'),
+            ('Model layer', 'declining',       '(OpenAI + Anthropic)',  0.06, 0.04,  91, 353, 'start', '#fca5a5'),
         ]
 
         def cx(m): return PL + m * IW
@@ -3050,6 +3451,7 @@ def main(reset_registry=False):
                 f"<tr><td>{storm_label}</td><td>{storm_state}</td><td>{storm_status_lbl}</td><td>{storm_events}</td><td>{storm_coherence}</td></tr>"
             )
         vars[f'actor_{i}_additional_storms_html'] = ''.join(additional_storms_html) if additional_storms_html else '<tr><td colspan="5" class="muted">No additional storms detected</td></tr>'
+        vars[f'actor_{i}_transcript_html'] = _build_actor_transcript_html(actor, transcript_by_actor.get(actor, {}))
         
         themes = top_storm.get('themes', [])[:3]
         for j in range(1, 4):
@@ -3311,6 +3713,44 @@ def main(reset_registry=False):
             if f'path_{key}_{i}' not in vars:
                 vars[f'path_{key}_{i}'] = ''
     
+    # Build driving/watch bullets from today's homepage signals
+    try:
+        import json as _json
+        _site_signals_path = (
+            Path(__file__).parent.parent.parent
+            / 'topicspace-site' / 'public' / 'signals' / 'ai' / 'latest.json'
+        )
+        if _site_signals_path.exists():
+            _site_data   = _json.loads(_site_signals_path.read_text())
+            _sigs        = _site_data.get('signals', [])[:4]
+
+            # Driving: signal headline + first sentence of summary
+            def _first_sentence(text):
+                text = (text or '').strip()
+                end  = text.find('. ')
+                return text[:end + 1] if end > 0 else text[:120]
+
+            driving_li = '\n'.join(
+                f'<li><strong>{s["title"]}</strong> — {_first_sentence(s.get("summary", ""))}</li>'
+                for s in _sigs
+            )
+
+            # Watch: first sentence of notes (the confirmation condition)
+            watch_li = '\n'.join(
+                f'<li>{_first_sentence(s.get("notes", ""))}</li>'
+                for s in _sigs if s.get('notes')
+            )
+
+            vars['driving_bullets_html'] = driving_li or '<li>See signal feed for current system state</li>'
+            vars['watch_bullets_html']   = watch_li   or '<li>See signal feed for watch items</li>'
+            print(f"  [report] Loaded {len(_sigs)} signals for driving/watch bullets")
+        else:
+            raise FileNotFoundError(f"Not found: {_site_signals_path}")
+    except Exception as _e:
+        print(f"  [warn] Could not load signals for driving/watch: {_e}")
+        vars['driving_bullets_html'] = '<li>See signal feed for current system state</li>'
+        vars['watch_bullets_html']   = '<li>See signal feed for watch items</li>'
+
     # Load template
     print("Loading template...")
     with open(template_path) as f:
@@ -3619,6 +4059,258 @@ def main(reset_registry=False):
               f" {_ns:<20}"
               f" {_row['pressure_level']:>5.1f} {_row['pressure_trend']:>5.1f}"
               f" {_row['event_acceleration']:>5.1f} {_row['noise_penalty']:>5.1f}")
+
+    # ── Homepage narrative map data (dynamic actor selection) ─────────────────
+    def _build_narrative_map_json(traj_list, merged, lead_map_data):
+        """
+        Select 5–7 highest-signal actors for the homepage map using a composite score.
+
+        SCORING (per actor):
+          0.40 × normalized |accel|        — momentum delta
+          0.25 × normalized total_events   — narrative velocity / attention
+          0.15 × normalized latest_density — density
+          0.10 × structural role bonus     — bridge / narrative leader / key layer
+          0.10 × change significance       — sign flip or major reversal (|accel| > 60)
+
+        CONSTRAINTS (enforced after top-7 sort):
+          ≥ 1 positive actor  (accel > 5)
+          ≥ 2 negative actors (accel ≤ −20)
+          ≥ 1 structural      (bridge, alpha, or MODEL_LAYER)
+
+        MODEL_LAYER — OPENAI + ANTHROPIC merged into one entry.
+        m-axis uses summed total_events across all trajectories (overall attention weight).
+        v-axis uses 0.5 + accel/150, clamped [0.04, 0.95].
+        """
+        import json as _json
+
+        SITE_ROOT = base_dir.parent / 'topicspace-site'
+        out_path = SITE_ROOT / 'app' / 'data' / 'narrative-map.ts'
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+
+        MODEL_ACTORS = {'OPENAI', 'ANTHROPIC'}
+        PL, PT, IW, IH = 55, 24, 485, 356
+        MID_X = PL + IW / 2   # 297.5
+
+        # Best trajectory per actor (highest |accel|) + total_events summed
+        best: dict = {}           # actor → traj with highest |accel|
+        total_ev: dict = {}       # actor → sum of total_events across all trajs
+        for t in traj_list:
+            a = t.get('actor')
+            if not a:
+                continue
+            accel = t.get('latest_acceleration', 0) or 0
+            ev = t.get('total_events', 0) or 0
+            total_ev[a] = total_ev.get(a, 0) + ev
+            if a not in best or abs(accel) > abs(best[a].get('latest_acceleration', 0) or 0):
+                best[a] = t
+
+        # Alpha and bridge from lead_map
+        alpha = max(lead_map_data, key=lambda a: lead_map_data[a].get('leader_score', 0),
+                    default=None) if lead_map_data else None
+        bridges = {a for a, r in lead_map_data.items() if r.get('bridge_score', 0) > 0.5}
+
+        # Merge model actors → MODEL_LAYER
+        model_present = [a for a in best if a in MODEL_ACTORS]
+        if model_present:
+            avg_accel = sum(best[a].get('latest_acceleration', 0) or 0 for a in model_present) / len(model_present)
+            avg_density = sum(best[a].get('latest_density', 0) or 0 for a in model_present) / len(model_present)
+            best['MODEL_LAYER'] = {
+                'latest_acceleration': avg_accel,
+                'latest_density': avg_density,
+                'total_events': sum(total_ev.get(a, 0) for a in model_present),
+                'state_history': best[model_present[0]].get('state_history', []),
+            }
+            total_ev['MODEL_LAYER'] = sum(total_ev.get(a, 0) for a in model_present)
+
+        # Pool of candidates (exclude individual model actors — they're now MODEL_LAYER)
+        pool = {a: t for a, t in best.items() if a not in MODEL_ACTORS}
+
+        # ── Score each candidate ──────────────────────────────────────────────
+        candidates = list(pool.keys())
+
+        accels      = {a: best[a].get('latest_acceleration', 0) or 0 for a in candidates}
+        densities   = {a: best[a].get('latest_density', 0) or 0     for a in candidates}
+        events_raw  = {a: total_ev.get(a, 0)                         for a in candidates}
+
+        def _norm(vals: dict) -> dict:
+            lo, hi = min(vals.values(), default=0), max(vals.values(), default=1)
+            span = hi - lo or 1
+            return {a: (v - lo) / span for a, v in vals.items()}
+
+        norm_accel   = _norm({a: abs(v) for a, v in accels.items()})
+        norm_vel     = _norm(events_raw)   # total_events as narrative activity proxy
+        norm_density = _norm(densities)
+
+        def _structural_bonus(a):
+            if a == 'MODEL_LAYER': return 1.0   # key layer
+            if a == alpha:         return 0.8   # narrative leader
+            if a in bridges:       return 0.6   # bridge
+            return 0.0
+
+        def _change_bonus(a):
+            hist  = best[a].get('state_history', []) or []
+            accel = accels[a]
+            if len(hist) >= 2:
+                _POS = {'growing', 'leading', 'stable', 'emerging'}
+                _NEG = {'fading', 'cooling', 'collapse', 'declining', 'volatile'}
+                if hist[-2] in _POS and hist[-1] in _NEG: return 1.0  # sign flip down
+                if hist[-2] in _NEG and hist[-1] in _POS: return 1.0  # sign flip up
+            if abs(accel) > 60: return 0.6   # major reversal by magnitude
+            return 0.0
+
+        def _score(a):
+            return (
+                0.40 * norm_accel.get(a, 0)
+              + 0.25 * norm_vel.get(a, 0)
+              + 0.15 * norm_density.get(a, 0)
+              + 0.10 * _structural_bonus(a)
+              + 0.10 * _change_bonus(a)
+            )
+
+        scored = sorted(candidates, key=lambda a: -_score(a))
+
+        # ── Select top 7, then enforce coverage constraints ────────────────────
+        def _is_positive(a):   return accels[a] > 5
+        def _is_negative(a):   return accels[a] <= -20
+        def _is_structural(a): return a in bridges or a == alpha or a == 'MODEL_LAYER'
+
+        selected: list = list(scored[:7])
+
+        if not any(_is_positive(a) for a in selected):
+            for a in scored:
+                if _is_positive(a) and a not in selected:
+                    selected.append(a)
+                    break
+
+        neg_have = sum(1 for a in selected if _is_negative(a))
+        for a in scored:
+            if neg_have >= 2: break
+            if _is_negative(a) and a not in selected:
+                selected.append(a)
+                neg_have += 1
+
+        if not any(_is_structural(a) for a in selected):
+            for a in scored:
+                if _is_structural(a) and a not in selected:
+                    selected.append(a)
+                    break
+
+        selected = selected[:7]
+
+        # ── Position computation ───────────────────────────────────────────────
+        def _clamp(x, lo, hi): return max(lo, min(hi, x))
+
+        # m: rank by total_events (overall attention weight); spread 0.06–0.90
+        # Positive-accel actors are clamped to [0.35, 0.65] so they stay visually central
+        # and contrast clearly with declining actors on either side.
+        ev_vals = sorted(selected, key=lambda a: total_ev.get(a, 0))
+        n = len(ev_vals)
+        m_rank = {a: i for i, a in enumerate(ev_vals)}
+        def _m(a):
+            raw = 0.06 + (m_rank.get(a, 0) / max(n - 1, 1)) * 0.84
+            accel = best[a].get('latest_acceleration', 0) or 0
+            if accel > 8:   # positive outlier: keep in central band
+                return round(_clamp(raw, 0.35, 0.65), 3)
+            return round(raw, 3)
+
+        # v: 0.5 + accel/150, clamped
+        def _v(a): return round(
+            _clamp(0.5 + (best[a].get('latest_acceleration', 0) or 0) / 150, 0.04, 0.95), 3
+        )
+
+        def _color(a):
+            accel = best[a].get('latest_acceleration', 0) or 0
+            if accel > 8: return '#86efac'
+            # Bridge color only when decline is mild; deep negative always red
+            if (a in bridges or -20 < accel <= 8) and accel > -30: return '#fcd34d'
+            return '#fca5a5'
+
+        def _role(a):
+            accel = best[a].get('latest_acceleration', 0) or 0
+            if a == 'MODEL_LAYER': return 'declining'
+            if a in bridges and accel < 0: return 'bridge \u2014 fading'
+            if a in bridges: return 'bridge'
+            if a == alpha and accel >= 0: return 'leading'
+            if accel > 25: return 'emerging'
+            if accel > 5: return 'growing'
+            if accel > -12: return 'stable'
+            if accel > -35: return 'fading'
+            if accel > -60: return 'declining'
+            return 'collapsing'
+
+        DISPLAY = {
+            'META': 'Meta', 'NVDA': 'NVIDIA', 'INTC': 'Intel', 'AVGO': 'AVGO',
+            'PLTR': 'PLTR', 'MSFT': 'Microsoft', 'GOOGL': 'Google',
+            'AMZN': 'Amazon', 'AAPL': 'Apple', 'SMCI': 'SMCI', 'ARM': 'ARM',
+        }
+
+        # ── Build actor records ────────────────────────────────────────────────
+        actors_out = []
+        for a in selected:
+            m = _m(a)
+            v = _v(a)
+            cxv = PL + m * IW
+            cyv = PT + (1 - v) * IH
+            anchor = 'end' if cxv > MID_X + 30 else 'start'
+            nx = round(cxv - 8 if anchor == 'end' else cxv + 8, 1)
+            ny = round(cyv - 10, 1)
+            actors_out.append({
+                'name':   'Model layer' if a == 'MODEL_LAYER' else DISPLAY.get(a, a),
+                'role':   _role(a),
+                'sub':    '(OpenAI + Anthropic)' if a == 'MODEL_LAYER' else None,
+                'm':      m, 'v': v, 'nx': nx, 'ny': ny,
+                'anchor': anchor,
+                'color':  _color(a),
+            })
+
+        # Single-pass vertical overlap resolution
+        actors_out.sort(key=lambda x: x['ny'])
+        for i in range(len(actors_out)):
+            for j in range(i + 1, len(actors_out)):
+                if abs(actors_out[i]['nx'] - actors_out[j]['nx']) < 65:
+                    if actors_out[j]['ny'] - actors_out[i]['ny'] < 26:
+                        actors_out[j]['ny'] = round(actors_out[i]['ny'] + 28, 1)
+
+        # ── Legend (only colors actually present) ─────────────────────────────
+        COLOR_LABEL = {'#86efac': 'Emerging', '#fcd34d': 'Bridge \u2014 fading', '#fca5a5': 'Declining'}
+        seen: list = []
+        legend = []
+        for a in actors_out:
+            c = a['color']
+            if c not in seen:
+                seen.append(c)
+                legend.append({'color': c, 'label': COLOR_LABEL.get(c, c)})
+
+        # ── Headline ───────────────────────────────────────────────────────────
+        n_pos = sum(1 for a in actors_out if a['color'] == '#86efac')
+        n_declining = sum(1 for a in actors_out if a['color'] in ('#fca5a5', '#fcd34d')
+                          and 'fading' in a['role'] or a['color'] == '#fca5a5')
+        if n_pos <= 1 and n_declining >= 2:
+            headline = 'AI narratives are cooling across the system \u2014 only isolated signals remain'
+        elif n_declining >= 4:
+            headline = 'Broad narrative decline \u2014 momentum collapsing across the system'
+        else:
+            headline = 'AI narrative system in flux \u2014 mixed signals across actors'
+
+        data = {
+            'headline': headline,
+            'actors': actors_out,
+            'legend': legend,
+            'generatedAt': datetime.now().strftime('%Y-%m-%d'),
+        }
+        ts = (
+            '// Auto-generated by generate_master_report.py \u2014 do not edit manually.\n'
+            '// Re-run the pipeline to update actor selection and positions.\n\n'
+            f'export const narrativeMapData = {_json.dumps(data, indent=2)} as const;\n'
+        )
+        out_path.write_text(ts)
+        print(f"\nNarrative map data \u2192 {out_path}")
+
+    _build_narrative_map_json(
+        trajectories,
+        _actor_storms_merged + _eco_storms_merged,
+        leadership_map,
+    )
 
     print(f"\nTo view: open {output_path} in a browser")
     print("To print to PDF: use browser's Print → Save as PDF")

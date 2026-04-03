@@ -314,13 +314,53 @@
   <section class="page" style="page-break-before:always">
     <div class="section" style="margin-bottom:0">
       <h2>1. Executive overview</h2>
-      <div class="summary-band">
-        <div class="kpi"><div class="k">Events in storms</div><div class="v">{{ total_events }}</div><div class="s">{{ event_window }}</div></div>
-        <div class="kpi"><div class="k">Actor storms</div><div class="v">{{ actor_storm_count }}</div><div class="s">tracked narratives</div></div>
-        <div class="kpi"><div class="k">Actor lineages</div><div class="v">{{ actor_lineages_count }}</div><div class="s">actor narratives</div></div>
-        <div class="kpi"><div class="k">Ecosystem lineages</div><div class="v">{{ eco_lineages_count }}</div><div class="s">cross-actor narratives</div></div>
-        <div class="kpi"><div class="k">Avg coherence</div><div class="v">{{ avg_coherence }}</div><div class="s">narrative clarity</div></div>
-        <div class="kpi"><div class="k">Avg storm size</div><div class="v">{{ avg_storm_size }}</div><div class="s">events per storm</div></div>
+
+      <!-- System state regime label -->
+      <div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:linear-gradient(180deg,#fff,var(--soft));margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">System state</div>
+        <div style="font-size:16px;font-weight:700;color:#222;margin-bottom:2px">Cooling</div>
+        <div style="font-size:10px;color:#aaa;margin-bottom:4px">Previous: Fragmentation → Cooling</div>
+        <div style="font-size:11px;color:#666;line-height:1.5">Broad momentum is declining across most actors; prior leaders failed to sustain acceleration.</div>
+      </div>
+
+      <!-- What's driving + What to watch — quick-read panel -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+
+        <div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:linear-gradient(180deg,#fff,var(--soft))">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">What's driving the system</div>
+          <ul style="margin:0;padding:0 0 0 14px;font-size:12px;line-height:1.7;color:var(--text)">
+            {{ driving_bullets_html }}
+          </ul>
+        </div>
+
+        <div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:linear-gradient(180deg,#fff,var(--soft))">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">What to watch next</div>
+          <ul style="margin:0;padding:0 0 0 14px;font-size:12px;line-height:1.7;color:var(--text)">
+            {{ watch_bullets_html }}
+          </ul>
+        </div>
+
+      </div>
+
+      <p style="font-size:10px;color:var(--muted);margin:-8px 0 16px;font-style:italic">Updated daily as narratives shift across the AI ecosystem</p>
+
+      {{ since_last_update_html }}
+
+      <p style="font-size:11px;color:var(--muted);margin:0 0 8px;font-style:italic">This is what shifted in the last window:</p>
+      <div class="section" style="margin-top:0">
+        <div class="card">
+          {{ whats_changing_html }}
+          {{ misalignment_html }}
+        </div>
+      </div>
+
+      <div class="summary-band" style="margin-top:14px;opacity:0.75">
+        <div class="kpi" style="background:none;border-color:#e8e8e8"><div class="k" style="font-size:9px">Events in storms</div><div class="v" style="font-size:16px">{{ total_events }}</div><div class="s" style="font-size:10px">{{ event_window }}</div></div>
+        <div class="kpi" style="background:none;border-color:#e8e8e8"><div class="k" style="font-size:9px">Actor storms</div><div class="v" style="font-size:16px">{{ actor_storm_count }}</div><div class="s" style="font-size:10px">tracked narratives</div></div>
+        <div class="kpi" style="background:none;border-color:#e8e8e8"><div class="k" style="font-size:9px">Actor lineages</div><div class="v" style="font-size:16px">{{ actor_lineages_count }}</div><div class="s" style="font-size:10px">actor narratives</div></div>
+        <div class="kpi" style="background:none;border-color:#e8e8e8"><div class="k" style="font-size:9px">Ecosystem lineages</div><div class="v" style="font-size:16px">{{ eco_lineages_count }}</div><div class="s" style="font-size:10px">cross-actor narratives</div></div>
+        <div class="kpi" style="background:none;border-color:#e8e8e8"><div class="k" style="font-size:9px">Avg coherence</div><div class="v" style="font-size:16px">{{ avg_coherence }}</div><div class="s" style="font-size:10px">narrative clarity</div></div>
+        <div class="kpi" style="background:none;border-color:#e8e8e8"><div class="k" style="font-size:9px">Avg storm size</div><div class="v" style="font-size:16px">{{ avg_storm_size }}</div><div class="s" style="font-size:10px">events per storm</div></div>
       </div>
 
       <div class="section" style="margin-top:14px">
@@ -330,17 +370,9 @@
           <table>
             <thead><tr><th>Source</th><th>Events</th><th>Share</th><th>Time Range</th><th>Rate</th></tr></thead>
             <tbody>
-              <tr><td>{{ source_1 }}</td><td>{{ source_1_count }}</td><td>{{ source_1_pct }}%</td><td class="muted" style="font-size:11px">{{ source_1_time }}</td><td>{{ source_1_rate }}</td></tr>
-              <tr><td>{{ source_2 }}</td><td>{{ source_2_count }}</td><td>{{ source_2_pct }}%</td><td class="muted" style="font-size:11px">{{ source_2_time }}</td><td>{{ source_2_rate }}</td></tr>
-              <tr><td>{{ source_3 }}</td><td>{{ source_3_count }}</td><td>{{ source_3_pct }}%</td><td class="muted" style="font-size:11px">{{ source_3_time }}</td><td>{{ source_3_rate }}</td></tr>
+              {{ source_table_html }}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div class="section" style="margin-top:14px">
-        <div class="card">
-          {{ whats_changing_html }}
         </div>
       </div>
 
@@ -425,6 +457,64 @@
             <div class="callout" style="margin:0">
               <strong>Interpretation:</strong> {{ watchlist_summary_interpretation }}
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:14px">
+        <div class="card">
+          <h3>What to watch next</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:20px">Conditions that would confirm, break, or replace the current regime.</p>
+          <div style="display:flex;flex-direction:column;gap:22px">
+
+            <div style="border-left:2px solid var(--accent);padding-left:16px">
+              <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px">Energy becomes the dominant AI bottleneck</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:8px"><strong>Why it matters:</strong> Energy is the only upstream constraint still gaining relevance while core infrastructure narratives cool.</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Watch for</div>
+              <ul style="font-size:12px;color:var(--muted);margin:0 0 8px 16px;line-height:1.8">
+                <li>New hyperscaler power agreements (META, MSFT, GOOGL) at scale</li>
+                <li>Utility or grid partnerships involving CEG or VST</li>
+                <li>Narrative language shifting from compute constraints to power constraints in analyst coverage</li>
+              </ul>
+              <div style="font-size:12px;color:var(--muted)"><strong>System impact:</strong> If confirmed, the AI trade rotates from hardware procurement toward upstream energy infrastructure.</div>
+            </div>
+
+            <div style="border-left:2px solid var(--accent);padding-left:16px">
+              <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px">Data center demand stabilizes or breaks</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:8px"><strong>Why it matters:</strong> The NVDA / ANET / VRT demand narrative is fading, but it is still the largest infrastructure cluster in the system.</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Watch for</div>
+              <ul style="font-size:12px;color:var(--muted);margin:0 0 8px 16px;line-height:1.8">
+                <li>New capex announcements from hyperscalers</li>
+                <li>Pricing or lead-time signals indicating renewed GPU scarcity</li>
+                <li>NVDA narrative momentum turning positive again</li>
+              </ul>
+              <div style="font-size:12px;color:var(--muted)"><strong>System impact:</strong> If confirmed, infrastructure demand reasserts itself; if not, the prior AI buildout cycle is fully exhausted.</div>
+            </div>
+
+            <div style="border-left:2px solid var(--accent);padding-left:16px">
+              <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px">SoftBank-to-OpenAI capital becomes a broader financing wave</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:8px"><strong>Why it matters:</strong> The $40B commitment is the clearest capital signal this week, but it remains isolated.</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Watch for</div>
+              <ul style="font-size:12px;color:var(--muted);margin:0 0 8px 16px;line-height:1.8">
+                <li>Follow-on capital commitments from sovereign wealth, pension, or a second hyperscaler</li>
+                <li>New financing structures around compute or model infrastructure</li>
+                <li>Adjacent partnership momentum re-accelerating (ARM, portfolio companies)</li>
+              </ul>
+              <div style="font-size:12px;color:var(--muted)"><strong>System impact:</strong> If confirmed, capital deployment becomes the next system anchor and revives the infrastructure narrative.</div>
+            </div>
+
+            <div style="border-left:2px solid var(--accent);padding-left:16px">
+              <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px">Physical AI moves from analyst language to real narrative propagation</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:8px"><strong>Why it matters:</strong> Physical AI is re-entering coverage (Bernstein, this week), but it has not yet become a durable multi-actor theme.</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Watch for</div>
+              <ul style="font-size:12px;color:var(--muted);margin:0 0 8px 16px;line-height:1.8">
+                <li>Robotaxi milestones connecting TSLA thesis to price action</li>
+                <li>Industrial AI deployment announcements from NVDA</li>
+                <li>Propagation from TSLA or NVDA into broader ecosystem attention</li>
+              </ul>
+              <div style="font-size:12px;color:var(--muted)"><strong>System impact:</strong> If confirmed, narrative energy rotates from core compute infrastructure toward deployment in the physical world.</div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -652,6 +742,7 @@
                 </ul>
               </div>
               {{ actor_1_community_html }}
+              {{ actor_1_transcript_html }}
             </div>
             
             <div style="margin-top:14px">
@@ -734,6 +825,7 @@
                 </ul>
               </div>
               {{ actor_2_community_html }}
+              {{ actor_2_transcript_html }}
             </div>
             
             <div style="margin-top:14px">
@@ -816,6 +908,7 @@
                 </ul>
               </div>
               {{ actor_3_community_html }}
+              {{ actor_3_transcript_html }}
             </div>
             
             <div style="margin-top:14px">
@@ -898,6 +991,7 @@
                 </ul>
               </div>
               {{ actor_4_community_html }}
+              {{ actor_4_transcript_html }}
             </div>
             
             <div style="margin-top:14px">
@@ -980,6 +1074,7 @@
                 </ul>
               </div>
               {{ actor_5_community_html }}
+              {{ actor_5_transcript_html }}
             </div>
             
             <div style="margin-top:14px">
@@ -1062,6 +1157,7 @@
                 </ul>
               </div>
               {{ actor_6_community_html }}
+              {{ actor_6_transcript_html }}
             </div>
 
             <div style="margin-top:14px">

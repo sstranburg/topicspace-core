@@ -9,6 +9,10 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'scripts'))
+from strategic_watchlist import build_pressure_leadership_records
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -42,9 +46,11 @@ def main():
     data_dir = Path(__file__).parent.parent / 'data' / 'derived'
     out_path = data_dir / 'pressure_leadership_matrix.png'
 
-    watchlist = load_jsonl(data_dir / 'strategic_watchlist.jsonl')
+    pressure_records = load_jsonl(data_dir / 'narrative_pressure.jsonl')
     leadership_list = json.loads((data_dir / 'narrative_leadership.json').read_text()) if (data_dir / 'narrative_leadership.json').exists() else []
     leadership_map = {r['actor']: r for r in leadership_list}
+
+    watchlist = build_pressure_leadership_records(pressure_records, leadership_map)
 
     # Dedupe: keep highest strategic_score per actor
     best_per_actor = {}
@@ -115,12 +121,39 @@ def main():
         ax.scatter(p['x'], p['y'], s=p['size'], c=color, alpha=0.75,
                    edgecolors=edge, linewidths=lw, zorder=3)
 
-    # Labels — only for top strategic items or distinct actors
+    # Labels — direction-aware placement to minimise overlap.
+    # For each point, push the label away from the local cluster centroid.
     labeled = set()
+    label_pts = []  # (x, y) of already-placed label anchors, for collision avoidance
+
+    CANDIDATE_OFFSETS = [
+        ( 6,  9), (-8,  9), ( 6, -13), (-8, -13),
+        (14,  4), (-16,  4), (14, -8),  (-16, -8),
+        ( 6, 18), (-8,  18), ( 6, -22), (-8, -22),
+    ]
+    CLUSTER_RADIUS = 0.12  # data-space radius for "nearby" points
+
+    def _best_offset(px, py, all_pts, cluster_r):
+        """Return (ox, oy) in points that best avoids nearby placed labels."""
+        nearby = [(qx, qy) for qx, qy in all_pts if abs(qx - px) < cluster_r and abs(qy - py) < cluster_r]
+        if not nearby:
+            return CANDIDATE_OFFSETS[0]
+        # centroid of nearby labels
+        cx = sum(q[0] for q in nearby) / len(nearby)
+        cy = sum(q[1] for q in nearby) / len(nearby)
+        # push away from centroid: pick candidate offset whose direction best opposes centroid vector
+        dx, dy = px - cx, py - cy
+        best, best_dot = CANDIDATE_OFFSETS[0], -1e9
+        for ox, oy in CANDIDATE_OFFSETS:
+            dot = ox * dx + oy * dy  # prefer offsets that point away from centroid
+            if dot > best_dot:
+                best_dot, best = dot, (ox, oy)
+        return best
+
     for p in sorted(points, key=lambda p: -p['strategic']):
         actor = p['actor']
         if actor.startswith('eco_'):
-            display = p['label'][:20] if p['label'] != 'Unnamed' else actor
+            display = p['label'][:22] if p['label'] != 'Unnamed' else actor
         else:
             display = actor
 
@@ -128,14 +161,13 @@ def main():
             continue
         labeled.add(display)
 
-        # Offset to avoid overlap
-        offset_y = 0.025
-        if p['y'] > 0.9:
-            offset_y = -0.035
+        ox, oy = _best_offset(p['x'], p['y'], label_pts, CLUSTER_RADIUS)
+        label_pts.append((p['x'], p['y']))
         ax.annotate(display, (p['x'], p['y']),
-                    xytext=(6, 8 if offset_y > 0 else -12), textcoords='offset points',
+                    xytext=(ox, oy), textcoords='offset points',
                     fontsize=8, fontweight='bold' if p['category'] == 'priority_watch' else 'normal',
-                    color='#1b1f24', zorder=5)
+                    color='#1b1f24', zorder=5,
+                    arrowprops=dict(arrowstyle='-', color='#c8d0da', lw=0.6) if abs(ox) > 10 or abs(oy) > 12 else None)
 
     # Legend
     legend_handles = [mpatches.Patch(color=ROLE_COLORS[r], label=r.title()) for r in ['leader', 'amplifier', 'bridge', 'receiver']]

@@ -20,18 +20,22 @@ import re
 import shutil
 import sys
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).parent.parent
-PRICES_DIR   = ROOT / "data" / "derived" / "prices"
+PRICES_DIR    = ROOT / "data" / "derived" / "prices"
 PRESSURE_FILE = ROOT / "data" / "derived" / "narrative_pressure.jsonl"
 LEADERSHIP_FILE = ROOT / "data" / "derived" / "narrative_leadership.json"
 AI_SIGNALS_FILE = ROOT.parent / "topicspace-site" / "public" / "signals" / "ai" / "latest.json"
 TEMPLATE_FILE   = ROOT / "social" / "narrative-leaderboard.html"
 SITE_DEST       = ROOT.parent / "topicspace-site" / "public" / "leaderboard.html"
+HISTORY_FILE    = ROOT / "data" / "derived" / "narrative_history.jsonl"
+EVENTS_FILE     = ROOT / "data" / "normalized" / "tech_ecosystem_filtered.jsonl"
+
+CHART_DAYS = 30  # rolling window for chart data
 
 BENCHMARK = "QQQ"
 
@@ -59,26 +63,66 @@ STATE_READS = {
     "UNCLEAR":      "no clean read",
 }
 
+# Per-ticker narrative descriptions (what the story is actually about)
+NARRATIVES = {
+    "NVDA":  "AI infrastructure buildout; China market share erosion",
+    "MRVL":  "AI networking revenue accelerating",
+    "MSFT":  "Copilot + OpenAI bet gaining traction",
+    "ARM":   "Architecture licensing expanding into AI chips",
+    "PLTR":  "Government AI contracts + commercial growth",
+    "META":  "AI chips and data center build-out",
+    "ADBE":  "Earnings pressure vs AI creative tools story",
+    "MU":    "HBM demand uncertain after earnings miss",
+    "ORCL":  "Cloud + AI infra expansion, rising price targets",
+    "SMCI":  "AI server demand; VAST Data partnership",
+    "INTC":  "Qualcomm acquisition chatter; foundry pivot",
+    "AMD":   "AI GPU competition narrative vs NVDA",
+    "TSLA":  "Brand drag from Musk politics; recession sensitivity",
+    "DELL":  "AI server demand vs margin pressure",
+    "GOOGL": "AI search competition + Waymo",
+    "ANET":  "AI networking infrastructure demand",
+    "NBIS":  "European AI cloud buildout",
+    "AVGO":  "Custom silicon; insider activity cooling",
+    "AMZN":  "Custom silicon (Trainium) + Globalstar buyout",
+    "TSM":   "Advanced node demand; geopolitical risk",
+    "VRT":   "Power and cooling for AI data centers",
+    "CRM":   "Agentforce adoption narrative cooling",
+    "CRWV":  "CoreWeave cloud IPO hype fading",
+    "SOFI":  "Fintech competition pressures",
+    "AAPL":  "AI features rollout + India manufacturing",
+    "ASML":  "EUV demand tied to AI chip cycle",
+    "SNOW":  "Data cloud growth narrative stalling",
+}
+
 # Per-ticker read overrides
 READ_OVERRIDES = {
-    "NVDA":  "infra rotation, market cautious",
-    "MSFT":  "holding and starting to validate",
-    "ARM":   "breakout confirming story",
-    "PLTR":  "strong story, price diverging",
-    "MU":    "earnings narrative hard rejected",
-    "ADBE":  "earnings narrative confirmed",
-    "SMCI":  "flat, story holding",
-    "TSLA":  "brand drag overriding narrative",
-    "CRWV":  "narrative fading, price following",
-    "VRT":   "infra story, market not paying up",
-    "ANET":  "infrastructure narrative, price declining",
-    "NBIS":  "story not landing",
-    "INTC":  "market not buying it yet",
-    "GOOGL": "holding, not breaking",
-    "DELL":  "price rejecting story",
-    "ORCL":  "recovered from prior selloff",
-    "AMZN":  "moving with tape, Globalstar noise",
-    "ASML":  "macro overriding signal",
+    "NVDA":  "infra rotation, market not yet paying up",
+    "MSFT":  "Copilot bet building, price just starting to follow",
+    "MRVL":  "revenue acceleration finding the stock",
+    "ARM":   "architecture licensing bet breaking out",
+    "PLTR":  "strong story, price not following",
+    "META":  "capex narrative intact, price softer",
+    "ADBE":  "earnings narrative confirmed by price",
+    "MU":    "HBM story hard rejected after earnings",
+    "ORCL":  "recovered from selloff, targets rising",
+    "SMCI":  "VAST Data deal, price not moving yet",
+    "INTC":  "market not buying the foundry pivot",
+    "AMD":   "AI GPU story, flat on the week",
+    "TSLA":  "brand drag overriding any AI narrative",
+    "DELL":  "AI server demand not landing in price",
+    "GOOGL": "AI pressure not breaking it yet",
+    "ANET":  "infra narrative strong, price declining",
+    "NBIS":  "European AI story not landing",
+    "AVGO":  "insider noise fading, moving with tape",
+    "AMZN":  "custom silicon + Globalstar deal noise",
+    "TSM":   "geopolitical risk trumping AI demand",
+    "VRT":   "power/cooling story, market not paying up",
+    "CRM":   "Agentforce fading, price up on macro",
+    "CRWV":  "IPO hype cooling, price following narrative down",
+    "SOFI":  "fintech competition, no clear direction",
+    "AAPL":  "AI features not yet moving the needle",
+    "ASML":  "EUV cycle tied to AI, macro driving",
+    "SNOW":  "growth story stalling, no catalyst visible",
 }
 
 
@@ -207,24 +251,30 @@ def build_actors(pressure_by_actor, leadership, buckets, rel_returns):
 
         conflict = conflict_flag(state, narr, rel)
         read = READ_OVERRIDES.get(t, STATE_READS.get(state, "no clean read"))
+        narrative = NARRATIVES.get(t, "")
 
-        rows.append(dict(t=t, state=state, narr=narr, rel=rel, conflict=conflict, read=read))
+        price_score = max(0, min(100, 50 + rel * 5))
+        nds = round(narr - price_score, 1)
 
-    # sort by narr descending
-    rows.sort(key=lambda r: r["narr"], reverse=True)
+        rows.append(dict(t=t, state=state, narr=narr, rel=rel, conflict=conflict, read=read, narrative=narrative, nds=nds))
+
+    # sort by NDS descending
+    rows.sort(key=lambda r: r["nds"], reverse=True)
     return rows
 
 
 def actors_js(rows):
     lines = ["const ACTORS = [",
-             "  // state, narrative (0-100), rel_5d (% vs benchmark), conflict, short_read"]
+             "  // state, narrative (0-100), rel_5d (% vs benchmark), conflict, short_read, narrative_desc"]
     for r in rows:
         rel_str = f"{r['rel']:+.2f}"
         conflict_str = "true" if r["conflict"] else "false"
+        narrative_escaped = r["narrative"].replace("'", "\\'")
         line = (
             f"  {{ t:'{r['t']}', state:'{r['state']}', "
-            f"narr:{r['narr']}, rel:{rel_str}, "
-            f"conflict:{conflict_str}, read:'{r['read']}' }},"
+            f"narr:{r['narr']}, rel:{rel_str}, nds:{r['nds']}, "
+            f"conflict:{conflict_str}, read:'{r['read']}', "
+            f"story:'{narrative_escaped}' }},"
         )
         lines.append(line)
     lines.append("];")
@@ -265,6 +315,194 @@ def narrative_context(rows, buckets):
         "Narratives are active but the market is not paying up. "
         "Most high-pressure names are flat to down on the week."
     )
+
+
+def record_history(rows: list, today: date):
+    """Append today's narr/state/nds snapshot per ticker to narrative_history.jsonl."""
+    today_str = today.isoformat()
+    # Load existing to avoid duplicate entries for today
+    existing_today = set()
+    if HISTORY_FILE.exists():
+        for line in HISTORY_FILE.read_text().splitlines():
+            if line.strip():
+                r = json.loads(line)
+                if r.get("date") == today_str:
+                    existing_today.add(r["t"])
+
+    with HISTORY_FILE.open("a") as f:
+        for r in rows:
+            if r["t"] not in existing_today:
+                f.write(json.dumps({
+                    "date": today_str,
+                    "t": r["t"],
+                    "narr": r["narr"],
+                    "state": r["state"],
+                    "nds": r["nds"],
+                }) + "\n")
+
+
+def load_signals_per_day() -> dict:
+    """Return dict: ticker → {date_str → count} from events file."""
+    result: dict = defaultdict(lambda: defaultdict(int))
+    if not EVENTS_FILE.exists():
+        return {}
+    for line in EVENTS_FILE.read_text().splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        ts = r.get("timestamp", "")[:10]  # "YYYY-MM-DD"
+        for actor in r.get("actors", []):
+            result[actor][ts] += 1
+    return {t: dict(dates) for t, dates in result.items()}
+
+
+def load_narr_history() -> dict:
+    """Return dict: ticker → sorted list of {date, narr, state}."""
+    if not HISTORY_FILE.exists():
+        return {}
+    by_ticker = defaultdict(list)
+    for line in HISTORY_FILE.read_text().splitlines():
+        if line.strip():
+            r = json.loads(line)
+            by_ticker[r["t"]].append(r)
+    for t in by_ticker:
+        by_ticker[t].sort(key=lambda x: x["date"])
+    return dict(by_ticker)
+
+
+def compute_rolling_narr(dates: list, signals_by_date: dict, current_narr: int) -> list:
+    """
+    Approximate per-day narrative score using a rolling 7-day event window,
+    anchored so the last value matches today's known narr score.
+
+    Score formula mirrors compute_narr_score: floor 35, event activity drives
+    up to ~60 points above the floor, capped at 95.
+    """
+    counts = [signals_by_date.get(d, 0) for d in dates]
+
+    # Rolling 7-day event sum
+    rolling = []
+    for i in range(len(dates)):
+        rolling.append(sum(counts[max(0, i - 6): i + 1]))
+
+    peak = max(rolling) if any(r > 0 for r in rolling) else 1
+
+    # Raw scores in [35, 95]
+    raw = [35 + (r / peak) * 60 for r in rolling]
+
+    # Anchor last value to current_narr by scaling the activity component
+    last_raw = raw[-1]
+    if last_raw != 35 and current_narr != 35:
+        scale = (current_narr - 35) / (last_raw - 35)
+        adjusted = [35 + (v - 35) * scale for v in raw]
+    else:
+        adjusted = raw
+
+    return [int(min(95, max(35, round(v)))) for v in adjusted]
+
+
+def compute_chart_data(ticker: str, today: date, narr_history: list, signals_by_date: dict | None = None) -> dict:
+    """
+    Build 30-day chart data: ticker price (min-max normalized 0-100) + narrative score series.
+    Both series share the same 0-100 scale so they can be plotted together.
+    NDS is computed per day from narr[d] - price_score[d].
+    """
+    price_path = PRICES_DIR / f"{ticker}.parquet"
+    bench_path = PRICES_DIR / f"{BENCHMARK}.parquet"
+    if not price_path.exists():
+        return {}
+
+    # Load extra history before the window to support 5-day return lookback
+    LOOKBACK = CHART_DAYS + 7
+    df = pd.read_parquet(price_path).sort_values("timestamp").reset_index(drop=True)
+    df = df[["timestamp", "close"]].tail(LOOKBACK).reset_index(drop=True)
+
+    if len(df) < 2:
+        return {}
+
+    # Keep only the window dates for the chart
+    df_window = df.tail(CHART_DAYS).reset_index(drop=True)
+    dates = df_window["timestamp"].astype(str).tolist()
+
+    # Normalize price to 0-100 using min-max over the window
+    px_min = float(df_window["close"].min())
+    px_max = float(df_window["close"].max())
+    if px_max > px_min:
+        price_series = ((df_window["close"] - px_min) / (px_max - px_min) * 100).round(2).tolist()
+    else:
+        price_series = [50.0] * len(df_window)
+
+    # Per-day 5-day relative return vs benchmark → price_score → feeds into NDS
+    bench_df = None
+    if bench_path.exists():
+        bench_df = pd.read_parquet(bench_path).sort_values("timestamp").reset_index(drop=True)
+        bench_df = bench_df[["timestamp", "close"]].tail(LOOKBACK).reset_index(drop=True)
+
+    rel5d_by_date: dict[str, float] = {}
+    if bench_df is not None:
+        merged = pd.merge(
+            df[["timestamp", "close"]].rename(columns={"close": "px"}),
+            bench_df[["timestamp", "close"]].rename(columns={"close": "bx"}),
+            on="timestamp", how="inner"
+        ).reset_index(drop=True)
+        for i, row in merged.iterrows():
+            if i < 5:
+                continue
+            ticker_ret = row["px"] / merged.iloc[i - 5]["px"] - 1
+            bench_ret  = row["bx"] / merged.iloc[i - 5]["bx"] - 1
+            rel5d_by_date[str(row["timestamp"])] = (ticker_ret - bench_ret) * 100
+
+    # Narrative score series (0-100) from history; bridge last trading day gap
+    # Exact history entries keyed by date
+    narr_map = {}
+    for r in narr_history:
+        narr_map[r["date"]] = (r["narr"], r.get("nds"))
+    # Bridge pipeline run date vs last trading date (up to 3 days ahead)
+    if narr_map and dates:
+        last_chart = dates[-1]
+        if last_chart not in narr_map:
+            last_dt = date.fromisoformat(last_chart)
+            for offset in range(1, 4):
+                candidate = (last_dt + timedelta(days=offset)).isoformat()
+                if candidate in narr_map:
+                    narr_map[last_chart] = narr_map[candidate]
+                    break
+
+    sig_map = signals_by_date or {}
+
+    # Current known narr score (most recent history entry)
+    current_narr = narr_map[max(narr_map)][0] if narr_map else None
+    current_nds  = narr_map[max(narr_map)][1] if narr_map else None
+
+    if current_narr is not None:
+        # Rolling event-based approximation, anchored to current known score
+        narr_series = compute_rolling_narr(dates, sig_map, current_narr)
+        # Overwrite exact history dates with real values
+        for d, (narr_val, _) in narr_map.items():
+            if d in dates:
+                narr_series[dates.index(d)] = narr_val
+        # Per-day NDS = narr[d] - price_score[d]
+        nds_series = []
+        for i, d in enumerate(dates):
+            rel = rel5d_by_date.get(d)
+            if rel is not None:
+                price_score = max(0, min(100, 50 + rel * 5))
+                nds_series.append(round(narr_series[i] - price_score, 1))
+            else:
+                nds_series.append(None)
+    else:
+        narr_series = [None] * len(dates)
+        nds_series  = [None] * len(dates)
+
+    signals_series = [sig_map.get(d) or None for d in dates]
+
+    return {
+        "dates": dates,
+        "price": price_series,
+        "narr": narr_series,
+        "signals": signals_series,
+        "nds": nds_series,
+    }
 
 
 def format_date(d: date) -> str:
@@ -312,14 +550,19 @@ def main():
     print(f"  AI signal buckets: {dict(list(buckets.items())[:6])} …")
 
     rows = build_actors(pressure, leadership, buckets, rel_returns)
+    today = date.today()
+
+    # Record today's narrative scores to history
+    record_history(rows, today)
+    narr_history = load_narr_history()
+
     actors_block = actors_js(rows)
     insight, takeaway = headline(rows, rel_returns)
     context = narrative_context(rows, buckets)
-    today = date.today()
 
-    print(f"\nTop 5 by narrative score:")
+    print(f"\nTop 5 by NDS:")
     for r in rows[:5]:
-        print(f"  {r['t']:6s}  narr:{r['narr']:2d}  rel:{r['rel']:+.2f}%  state:{r['state']}")
+        print(f"  {r['t']:6s}  nds:{r['nds']:+.1f}  narr:{r['narr']:2d}  rel:{r['rel']:+.2f}%  state:{r['state']}")
 
     # Load and update template
     if not TEMPLATE_FILE.exists():
@@ -335,6 +578,20 @@ def main():
     if SITE_DEST.exists() or SITE_DEST.parent.exists():
         shutil.copy2(TEMPLATE_FILE, SITE_DEST)
         print(f"Copied to {SITE_DEST}")
+
+        # Write actors.json for actor detail pages (includes chart data)
+        actors_json_dest = SITE_DEST.parent / "actors.json"
+        signals_per_day = load_signals_per_day()
+        rows_with_chart = []
+        for r in rows:
+            chart = compute_chart_data(r["t"], today, narr_history.get(r["t"], []),
+                                       signals_per_day.get(r["t"]))
+            rows_with_chart.append({**r, "chart": chart if chart else None})
+        actors_json_dest.write_text(json.dumps({
+            "date": today.isoformat(),
+            "actors": rows_with_chart,
+        }, indent=2))
+        print(f"Wrote {actors_json_dest}")
     else:
         print(f"Site dest not found, skipping copy: {SITE_DEST}")
 

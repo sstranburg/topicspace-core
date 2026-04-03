@@ -5,7 +5,10 @@ sys.path.insert(0, '/Users/sue/Documents/git/storm')
 from datetime import datetime, timedelta
 from src.ingest_finnhub import fetch_finnhub_company_news
 from src.ingest_newsapi import fetch_newsapi_query
-from src.merge_events import dedupe_events, write_jsonl, load_jsonl
+from src.ingest_reddit_ai import fetch_all_subreddits as fetch_reddit_ai
+from src.ingest_x import fetch_x_posts
+from src.ingest_amplification import fetch_amplification_for_actors
+from src.merge_events import dedupe_events, dedupe_by_title_tiered, write_jsonl, load_jsonl
 
 print("Fetching today's data...")
 
@@ -18,7 +21,7 @@ print(f"Date range: {yesterday} to {today}")
 actors = ['NVDA', 'AMD', 'TSM', 'MSFT', 'AMZN', 'GOOGL', 'ASML', 'AVGO',
           'META', 'ORCL', 'ADBE', 'CRM', 'SNOW', 'TSLA',
           'ARM', 'SMCI', 'DELL', 'INTC', 'MU', 'CRWV', 'NBIS',
-          'PLTR']
+          'PLTR', 'VRT', 'ANET', 'CEG', 'VST']
 finnhub_events = []
 for actor in actors:
     events = fetch_finnhub_company_news(actor, str(yesterday), str(today))
@@ -58,6 +61,10 @@ queries = [
     ('"AI memory" OR "HBM" AND (NVIDIA OR AMD OR Intel OR Micron)',        ['NVDA', 'AMD', 'INTC', 'MU']),
     ('"AI server" OR "GPU server" AND (Dell OR Supermicro OR CoreWeave)',   ['DELL', 'SMCI', 'CRWV']),
     ('ARM OR "AI chip design" AND (NVIDIA OR Qualcomm OR Apple)',           ['ARM', 'NVDA']),
+    ('Vertiv power cooling "data center" thermal AI',                       ['VRT']),
+    ('Arista Networks AI ethernet switching datacenter',                    ['ANET']),
+    ('"Constellation Energy" OR CEG nuclear "data center" OR AI power',     ['CEG']),
+    ('Vistra energy nuclear "data center" OR "AI power" OR VST',            ['VST']),
 ]
 newsapi_events = []
 for query, source_actors in queries:
@@ -65,9 +72,32 @@ for query, source_actors in queries:
     newsapi_events.extend(events)
 print(f"  NewsAPI: {len(newsapi_events)} events")
 
-# Combine new events
-new_events = finnhub_events + newsapi_events
-print(f"\nTotal new events: {len(new_events)}")
+# Fetch from Reddit (AI overlay — formation/attention signal, low reliability)
+print("\nFetching Reddit AI overlay...")
+reddit_ai_events = fetch_reddit_ai(str(yesterday), str(today))
+print(f"  Reddit AI total: {len(reddit_ai_events)} events")
+
+# Fetch from X (curated accounts — high-velocity, low-confidence signal layer)
+print("\nFetching X (Twitter) AI overlay...")
+x_start = f"{yesterday}T00:00:00Z"
+x_end   = f"{today}T00:00:00Z"
+x_ai_events = fetch_x_posts("ai", x_start, x_end)
+print(f"  X AI total: {len(x_ai_events)} events")
+
+# Fetch from amplification sources (Yahoo Finance, MarketWatch — breadth signal only)
+from src.ingest_amplification import fetch_amplification_news
+print("\nFetching amplification sources (Yahoo Finance, MarketWatch)...")
+amplification_events = fetch_amplification_news("ai", str(yesterday))
+print(f"  Amplification total: {len(amplification_events)} events")
+
+# Combine new events — order matters for tiered title dedup (primary first)
+new_events = finnhub_events + newsapi_events + reddit_ai_events + x_ai_events + amplification_events
+print(f"\nTotal new events (before dedup): {len(new_events)}")
+
+# Title-based tiered dedup: primary/validation beats amplification on same headline
+new_events, title_dupes = dedupe_by_title_tiered(new_events)
+if title_dupes:
+    print(f"  Title dedup: dropped {title_dupes} amplification/lower-tier duplicates")
 
 # Load existing events
 existing_events = load_jsonl('data/normalized/tech_ecosystem.jsonl')
