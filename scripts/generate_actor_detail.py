@@ -493,17 +493,27 @@ def main():
                 if src["title"] not in seen_titles:
                     seen_titles.add(src["title"])
                     top_sources.append(src)
-                if len(top_sources) >= 4:
+                if len(top_sources) >= 5:
                     break
             # fill remaining slots from storm headlines
-            if len(top_sources) < 4:
+            if len(top_sources) < 5:
                 for src in storm_headlines.get(t, []):
                     if src["title"] not in seen_titles:
                         seen_titles.add(src["title"])
                         top_sources.append(src)
-                    if len(top_sources) >= 4:
+                    if len(top_sources) >= 5:
                         break
             detail["top_sources"] = top_sources
+            # total unique sources available (for "5 of N" display)
+            all_source_titles: set = set()
+            for sig in signals:
+                for src in sig.get("sources", []):
+                    title = src.get("title", "").strip()
+                    if title:
+                        all_source_titles.add(title)
+            for src in storm_headlines.get(t, []):
+                all_source_titles.add(src["title"])
+            detail["source_count"] = len(all_source_titles)
             results[t] = {**actor, "detail": detail}
             print(f"    → {detail.get('interpretation', '')[:80]}")
         except Exception as e:
