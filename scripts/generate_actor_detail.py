@@ -505,6 +505,7 @@ def main():
                         break
             detail["top_sources"] = top_sources
             # total unique sources available (for "5 of N" display)
+            # includes signals, storm headlines, and raw events database
             all_source_titles: set = set()
             for sig in signals:
                 for src in sig.get("sources", []):
@@ -513,6 +514,8 @@ def main():
                         all_source_titles.add(title)
             for src in storm_headlines.get(t, []):
                 all_source_titles.add(src["title"])
+            for item in recent_headlines_by_actor.get(t, []):
+                all_source_titles.add(item["title"])
             detail["source_count"] = len(all_source_titles)
             results[t] = {**actor, "detail": detail}
             print(f"    → {detail.get('interpretation', '')[:80]}")
