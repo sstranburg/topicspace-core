@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TopicSpace — Narrative vs Market Confirmation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0d0f;
+    --surface:   #111116;
+    --border:    #55556e;
+    --border2:   #22222e;
+    --text:      #eeeef2;
+    --muted:     #c0c0d8;
+    --dim:       #9898b8;
+
+    --confirmed:    #22c55e;
+    --early:        #34d399;
+    --repricing:    #2b7fff;
+    --divergence:   #ef4444;
+    --disagreement: #f97316;
+    --macro:        #aaaaaa;
+    --unclear:      #8080a0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px 64px;
+  }
+
+  .page { max-width: 860px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .page-header {
+    margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .page-header .wordmark {
+    display: block;
+    margin-bottom: 20px;
+  }
+
+  .page-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .page-insight {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin-top: 12px;
+    line-height: 1.3;
+  }
+
+  .narrative-context {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 640px;
+  }
+
+  .date-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--dim);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    padding: 4px 10px;
+    margin-top: 10px;
+  }
+
+  /* ── Summary stats ── */
+  .stats-strip {
+    display: flex;
+    gap: 28px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    align-items: baseline;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+  }
+
+  .stat-n {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .stat-n.green  { color: var(--confirmed); }
+  .stat-n.blue   { color: var(--repricing); }
+  .stat-n.orange { color: var(--disagreement); }
+
+  .stat-lbl {
+    font-size: 12px;
+    color: var(--dim);
+  }
+
+  /* ── Section ── */
+  .section { margin-bottom: 36px; }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Key zone emphasis */
+  .section.key-zone .section-header {
+    background: rgba(43,127,255,0.05);
+    border-bottom-color: rgba(43,127,255,0.25);
+    padding: 10px 12px;
+    margin-left: -12px;
+    margin-right: -12px;
+    border-radius: 4px 4px 0 0;
+  }
+
+  .section-subtext {
+    font-size: 10px;
+    color: var(--dim);
+    margin-top: 3px;
+  }
+
+  .section.key-zone .section-subtext {
+    color: rgba(43,127,255,0.6);
+    margin-left: 0;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .section-desc {
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  .section-count {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--dim);
+    font-family: "SF Mono", monospace;
+  }
+
+  /* ── Table ── */
+  .lb-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .lb-table thead th {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dim);
+    text-align: left;
+    padding: 0 8px 8px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .lb-table thead th:hover { color: var(--muted); }
+  .lb-table thead th.sorted { color: var(--muted); }
+
+  .lb-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  .lb-table tbody tr.clickable-row { cursor: pointer; }
+  .lb-table tbody tr.clickable-row:hover {
+    background: #252540;
+    box-shadow: inset 3px 0 0 #4444aa;
+  }
+
+  .lb-table td {
+    padding: 10px 8px;
+    vertical-align: middle;
+  }
+
+  /* Actor cell */
+  .cell-actor {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    min-width: 52px;
+  }
+
+  /* State badge */
+  .badge {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  /* Narrative bar */
+  .narr-wrap { display: flex; align-items: center; gap: 6px; min-width: 80px; }
+  .narr-bar-bg {
+    width: 60px;
+    height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .narr-bar-fill { height: 100%; border-radius: 2px; background: var(--muted); }
+  .narr-val {
+    font-size: 10px;
+    font-family: "SF Mono", monospace;
+    color: var(--muted);
+    min-width: 24px;
+  }
+
+  /* Return */
+  .cell-return {
+    font-size: 12px;
+    font-family: "SF Mono", monospace;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pos { color: var(--confirmed); }
+  .neg { color: var(--divergence); }
+  .neu { color: var(--macro); }
+
+  /* NDS */
+  .cell-nds {
+    font-size: 11px;
+    font-family: "SF Mono", monospace;
+    white-space: nowrap;
+  }
+  .cell-nds.pos  { color: var(--text); font-weight: 600; }
+  .cell-nds.neg  { color: var(--dim); }
+  .cell-nds.neu  { color: var(--muted); }
+
+  /* Story description */
+  .cell-story {
+    font-size: 11px;
+    color: var(--muted);
+    max-width: 340px;
+    line-height: 1.35;
+  }
+
+  /* State */
+  .cell-state {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    opacity: 0.75;
+  }
+
+  /* Short read */
+  .cell-read {
+    font-size: 11px;
+    color: var(--dim);
+    font-style: italic;
+    white-space: nowrap;
+  }
+
+  /* Sort indicator */
+  th.sorted::after { content: " ↓"; opacity: 0.6; }
+  th.sorted.asc::after { content: " ↑"; opacity: 0.6; }
+
+  /* ── Footer ── */
+  .page-footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .takeaway {
+    font-size: 15px;
+    font-weight: 500;
+    color: #c8c8d8;
+    font-style: italic;
+    letter-spacing: -0.01em;
+  }
+
+  .wordmark {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  /* ── How to read this ── */
+  .legend {
+    margin-bottom: 28px;
+  }
+
+  .legend-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+  }
+
+  .legend-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border-left: 2px solid #2e2e40;
+    padding-left: 10px;
+  }
+
+  .legend-item strong {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .legend-item > span {
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.4;
+  }
+
+  .state-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  .sk-item {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .sk-item em {
+    font-style: normal;
+    font-weight: 400;
+    color: var(--dim);
+    margin-left: 4px;
+    letter-spacing: 0;
+  }
+  .sk-confirmed    { color: #22c55e; }
+  .sk-early        { color: #34d399; }
+  .sk-repricing    { color: #2b7fff; }
+  .sk-divergence   { color: #ef4444; }
+  .sk-disagreement { color: #f97316; }
+  .sk-macro        { color: #888888; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .col-vel, .col-story { display: none; }
+    .cell-read { max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
+    .legend-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <a href="/signals" class="wordmark" style="text-decoration:none"><img src="/banner.png" alt="topicspace" style="height:80px;width:auto;display:block;"></a>
+    <div class="page-title">Narrative vs Market Confirmation</div>
+    <div class="date-tag">Apr 2, 2026</div>
+    <div class="page-subtitle">Only a few names are getting paid. Most narratives aren't.</div>
+    <div class="page-insight">ARM confirming. Most others moving with or below the tape.</div>
+    <div class="narrative-context">The rotation is in motion — software development out, AI infrastructure in. Data center growth is the lone LEAN IN signal (NVDA, ANET, VRT). The market has not confirmed it. Most high-narrative names remain under pressure.</div>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="stats-strip" id="stats-strip"></div>
+
+  <!-- How to read this -->
+  <div class="legend">
+    <div class="legend-label">How to read this</div>
+    <div class="legend-grid">
+      <div class="legend-item">
+        <strong>Narrative</strong>
+        <span>How strong and active the story is around a company right now.</span>
+      </div>
+      <div class="legend-item">
+        <strong>5D Relative Return</strong>
+        <span>How the stock performed vs its benchmark over the last 5 trading days. Positive = outperforming.</span>
+      </div>
+      <div class="legend-item">
+        <strong>NDS — Narrative Dislocation Score</strong>
+        <span>Story strength minus price confirmation. High = strong narrative, market not paying up. Near 0 = aligned. Negative = price is ahead of the story.</span>
+      </div>
+      <div class="legend-item">
+        <strong>State — ticker color</strong>
+        <div class="state-key">
+          <span class="sk-item sk-confirmed">CONFIRMED <em>price confirming</em></span>
+          <span class="sk-item sk-early">EARLY <em>narrative finding price</em></span>
+          <span class="sk-item sk-repricing">REPRICING <em>story intact, price softer</em></span>
+          <span class="sk-item sk-divergence">DIVERGENCE <em>price rejecting story</em></span>
+          <span class="sk-item sk-disagreement">DISAGREEMENT <em>conflict unresolved</em></span>
+          <span class="sk-item sk-macro">MACRO <em>moving with tape</em></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sections rendered by JS -->
+  <div id="sections"></div>
+
+  <!-- Footer -->
+  <div class="page-footer">
+    <div class="takeaway">ARM breaking out. MU, NBIS, PLTR diverging.</div>
+    <a href="mailto:sue@topicspace.com" style="font-size:11px;color:#3a3a5c;text-decoration:none;letter-spacing:0.06em;font-family:monospace;">sue@topicspace.com</a>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  State config
+// ══════════════════════════════════════════════════════════════════
+
+const STATE_COLOR = {
+  CONFIRMED:    { fg: '#22c55e', bg: 'rgba(34,197,94,0.12)'   },
+  EARLY:        { fg: '#34d399', bg: 'rgba(52,211,153,0.12)'  },
+  REPRICING:    { fg: '#2b7fff', bg: 'rgba(43,127,255,0.12)'  },
+  DIVERGENCE:   { fg: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
+  DISAGREEMENT: { fg: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
+  MACRO:        { fg: '#888888', bg: 'rgba(136,136,136,0.10)' },
+  UNCLEAR:      { fg: '#8888aa', bg: 'rgba(136,136,170,0.10)'  },
+};
+
+const STATE_ORDER = ['CONFIRMED','EARLY','REPRICING','DIVERGENCE','DISAGREEMENT','MACRO','UNCLEAR'];
+
+// ══════════════════════════════════════════════════════════════════
+//  Actor data — narrative strength (0–100) × 5d relative return (%)
+//  Sources: state engine Mar–Apr 2026, pipeline signals 2026-04-02
+// ══════════════════════════════════════════════════════════════════
+
+const ACTORS = [
+  // state, narrative (0-100), rel_5d (% vs benchmark), conflict, short_read, narrative_desc
+  { t:'MU', state:'DIVERGENCE', narr:74, rel:-15.46, nds:74, conflict:true, read:'HBM story hard rejected after earnings', story:'HBM demand uncertain after earnings miss' },
+  { t:'NBIS', state:'DIVERGENCE', narr:59, rel:-11.31, nds:59, conflict:false, read:'European AI story not landing', story:'European AI cloud buildout' },
+  { t:'PLTR', state:'DIVERGENCE', narr:74, rel:-6.48, nds:56.4, conflict:true, read:'strong story, price not following', story:'Government AI contracts + commercial growth' },
+  { t:'NVDA', state:'REPRICING', narr:95, rel:-0.67, nds:48.4, conflict:false, read:'infra rotation, market not yet paying up', story:'AI infrastructure buildout; China market share erosion' },
+  { t:'ANET', state:'DIVERGENCE', narr:67, rel:-5.91, nds:46.6, conflict:true, read:'infra narrative strong, price declining', story:'AI networking infrastructure demand' },
+  { t:'VRT', state:'DIVERGENCE', narr:59, rel:-7.08, nds:44.4, conflict:false, read:'power/cooling story, market not paying up', story:'Power and cooling for AI data centers' },
+  { t:'META', state:'REPRICING', narr:71, rel:-3.13, nds:36.6, conflict:false, read:'capex narrative intact, price softer', story:'AI chips and data center build-out' },
+  { t:'DELL', state:'DIVERGENCE', narr:53, rel:-6.37, nds:34.8, conflict:false, read:'AI server demand not landing in price', story:'AI server demand vs margin pressure' },
+  { t:'MSFT', state:'REPRICING', narr:91, rel:+1.28, nds:34.6, conflict:false, read:'Copilot bet building, price just starting to follow', story:'Copilot + OpenAI bet gaining traction' },
+  { t:'CRWV', state:'DIVERGENCE', narr:41, rel:-8.70, nds:34.5, conflict:false, read:'IPO hype cooling, price following narrative down', story:'CoreWeave cloud IPO hype fading' },
+  { t:'ORCL', state:'REPRICING', narr:80, rel:-0.69, nds:33.4, conflict:false, read:'recovered from selloff, targets rising', story:'Cloud + AI infra expansion, rising price targets' },
+  { t:'ASML', state:'REPRICING', narr:55, rel:-4.94, nds:29.7, conflict:false, read:'EUV cycle tied to AI, macro driving', story:'EUV demand tied to AI chip cycle' },
+  { t:'INTC', state:'REPRICING', narr:69, rel:-1.15, nds:24.8, conflict:false, read:'market not buying the foundry pivot', story:'Qualcomm acquisition chatter; foundry pivot' },
+  { t:'GOOGL', state:'REPRICING', narr:67, rel:-0.94, nds:21.7, conflict:false, read:'AI pressure not breaking it yet', story:'AI search competition + Waymo' },
+  { t:'SMCI', state:'REPRICING', narr:68, rel:-0.35, nds:19.8, conflict:false, read:'VAST Data deal, price not moving yet', story:'AI server demand; VAST Data partnership' },
+  { t:'TSLA', state:'DISAGREEMENT', narr:54, rel:-2.23, nds:15.2, conflict:false, read:'brand drag overriding any AI narrative', story:'Brand drag from Musk politics; recession sensitivity' },
+  { t:'MRVL', state:'EARLY', narr:83, rel:+4.03, nds:12.8, conflict:false, read:'revenue acceleration finding the stock', story:'AI networking revenue accelerating' },
+  { t:'AMD', state:'REPRICING', narr:61, rel:+0.06, nds:10.7, conflict:false, read:'AI GPU story, flat on the week', story:'AI GPU competition narrative vs NVDA' },
+  { t:'SOFI', state:'DISAGREEMENT', narr:38, rel:-4.30, nds:9.5, conflict:false, read:'fintech competition, no clear direction', story:'Fintech competition pressures' },
+  { t:'SNOW', state:'UNCLEAR', narr:35, rel:-4.18, nds:5.9, conflict:false, read:'growth story stalling, no catalyst visible', story:'Data cloud growth narrative stalling' },
+  { t:'TSM', state:'MACRO', narr:42, rel:-2.50, nds:4.5, conflict:false, read:'geopolitical risk trumping AI demand', story:'Advanced node demand; geopolitical risk' },
+  { t:'ADBE', state:'EARLY', narr:72, rel:+4.03, nds:1.8, conflict:false, read:'earnings narrative confirmed by price', story:'Earnings pressure vs AI creative tools story' },
+  { t:'AVGO', state:'UNCLEAR', narr:37, rel:-2.73, nds:0.6, conflict:false, read:'insider noise fading, moving with tape', story:'Custom silicon; insider activity cooling' },
+  { t:'AMZN', state:'EARLY', narr:61, rel:+2.38, nds:-0.9, conflict:false, read:'custom silicon + Globalstar deal noise', story:'Custom silicon (Trainium) + Globalstar buyout' },
+  { t:'AAPL', state:'MACRO', narr:46, rel:+1.59, nds:-12.0, conflict:false, read:'AI features not yet moving the needle', story:'AI features rollout + India manufacturing' },
+  { t:'ARM', state:'CONFIRMED', narr:72, rel:+10.54, nds:-28, conflict:false, read:'architecture licensing bet breaking out', story:'Architecture licensing expanding into AI chips' },
+  { t:'CRM', state:'MACRO', narr:40, rel:+4.17, nds:-30.8, conflict:false, read:'Agentforce fading, price up on macro', story:'Agentforce adoption narrative cooling' },
+];
+
+// Deduplicate (TSLA appeared multiple times above)
+const seen = new Set();
+const DATA = ACTORS.filter(a => { if (seen.has(a.t)) return false; seen.add(a.t); return true; });
+
+// ══════════════════════════════════════════════════════════════════
+//  Compute derived scores
+// ══════════════════════════════════════════════════════════════════
+
+const rels    = DATA.map(a => a.rel);
+const minRel  = Math.min(...rels);
+const maxRel  = Math.max(...rels);
+const rangeRel = maxRel - minRel;
+
+DATA.forEach(a => {
+  a.narr_norm   = a.narr / 100;
+  a.ret_norm    = (a.rel - minRel) / rangeRel;   // 0 = worst, 1 = best
+  a.gap         = a.narr_norm - a.ret_norm;       // +ve = strong narrative, weak price
+  a.tension     = a.narr_norm * (1 - a.ret_norm) * (1 + (a.conflict ? 0.35 : 0));
+  a.confirm     = Math.max(0, a.ret_norm) * a.narr_norm * (a.conflict ? 0.5 : 1);
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Summary stats
+// ══════════════════════════════════════════════════════════════════
+
+const nConfirmed   = DATA.filter(a => a.state === 'CONFIRMED' || (a.state === 'EARLY' && a.rel > 0)).length;
+const nConflict    = DATA.filter(a => ['DISAGREEMENT','DIVERGENCE'].includes(a.state)).length;
+const strongNarr   = DATA.filter(a => a.narr > 60);
+const nStrongNeg   = strongNarr.filter(a => a.rel < 0).length;
+const nStrongTotal = strongNarr.length;
+
+document.getElementById('stats-strip').innerHTML = `
+  <div class="stat-item">
+    <span class="stat-n green">${nConfirmed}</span>
+    <span class="stat-lbl">confirming</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-n blue">${nStrongNeg}<span style="font-size:14px;font-weight:400;color:var(--dim)"> / ${nStrongTotal}</span></span>
+    <span class="stat-lbl">strong narrative, weak price</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-n orange">${nConflict}</span>
+    <span class="stat-lbl">in conflict</span>
+  </div>
+`;
+
+// ══════════════════════════════════════════════════════════════════
+//  Leaderboard sections
+// ══════════════════════════════════════════════════════════════════
+
+const SECTIONS = [
+  {
+    id:       'confirming',
+    title:    'Showing early confirmation',
+    desc:     'price beginning to validate narrative',
+    subtext:  null,
+    color:    '#34d399',
+    keyZone:  false,
+    filter:   a => ['CONFIRMED','EARLY'].includes(a.state) && a.rel >= 0,
+    sort:     (a,b) => b.confirm - a.confirm,
+  },
+  {
+    id:       'unconfirmed',
+    title:    'Narrative ahead of market',
+    desc:     'key zone',
+    subtext:  'strong narrative, weak price confirmation',
+    color:    '#2b7fff',
+    keyZone:  true,
+    filter:   a => !['CONFIRMED','DISAGREEMENT','DIVERGENCE'].includes(a.state) && a.gap > 0.2,
+    sort:     (a,b) => b.gap - a.gap,
+  },
+  {
+    id:       'conflict',
+    title:    'Active disagreement',
+    desc:     'conflicting signals, unstable price',
+    subtext:  null,
+    color:    '#f97316',
+    keyZone:  false,
+    filter:   a => ['DISAGREEMENT','DIVERGENCE'].includes(a.state),
+    sort:     (a,b) => b.tension - a.tension,
+  },
+  {
+    id:       'macro',
+    title:    'Macro-led',
+    desc:     'macro override, not actor-specific',
+    subtext:  null,
+    color:    '#888888',
+    keyZone:  false,
+    filter:   a => a.state === 'MACRO',
+    sort:     (a,b) => b.narr - a.narr,
+  },
+  {
+    id:       'unclear',
+    title:    'Low signal',
+    desc:     'insufficient conviction to classify',
+    subtext:  null,
+    color:    '#8888aa',
+    keyZone:  false,
+    filter:   a => a.state === 'UNCLEAR' || (a.gap <= 0.2 && !['MACRO','DISAGREEMENT','DIVERGENCE'].includes(a.state)),
+    sort:     (a,b) => b.narr - a.narr,
+  },
+];
+
+// ══════════════════════════════════════════════════════════════════
+//  Render helpers
+// ══════════════════════════════════════════════════════════════════
+
+function badge(state) {
+  const c = STATE_COLOR[state] || STATE_COLOR.UNCLEAR;
+  return `<span class="badge" style="color:${c.fg};background:${c.bg}">${state}</span>`;
+}
+
+function narrBar(narr, state) {
+  const c = STATE_COLOR[state] || STATE_COLOR.UNCLEAR;
+  const w = Math.round((narr / 100) * 60);
+  return `
+    <div class="narr-wrap">
+      <div class="narr-bar-bg">
+        <div class="narr-bar-fill" style="width:${w}px;background:${c.fg};opacity:0.7"></div>
+      </div>
+      <span class="narr-val">${narr}</span>
+    </div>`;
+}
+
+function retCell(rel) {
+  const cls = rel > 0.2 ? 'pos' : rel < -0.2 ? 'neg' : 'neu';
+  const sign = rel > 0 ? '+' : '';
+  return `<td class="cell-return ${cls}">${sign}${rel.toFixed(1)}%</td>`;
+}
+
+function ndsCell(a) {
+  const cls = a.nds > 5 ? 'pos' : a.nds < -5 ? 'neg' : 'neu';
+  const sign = a.nds > 0 ? '+' : '';
+  return `<td class="cell-nds ${cls}">${sign}${a.nds.toFixed(1)}</td>`;
+}
+
+function renderTable(actors, sortKey, sortAsc) {
+  const cols = [
+    { key:'t',     label:'Actor',     cls:''           },
+    { key:'nds',   label:'NDS',       cls:''           },
+    { key:'narr',  label:'Narrative', cls:''           },
+    { key:'rel',   label:'5D Rel',    cls:'col-ret'    },
+    { key:'state', label:'State',     cls:'col-state'  },
+    { key:'story', label:'Story',     cls:'col-story'  },
+    { key:'read',  label:'Read',      cls:'col-read'   },
+  ];
+
+  const head = cols.map(c =>
+    `<th class="${c.cls}${sortKey===c.key?' sorted'+(sortAsc?' asc':''): ''}"
+       onclick="reSort('${c.key}')">${c.label}</th>`
+  ).join('');
+
+  const rows = actors.map(a => `
+    <tr class="clickable-row" onclick="(window.top||window).location='/actor/${a.t.toLowerCase()}'">
+      <td class="cell-actor" style="color:${(STATE_COLOR[a.state]||STATE_COLOR.UNCLEAR).fg};font-weight:700">${a.t}</td>
+      ${ndsCell(a)}
+      <td>${narrBar(a.narr, a.state)}</td>
+      ${retCell(a.rel)}
+      <td class="cell-state col-state" style="color:${(STATE_COLOR[a.state]||STATE_COLOR.UNCLEAR).fg}">${a.state.toLowerCase()}</td>
+      <td class="cell-story col-story">${a.story || ''}</td>
+      <td class="cell-read">${a.read}</td>
+    </tr>`
+  ).join('');
+
+  return `
+    <table class="lb-table">
+      <thead><tr>${head}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  Render sections
+// ══════════════════════════════════════════════════════════════════
+
+let _sortKey = null;
+let _sortAsc = false;
+
+function renderAll() {
+  const container = document.getElementById('sections');
+  let actors = [...DATA];
+  if (_sortKey) {
+    actors.sort((a, b) => {
+      const av = a[_sortKey], bv = b[_sortKey];
+      return _sortAsc ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
+    });
+  } else {
+    actors.sort((a, b) => b.nds - a.nds);
+  }
+  container.innerHTML = `<div class="section">${renderTable(actors, _sortKey, _sortAsc)}</div>`;
+}
+
+function reSort(key) {
+  if (_sortKey === key) _sortAsc = !_sortAsc;
+  else { _sortKey = key; _sortAsc = false; }
+  renderAll();
+}
+
+renderAll();
+</script>
+</body>
+</html>
