@@ -305,9 +305,9 @@ def build_context(ticker: str, actor: dict, signals: list, pressure_recs: list,
             by_date[item["date"]].append(item["title"])
         sampled: list[tuple[str, str]] = []
         for d in sorted(by_date.keys(), reverse=True):
-            for title in by_date[d][:2]:
+            for title in by_date[d][:1]:
                 sampled.append((d, title))
-            if len(sampled) >= 20:
+            if len(sampled) >= 40:
                 break
         lines.append("DATED HEADLINES (use these to assign accurate dates to events[]):")
         for d, title in sampled:
@@ -342,6 +342,7 @@ USER_TEMPLATE = """Given this context for {ticker}:
 {context}
 
 Today is {today}. Only include events that occurred on or after {cutoff} — do not include anything older.
+For events[], pick events spread across the full date range — do not cluster all events near today. Aim for at least one event from each of: early in the period, middle of the period, and recent. Use the DATED HEADLINES above to anchor exact dates.
 
 Generate a JSON object with exactly these fields:
 {{
@@ -352,7 +353,7 @@ Generate a JSON object with exactly these fields:
   "drivers": ["driver 1 (≤10 words)", "driver 2 (≤10 words)", "driver 3 optional (≤10 words)"],
   "events": [
     {{"date": "YYYY-MM-DD", "event": "what happened (concise)"}},
-    ...3-5 events...
+    ...3-5 events spread across the date range...
   ],
   "market_read": "2-3 sentences: what price vs narrative means, tied to state, no repetition of drivers",
   "next": ["forward signal 1 — what confirms", "forward signal 2 — what invalidates", "propagation target or catalyst optional"],
