@@ -109,6 +109,38 @@ def load_event_url_map() -> dict:
     return url_map
 
 
+def load_recent_headlines_by_actor(cutoff_days: int = 60) -> dict:
+    """Return dict: ticker → list of {date, title} sorted newest-first, from events file."""
+    if not EVENTS_FILE.exists():
+        return {}
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=cutoff_days)).strftime("%Y-%m-%d")
+    by_actor: dict[str, list] = defaultdict(list)
+    for line in EVENTS_FILE.read_text().splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        ts = r.get("timestamp", "")
+        date_str = ts[:10] if ts else ""
+        if date_str < cutoff:
+            continue
+        title = (r.get("title") or "").strip()
+        if not title:
+            continue
+        for actor in r.get("actors", []):
+            by_actor[actor].append({"date": date_str, "title": title[:120]})
+    # sort newest-first, dedupe by title
+    result: dict[str, list] = {}
+    for actor, items in by_actor.items():
+        seen: set = set()
+        deduped = []
+        for item in sorted(items, key=lambda x: x["date"], reverse=True):
+            if item["title"] not in seen:
+                seen.add(item["title"])
+                deduped.append(item)
+        result[actor] = deduped
+    return result
+
+
 def load_storm_headlines_by_actor() -> dict:
     """Return dict: ticker → list of {title, source_type, timestamp, url} from storm summaries."""
     if not STORM_SUMMARY_FILE.exists():
@@ -202,7 +234,7 @@ def load_propagation_by_actor() -> dict:
 # ── context builder ───────────────────────────────────────────────────────────
 
 def build_context(ticker: str, actor: dict, signals: list, pressure_recs: list,
-                  leadership: dict, phases: list) -> str:
+                  leadership: dict, phases: list, recent_headlines: list | None = None) -> str:
     lines = [
         f"TICKER: {ticker}",
         f"STATE: {actor['state']}",
@@ -265,6 +297,23 @@ def build_context(ticker: str, actor: dict, signals: list, pressure_recs: list,
             lines.append(f"  {date}: {title}")
         lines.append("")
 
+    # dated headlines from event database — spread across the window for date diversity
+    if recent_headlines:
+        # group by date, pick 1-2 notable headlines per date, take up to 20 total
+        by_date: dict[str, list] = defaultdict(list)
+        for item in recent_headlines:
+            by_date[item["date"]].append(item["title"])
+        sampled: list[tuple[str, str]] = []
+        for d in sorted(by_date.keys(), reverse=True):
+            for title in by_date[d][:2]:
+                sampled.append((d, title))
+            if len(sampled) >= 20:
+                break
+        lines.append("DATED HEADLINES (use these to assign accurate dates to events[]):")
+        for d, title in sampled:
+            lines.append(f"  {d}: {title}")
+        lines.append("")
+
     return "\n".join(lines)
 
 
@@ -318,8 +367,9 @@ Return only valid JSON. No markdown fences."""
 
 def generate_detail(client: OpenAI, ticker: str, actor: dict,
                     signals: list, pressure_recs: list,
-                    leadership: dict, phases: list) -> dict:
-    context = build_context(ticker, actor, signals, pressure_recs, leadership, phases)
+                    leadership: dict, phases: list,
+                    recent_headlines: list | None = None) -> dict:
+    context = build_context(ticker, actor, signals, pressure_recs, leadership, phases, recent_headlines)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     prompt = USER_TEMPLATE.format(ticker=ticker, context=context, today=today, cutoff=_cutoff_date)
 
@@ -382,6 +432,7 @@ def main():
     propagation_by_actor = load_propagation_by_actor()
     event_url_map        = load_event_url_map()
     storm_headlines      = load_storm_headlines_by_actor()
+    recent_headlines_by_actor = load_recent_headlines_by_actor(cutoff_days=60)
     # backfill URLs into storm headlines from normalized events
     for actor_headlines in storm_headlines.values():
         for item in actor_headlines:
@@ -413,10 +464,11 @@ def main():
         signals  = signals_by_ticker.get(t, [])
         pressure = pressure_by_actor.get(t, [])
         phases   = phases_by_actor.get(t, [])
-        print(f"  {t}: {len(signals)} signals, {len(pressure)} pressure records, {len(phases)} phases")
+        recent_headlines = recent_headlines_by_actor.get(t, [])
+        print(f"  {t}: {len(signals)} signals, {len(pressure)} pressure records, {len(phases)} phases, {len(recent_headlines)} dated headlines")
 
         try:
-            detail = generate_detail(client, t, actor, signals, pressure, leadership, phases)
+            detail = generate_detail(client, t, actor, signals, pressure, leadership, phases, recent_headlines)
             # merge in data-derived fields (no Claude call needed)
             detail["threads"]          = threads_by_actor.get(t, [])[:4]
             detail["pressure_summary"] = pressure_summary.get(t)
