@@ -36,11 +36,16 @@ ACTOR_ALIASES = {
     "TSLA": ["tesla", "tsla"],
     # Enterprise AI software
     "PLTR": ["palantir", "pltr", "palantir aip"],
+    "DDOG": ["datadog", "ddog"],
+    "ZETA": ["zeta global", "zeta global holdings", "zeta cdp", "zeta marketing"],
     # Fintech / cross-sector
     "SOFI": ["sofi", "sofi technologies", "sofi bank"],
     # AI model labs (private companies — tracked by name only)
     "OPENAI":    ["openai", "chatgpt", "gpt-4", "gpt-5", "openai api"],
     "ANTHROPIC": ["anthropic", "claude ai", "anthropic claude"],
+    # User-suggested — under observation
+    "MP":   ["mp materials", "mp material", "rare earth", "rare-earth", " mp "],
+    "USAR": ["usar", "u.s. army", "us army", "army reserve", "usar "],
 }
 
 TAG_KEYWORDS = {

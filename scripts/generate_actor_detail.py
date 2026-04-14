@@ -39,6 +39,24 @@ PROPAGATION_FILE   = ROOT / "data" / "derived" / "propagation_chains.json"
 EVENTS_FILE        = ROOT / "data" / "normalized" / "tech_ecosystem_filtered.jsonl"
 OUTPUT_FILE        = ROOT.parent / "topicspace-site" / "public" / "actors_detail.json"
 
+# Canonical read → human-readable phrasing (single source of truth)
+# Must stay in sync with morning.md phrasing map and generate_leaderboard.py vocabulary
+READ_PHRASINGS: dict[str, str] = {
+    "price ahead of story":              "market moved before narrative caught up",
+    "price rejecting negative narrative": "market no longer pricing the bearish story",
+    "selloff confirming narrative":       "price is validating the bearish story",
+    "story not being paid":               "narrative is there but price isn't following",
+    "price confirming negative story":    "price is aligning with a negative narrative framing",
+    "price confirming narrative":         "narrative confirmed by price",
+    "price starting to follow":           "early follow-through forming — not yet clean confirmation",
+    "early confirmation forming":         "early confirmation forming — not yet clean confirmation",
+}
+
+
+def read_to_phrase(read: str) -> str:
+    """Translate a canonical read value to its required human-readable phrasing."""
+    return READ_PHRASINGS.get(read, read)
+
 
 # ── data loaders ──────────────────────────────────────────────────────────────
 
@@ -329,7 +347,12 @@ Rules:
 - phase_path: 3-4 stage progression ending in CURRENT PHASE in brackets, e.g. "Emergence → Expansion → [REPRICING]"
 - drivers: what is actively moving the narrative today (not background or company description)
 - events: exactly what happened, with dates
-- market_read: what the divergence or confirmation means, tied to the state
+- market_read: what the divergence or confirmation means, tied to the state. Use the read field as the frame — do NOT reinterpret it. Required phrasings by read value:
+  * "price ahead of story" → "market moved before narrative caught up"
+  * "price rejecting negative narrative" → "market no longer pricing the bearish story"
+  * "selloff confirming narrative" → "price is validating the bearish story"
+  * "story not being paid" → "narrative is there but price isn't following"
+  * "price confirming negative story" → "price is aligning with a negative narrative framing" (do NOT say "price rising against bearish narrative" or "price ahead of narrative")
 - next: concrete forward signals — what confirms, what invalidates, what propagates
 - confirm_signal: single observable price/event condition that would confirm the narrative thesis (≤12 words)
 - break_signal: single observable condition that would invalidate the narrative (≤12 words)
@@ -405,12 +428,12 @@ def generate_detail(client: OpenAI, ticker: str, actor: dict,
         print(f"  WARNING: JSON parse failed for {ticker}: {e}", file=sys.stderr)
         print(f"  Raw response: {text[:300]}", file=sys.stderr)
         return {
-            "interpretation": actor["read"],
+            "interpretation": read_to_phrase(actor["read"]),
             "positioning_role": None,
             "positioning_phase": None,
             "drivers": [actor["narrative"]],
             "events": [],
-            "market_read": actor["read"],
+            "market_read": read_to_phrase(actor["read"]),
             "next": [],
         }
 

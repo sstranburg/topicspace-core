@@ -90,7 +90,8 @@
     border: 1px solid var(--border2);
     border-radius: 2px;
     padding: 4px 10px;
-    margin-top: 10px;
+    margin-top: 4px;
+    margin-bottom: 14px;
   }
 
   /* ── Summary stats ── */
@@ -203,6 +204,7 @@
     border-bottom: 1px solid var(--border);
     transition: background 0.1s;
   }
+  .lb-table tbody tr:last-child { border-bottom: none; }
 
   .lb-table tbody tr.clickable-row { cursor: pointer; }
   .lb-table tbody tr.clickable-row:hover {
@@ -262,19 +264,17 @@
     font-weight: 600;
     white-space: nowrap;
   }
-  .pos { color: var(--confirmed); }
+  .pos { color: var(--text); }
   .neg { color: var(--divergence); }
   .neu { color: var(--macro); }
 
   /* NDS */
   .cell-nds {
-    font-size: 11px;
+    font-size: 14px;
     font-family: "SF Mono", monospace;
+    font-weight: 700;
     white-space: nowrap;
   }
-  .cell-nds.pos  { color: var(--text); font-weight: 600; }
-  .cell-nds.neg  { color: var(--dim); }
-  .cell-nds.neu  { color: var(--muted); }
 
   /* Story description */
   .cell-story {
@@ -295,8 +295,16 @@
   /* Short read */
   .cell-read {
     font-size: 11px;
-    color: var(--dim);
+    color: var(--muted);
+    max-width: 280px;
+    line-height: 1.35;
+  }
+  .cell-read-state {
+    display: block;
+    font-size: 9.5px;
     font-style: italic;
+    color: #7878a0;
+    margin-top: 2px;
     white-space: nowrap;
   }
 
@@ -347,8 +355,10 @@
   .legend-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
     gap: 6px 24px;
   }
+  .legend-item-span { grid-row: 1 / 4; grid-column: 2; }
 
   .legend-item {
     display: flex;
@@ -389,18 +399,131 @@
     margin-left: 4px;
     letter-spacing: 0;
   }
-  .sk-confirmed    { color: #22c55e; }
-  .sk-early        { color: #34d399; }
-  .sk-repricing    { color: #2b7fff; }
-  .sk-divergence   { color: #ef4444; }
-  .sk-disagreement { color: #f97316; }
-  .sk-macro        { color: #888888; }
+  .sk-confirmed        { color: #22c55e; }
+  .sk-early            { color: #22d3ee; }
+  .sk-repricing        { color: #2b7fff; }
+  .sk-divergence       { color: #ef4444; }
+  .sk-neg-confirmation { color: #f43f5e; }
+  .sk-disagreement     { color: #f97316; }
+  .sk-macro            { color: #888888; }
+  .sk-price-led        { color: #a855f7; }
+
+  /* ── Scatter chart ── */
+  .chart-section {
+    margin-bottom: 36px;
+    position: relative;
+  }
+  .chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    background: var(--surface);
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+  }
+  .chart-canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+  #lb-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: #13131a;
+    border: 1px solid #252535;
+    border-radius: 4px;
+    padding: 10px 14px;
+    min-width: 168px;
+    font-size: 12px;
+    line-height: 1;
+    display: none;
+    z-index: 10;
+  }
+  #lb-tooltip .tt-ticker { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  #lb-tooltip .tt-row { display: flex; justify-content: space-between; gap: 16px; margin-top: 4px; font-size: 11px; }
+  #lb-tooltip .tt-key { color: #606080; }
+  #lb-tooltip .tt-val { color: #c8c8e0; font-variant-numeric: tabular-nums; }
+
+  /* ── Purpose subhead ── */
+  .subhead { font-size: 13px; color: var(--dim); opacity: 0.7; margin-top: 6px; margin-bottom: 0; line-height: 1.4; }
+
+  /* ── Regime badge ── */
+  .regime-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-top: 12px;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    color: #505070;
+  }
+  .regime-badge::before {
+    content: ''; display: inline-block; width: 5px; height: 5px;
+    border-radius: 50%; background: currentColor; flex-shrink: 0;
+  }
+
+  /* ── Feedback bar ── */
+  .feedback-bar {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .feedback-bar span { font-size: 12px; color: var(--dim); }
+  .feedback-bar button {
+    background: #13131e; border: 1px solid #252535; color: #7878a0;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 3px; cursor: pointer; transition: all 0.1s;
+  }
+  .feedback-bar button:hover { border-color: #5555a0; color: var(--muted); }
+  .feedback-bar button.voted { border-color: #22c55e; color: #22c55e; }
+
+  /* ── Chart hint ── */
+  .hint-text { font-size: 11px; color: #46465e; margin-bottom: 10px; letter-spacing: 0.01em; }
+
+  /* ── Suggest button (fixed) ── */
+  .suggest-btn {
+    position: fixed; bottom: 28px; right: 28px;
+    background: #13131e; border: 1px solid #252535; color: #7878a0;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 8px 16px; border-radius: 4px; cursor: pointer; z-index: 100;
+    transition: all 0.15s;
+  }
+  .suggest-btn:hover { border-color: #5555a0; color: var(--muted); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.72); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #13131e; border: 1px solid #252535; border-radius: 8px;
+    padding: 28px 32px; width: 360px; max-width: 90vw;
+  }
+  .modal h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
+  .modal p { font-size: 11px; color: var(--dim); margin: 0 0 20px; }
+  .modal input, .modal textarea {
+    display: block; width: 100%;
+    background: #0d0d14; border: 1px solid #252535;
+    color: var(--text); font-size: 13px; padding: 8px 12px;
+    border-radius: 4px; margin-bottom: 12px; font-family: inherit; outline: none;
+    box-sizing: border-box;
+  }
+  .modal input:focus, .modal textarea:focus { border-color: #5555a0; }
+  .modal textarea { height: 80px; resize: vertical; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+  .modal-actions button {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+    padding: 7px 16px; border-radius: 3px; cursor: pointer;
+  }
+  .btn-cancel { background: transparent; border: 1px solid #252535; color: var(--dim); }
+  .btn-submit { background: transparent; border: 1px solid #22c55e; color: #22c55e; }
+  .btn-submit:hover { background: rgba(34,197,94,0.1); }
+  .modal-thanks { display: none; font-size: 13px; color: #22c55e; text-align: center; padding: 12px 0; }
+
+  /* ── Spark column ── */
+  .cell-spark { width: 80px; padding: 6px 8px; }
+  .cell-spark canvas { display: block; width: 80px; height: 34px; }
 
   /* ── Responsive ── */
   @media (max-width: 600px) {
-    .col-vel, .col-story { display: none; }
+    .col-vel, .col-story, .col-spark { display: none; }
     .cell-read { max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
     .legend-grid { grid-template-columns: 1fr; }
+    .chart-canvas-wrap { height: 280px; }
   }
 </style>
 </head>
@@ -410,14 +533,15 @@
   <!-- Header -->
   <div class="page-header">
     <a href="/signals" class="wordmark" style="text-decoration:none"><img src="/banner.png" alt="topicspace" style="height:80px;width:auto;display:block;"></a>
-    <div class="page-title">Narrative vs Market Confirmation</div>
-    <div class="date-tag">Apr 2, 2026</div>
-    <div class="page-subtitle">Only a few names are getting paid. Most narratives aren't.</div>
-    <div class="page-insight">ARM confirming. Most others moving with or below the tape.</div>
-    <div class="narrative-context">The rotation is in motion — software development out, AI infrastructure in. Data center growth is the lone LEAN IN signal (NVDA, ANET, VRT). The market has not confirmed it. Most high-narrative names remain under pressure.</div>
+    <div class="page-title">Downside is being confirmed. Upside isn't.</div>
+    <p class="subhead">Confirmation is happening — but almost entirely on the downside. MRVL is the lone upside exception: the only name where a strong narrative is propagating through the system and being paid by price.</p>
+    <div class="regime-badge" id="regime-badge"></div>
+    <div class="page-insight">Cluster of price-led movement forming: ADBE, ARM, DELL, MP, USAR, NBIS. Cluster of bearish rejection forming: TSLA, SOFI, TSM, MU, CRWV. Cluster of narrative divergence forming: PLTR, DDOG, ZETA. META, ANET confirming. PLTR, DDOG price-led. Multiple behaviors coexisting on the board.</div>
+    <div class="narrative-context">The system is cooling, but the board shows mixed behavior — price is moving ahead of narrative in some names while others show early follow-through. 2 confirmed · 1 price-led · 4 diverging. Multiple behaviors coexisting; no single regime dominant. Cluster of price-led movement forming: ADBE, ARM, DELL, MP, USAR, NBIS. Cluster of bearish rejection forming: TSLA, SOFI, TSM, MU, CRWV. Cluster of narrative divergence forming: PLTR, DDOG, ZETA.</div>
   </div>
 
   <!-- Stats strip -->
+  <div class="date-tag">Last updated: Apr 14, 2026</div>
   <div class="stats-strip" id="stats-strip"></div>
 
   <!-- How to read this -->
@@ -425,37 +549,47 @@
     <div class="legend-label">How to read this</div>
     <div class="legend-grid">
       <div class="legend-item">
+        <strong>NDS — Narrative Dislocation Score</strong>
+        <span>NDS measures whether narrative or price is leading. Positive = narrative leading price. Near zero = in sync. Negative = price leading narrative. "Getting paid" means price is confirming the narrative. Right now, confirmation is mostly happening on the downside.</span>
+      </div>
+      <div class="legend-item">
         <strong>Narrative</strong>
-        <span>How strong and active the story is around a company right now.</span>
+        <span>Measures how strong, directional, and active the story is around a company. It combines momentum (how fast attention is changing), density (how concentrated the narrative is), trajectory (whether the story is strengthening or fading), and sentiment (positive or negative direction). This is not just what's being said — it's how forcefully and consistently the story is evolving.</span>
       </div>
       <div class="legend-item">
         <strong>5D Relative Return</strong>
-        <span>How the stock performed vs its benchmark over the last 5 trading days. Positive = outperforming.</span>
+        <span>Stock performance vs its benchmark over the last 5 trading days. Positive = outperforming.</span>
       </div>
       <div class="legend-item">
-        <strong>NDS — Narrative Dislocation Score</strong>
-        <span>Story strength minus price confirmation. High = strong narrative, market not paying up. Near 0 = aligned. Negative = price is ahead of the story.</span>
+        <strong>Read</strong>
+        <span>The relationship between narrative strength and price action in plain language.</span>
       </div>
-      <div class="legend-item">
-        <strong>State — ticker color</strong>
-        <div class="state-key">
-          <span class="sk-item sk-confirmed">CONFIRMED <em>price confirming</em></span>
-          <span class="sk-item sk-early">EARLY <em>narrative finding price</em></span>
-          <span class="sk-item sk-repricing">REPRICING <em>story intact, price softer</em></span>
-          <span class="sk-item sk-divergence">DIVERGENCE <em>price rejecting story</em></span>
-          <span class="sk-item sk-disagreement">DISAGREEMENT <em>conflict unresolved</em></span>
-          <span class="sk-item sk-macro">MACRO <em>moving with tape</em></span>
-        </div>
-      </div>
+    </div>
+  </div>
+
+  <!-- Scatter chart -->
+  <p class="hint-text">Focus on whether the gap is closing (confirmation) or widening (divergence).</p>
+  <div class="chart-section">
+    <div class="chart-canvas-wrap">
+      <canvas id="lb-chart"></canvas>
+      <div id="lb-tooltip"></div>
     </div>
   </div>
 
   <!-- Sections rendered by JS -->
   <div id="sections"></div>
 
+
+  <!-- Feedback bar -->
+  <div class="feedback-bar" id="feedback-bar" style="margin-top:32px;margin-bottom:0">
+    <span>Does this match your view of the market today?</span>
+    <button data-vote="yes" onclick="recordFeedback('yes')">Yes</button>
+    <button data-vote="no" onclick="recordFeedback('no')">No</button>
+  </div>
+
   <!-- Footer -->
   <div class="page-footer">
-    <div class="takeaway">ARM breaking out. MU, NBIS, PLTR diverging.</div>
+    <div class="takeaway">6-name price-led movement cluster: ADBE, ARM, DELL. META confirming.</div>
     <a href="mailto:sue@topicspace.com" style="font-size:11px;color:#3a3a5c;text-decoration:none;letter-spacing:0.06em;font-family:monospace;">sue@topicspace.com</a>
   </div>
 
@@ -467,51 +601,59 @@
 // ══════════════════════════════════════════════════════════════════
 
 const STATE_COLOR = {
-  CONFIRMED:    { fg: '#22c55e', bg: 'rgba(34,197,94,0.12)'   },
-  EARLY:        { fg: '#34d399', bg: 'rgba(52,211,153,0.12)'  },
-  REPRICING:    { fg: '#2b7fff', bg: 'rgba(43,127,255,0.12)'  },
-  DIVERGENCE:   { fg: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
-  DISAGREEMENT: { fg: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
-  MACRO:        { fg: '#888888', bg: 'rgba(136,136,136,0.10)' },
-  UNCLEAR:      { fg: '#8888aa', bg: 'rgba(136,136,170,0.10)'  },
+  CONFIRMED:        { fg: '#22c55e', bg: 'rgba(34,197,94,0.12)'   },
+  EARLY:            { fg: '#22d3ee', bg: 'rgba(34,211,238,0.12)'  },
+  REPRICING:        { fg: '#2b7fff', bg: 'rgba(43,127,255,0.12)'  },
+  DIVERGENCE:       { fg: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
+  NEG_CONFIRMATION: { fg: '#f43f5e', bg: 'rgba(244,63,94,0.12)'   },
+  DISAGREEMENT:     { fg: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
+  MACRO:            { fg: '#888888', bg: 'rgba(136,136,136,0.10)' },
+  'PRICE-LED':      { fg: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+  UNCLEAR:          { fg: '#8888aa', bg: 'rgba(136,136,170,0.10)'  },
 };
 
-const STATE_ORDER = ['CONFIRMED','EARLY','REPRICING','DIVERGENCE','DISAGREEMENT','MACRO','UNCLEAR'];
+const STATE_ORDER = ['CONFIRMED','EARLY','REPRICING','DIVERGENCE','NEG_CONFIRMATION','DISAGREEMENT','MACRO','PRICE-LED','UNCLEAR'];
 
 // ══════════════════════════════════════════════════════════════════
 //  Actor data — narrative strength (0–100) × 5d relative return (%)
-//  Sources: state engine Mar–Apr 2026, pipeline signals 2026-04-02
+//  Sources: state engine Mar–Apr 2026, pipeline signals 2026-04-14
 // ══════════════════════════════════════════════════════════════════
 
 const ACTORS = [
   // state, narrative (0-100), rel_5d (% vs benchmark), conflict, short_read, narrative_desc
-  { t:'MU', state:'DIVERGENCE', narr:74, rel:-15.46, nds:74, conflict:true, read:'HBM story hard rejected after earnings', story:'HBM demand uncertain after earnings miss' },
-  { t:'NBIS', state:'DIVERGENCE', narr:59, rel:-11.31, nds:59, conflict:false, read:'European AI story not landing', story:'European AI cloud buildout' },
-  { t:'PLTR', state:'DIVERGENCE', narr:74, rel:-6.48, nds:56.4, conflict:true, read:'strong story, price not following', story:'Government AI contracts + commercial growth' },
-  { t:'NVDA', state:'REPRICING', narr:95, rel:-0.67, nds:48.4, conflict:false, read:'infra rotation, market not yet paying up', story:'AI infrastructure buildout; China market share erosion' },
-  { t:'ANET', state:'DIVERGENCE', narr:67, rel:-5.91, nds:46.6, conflict:true, read:'infra narrative strong, price declining', story:'AI networking infrastructure demand' },
-  { t:'VRT', state:'DIVERGENCE', narr:59, rel:-7.08, nds:44.4, conflict:false, read:'power/cooling story, market not paying up', story:'Power and cooling for AI data centers' },
-  { t:'META', state:'REPRICING', narr:71, rel:-3.13, nds:36.6, conflict:false, read:'capex narrative intact, price softer', story:'AI chips and data center build-out' },
-  { t:'DELL', state:'DIVERGENCE', narr:53, rel:-6.37, nds:34.8, conflict:false, read:'AI server demand not landing in price', story:'AI server demand vs margin pressure' },
-  { t:'MSFT', state:'REPRICING', narr:91, rel:+1.28, nds:34.6, conflict:false, read:'Copilot bet building, price just starting to follow', story:'Copilot + OpenAI bet gaining traction' },
-  { t:'CRWV', state:'DIVERGENCE', narr:41, rel:-8.70, nds:34.5, conflict:false, read:'IPO hype cooling, price following narrative down', story:'CoreWeave cloud IPO hype fading' },
-  { t:'ORCL', state:'REPRICING', narr:80, rel:-0.69, nds:33.4, conflict:false, read:'recovered from selloff, targets rising', story:'Cloud + AI infra expansion, rising price targets' },
-  { t:'ASML', state:'REPRICING', narr:55, rel:-4.94, nds:29.7, conflict:false, read:'EUV cycle tied to AI, macro driving', story:'EUV demand tied to AI chip cycle' },
-  { t:'INTC', state:'REPRICING', narr:69, rel:-1.15, nds:24.8, conflict:false, read:'market not buying the foundry pivot', story:'Qualcomm acquisition chatter; foundry pivot' },
-  { t:'GOOGL', state:'REPRICING', narr:67, rel:-0.94, nds:21.7, conflict:false, read:'AI pressure not breaking it yet', story:'AI search competition + Waymo' },
-  { t:'SMCI', state:'REPRICING', narr:68, rel:-0.35, nds:19.8, conflict:false, read:'VAST Data deal, price not moving yet', story:'AI server demand; VAST Data partnership' },
-  { t:'TSLA', state:'DISAGREEMENT', narr:54, rel:-2.23, nds:15.2, conflict:false, read:'brand drag overriding any AI narrative', story:'Brand drag from Musk politics; recession sensitivity' },
-  { t:'MRVL', state:'EARLY', narr:83, rel:+4.03, nds:12.8, conflict:false, read:'revenue acceleration finding the stock', story:'AI networking revenue accelerating' },
-  { t:'AMD', state:'REPRICING', narr:61, rel:+0.06, nds:10.7, conflict:false, read:'AI GPU story, flat on the week', story:'AI GPU competition narrative vs NVDA' },
-  { t:'SOFI', state:'DISAGREEMENT', narr:38, rel:-4.30, nds:9.5, conflict:false, read:'fintech competition, no clear direction', story:'Fintech competition pressures' },
-  { t:'SNOW', state:'UNCLEAR', narr:35, rel:-4.18, nds:5.9, conflict:false, read:'growth story stalling, no catalyst visible', story:'Data cloud growth narrative stalling' },
-  { t:'TSM', state:'MACRO', narr:42, rel:-2.50, nds:4.5, conflict:false, read:'geopolitical risk trumping AI demand', story:'Advanced node demand; geopolitical risk' },
-  { t:'ADBE', state:'EARLY', narr:72, rel:+4.03, nds:1.8, conflict:false, read:'earnings narrative confirmed by price', story:'Earnings pressure vs AI creative tools story' },
-  { t:'AVGO', state:'UNCLEAR', narr:37, rel:-2.73, nds:0.6, conflict:false, read:'insider noise fading, moving with tape', story:'Custom silicon; insider activity cooling' },
-  { t:'AMZN', state:'EARLY', narr:61, rel:+2.38, nds:-0.9, conflict:false, read:'custom silicon + Globalstar deal noise', story:'Custom silicon (Trainium) + Globalstar buyout' },
-  { t:'AAPL', state:'MACRO', narr:46, rel:+1.59, nds:-12.0, conflict:false, read:'AI features not yet moving the needle', story:'AI features rollout + India manufacturing' },
-  { t:'ARM', state:'CONFIRMED', narr:72, rel:+10.54, nds:-28, conflict:false, read:'architecture licensing bet breaking out', story:'Architecture licensing expanding into AI chips' },
-  { t:'CRM', state:'MACRO', narr:40, rel:+4.17, nds:-30.8, conflict:false, read:'Agentforce fading, price up on macro', story:'Agentforce adoption narrative cooling' },
+  { t:'PLTR', state:'DIVERGENCE', narr:81, rel:-15.43, nds:108.2, dir:1, conflict:true, read:'story not being paid', story:'Government AI contracts + commercial growth', exp:false },
+  { t:'SNOW', state:'NEG_CONFIRMATION', narr:35, rel:-15.04, nds:90.2, dir:-1, conflict:false, read:'selloff confirming narrative', story:'Data cloud growth narrative stalling', exp:false },
+  { t:'CRM', state:'NEG_CONFIRMATION', narr:51, rel:-11.27, nds:55.4, dir:-1, conflict:false, read:'selloff confirming narrative', story:'Agentforce adoption narrative cooling', exp:false },
+  { t:'DDOG', state:'DIVERGENCE', narr:53, rel:-10.42, nds:55.1, dir:1, conflict:false, read:'story not being paid', story:'AI-native observability; enterprise monitoring adoption in AI stacks', exp:false },
+  { t:'TSLA', state:'DISAGREEMENT', narr:42, rel:-5.02, nds:33.1, dir:-1, conflict:false, read:'price rejecting negative narrative', story:'Brand drag from Musk politics; recession sensitivity', exp:false },
+  { t:'ADBE', state:'DIVERGENCE', narr:48, rel:-6.65, nds:31.2, dir:1, conflict:false, read:'price ahead of story', story:'Earnings pressure vs AI creative tools story', exp:false },
+  { t:'AAPL', state:'REPRICING', narr:55, rel:-4.78, nds:28.9, dir:1, conflict:false, read:'price lagging narrative', story:'AI features rollout + India manufacturing', exp:false },
+  { t:'MSFT', state:'REPRICING', narr:67, rel:-1.83, nds:26.2, dir:1, conflict:false, read:'price lagging narrative', story:'Copilot + OpenAI bet gaining traction', exp:false },
+  { t:'ZETA', state:'DIVERGENCE', narr:36, rel:-6.05, nds:16.2, dir:1, conflict:false, read:'story not being paid', story:'AI-native customer data platform; enterprise marketing automation adoption', exp:false },
+  { t:'SOFI', state:'DISAGREEMENT', narr:36, rel:-0.12, nds:14.6, dir:-1, conflict:false, read:'price rejecting negative narrative', story:'Fintech competition pressures', exp:false },
+  { t:'VST', state:'REPRICING', narr:51, rel:-0.55, nds:3.8, dir:1, conflict:false, read:'price lagging narrative', story:'Gas and nuclear power generation serving AI data center demand', exp:false },
+  { t:'NVDA', state:'EARLY', narr:58, rel:+1.66, nds:-0.3, dir:1, conflict:false, read:'price starting to follow', story:'AI infrastructure buildout; China market share erosion', exp:false },
+  { t:'GOOGL', state:'EARLY', narr:56, rel:+2.20, nds:-5.0, dir:1, conflict:false, read:'price starting to follow', story:'AI search competition + Waymo', exp:false },
+  { t:'META', state:'CONFIRMED', narr:72, rel:+5.83, nds:-7.1, dir:1, conflict:false, read:'price confirming narrative', story:'AI chips and data center build-out', exp:false },
+  { t:'ORCL', state:'MACRO', narr:53, rel:+2.39, nds:-9.0, dir:1, conflict:false, read:'moving with tape', story:'Cloud + AI infra expansion, rising price targets', exp:false },
+  { t:'TSM', state:'DISAGREEMENT', narr:49, rel:+3.23, nds:-15.2, dir:-1, conflict:false, read:'price rejecting negative narrative', story:'Advanced node demand; geopolitical risk', exp:false },
+  { t:'ARM', state:'UNCLEAR', narr:38, rel:+1.01, nds:-17.0, dir:1, conflict:false, read:'price ahead of story', story:'Architecture licensing expanding into AI chips', exp:false },
+  { t:'CEG', state:'UNCLEAR', narr:38, rel:+1.11, nds:-17.6, dir:1, conflict:false, read:'no follow-through', story:'Nuclear power capacity for AI data centers; hyperscaler offtake deals', exp:false },
+  { t:'AMD', state:'EARLY', narr:64, rel:+7.19, nds:-22.0, dir:1, conflict:false, read:'narrative active, price flat', story:'AI GPU competition narrative vs NVDA', exp:false },
+  { t:'AMZN', state:'EARLY', narr:63, rel:+7.83, nds:-26.2, dir:1, conflict:false, read:'price starting to follow', story:'Custom silicon (Trainium) + Globalstar buyout', exp:false },
+  { t:'DELL', state:'PRICE-LED', narr:38, rel:+4.68, nds:-35.4, dir:1, conflict:false, read:'price ahead of story', story:'AI server demand vs margin pressure', exp:false },
+  { t:'MP', state:'PRICE-LED', narr:45, rel:+6.09, nds:-35.4, dir:1, conflict:false, read:'price ahead of story', story:'Rare earth mining; China tariff tailwind and supply chain angle', exp:true },
+  { t:'ASML', state:'EARLY', narr:64, rel:+10.14, nds:-36.7, dir:1, conflict:false, read:'price starting to follow', story:'EUV demand tied to AI chip cycle', exp:false },
+  { t:'USAR', state:'PRICE-LED', narr:35, rel:+4.97, nds:-39.8, dir:1, conflict:false, read:'price ahead of story', story:'Rare earth supply chain; domestic critical minerals push', exp:true },
+  { t:'MU', state:'DISAGREEMENT', narr:56, rel:+8.01, nds:-46.0, dir:-1, conflict:false, read:'price rejecting negative narrative', story:'HBM demand uncertain after earnings miss', exp:false },
+  { t:'VRT', state:'EARLY', narr:59, rel:+11.03, nds:-46.2, dir:1, conflict:false, read:'price starting to follow', story:'Power and cooling for AI data centers', exp:false },
+  { t:'ANET', state:'CONFIRMED', narr:71, rel:+15.50, nds:-56.5, dir:1, conflict:false, read:'price confirming narrative', story:'AI networking infrastructure demand', exp:false },
+  { t:'SMCI', state:'EARLY', narr:57, rel:+12.87, nds:-57.4, dir:1, conflict:false, read:'price starting to follow', story:'AI server demand; VAST Data partnership', exp:false },
+  { t:'AVGO', state:'PRICE-LED', narr:52, rel:+15.87, nds:-77.4, dir:1, conflict:false, read:'moving with tape', story:'Custom silicon; insider activity cooling', exp:false },
+  { t:'MRVL', state:'PRICE-LED', narr:37, rel:+15.05, nds:-88.2, dir:1, conflict:false, read:'early confirmation forming', story:'AI networking revenue accelerating', exp:false },
+  { t:'INTC', state:'DISAGREEMENT', narr:69, rel:+23.45, nds:-136.2, dir:-1, conflict:true, read:'price confirming negative story', story:'Qualcomm acquisition chatter; foundry pivot', exp:false },
+  { t:'CRWV', state:'DISAGREEMENT', narr:39, rel:+31.33, nds:-145.6, dir:-1, conflict:false, read:'price rejecting negative narrative', story:'CoreWeave cloud IPO hype fading', exp:false },
+  { t:'NBIS', state:'PRICE-LED', narr:53, rel:+32.43, nds:-159.2, dir:1, conflict:false, read:'price ahead of story', story:'European AI cloud buildout', exp:false },
 ];
 
 // Deduplicate (TSLA appeared multiple times above)
@@ -539,24 +681,27 @@ DATA.forEach(a => {
 //  Summary stats
 // ══════════════════════════════════════════════════════════════════
 
-const nConfirmed   = DATA.filter(a => a.state === 'CONFIRMED' || (a.state === 'EARLY' && a.rel > 0)).length;
-const nConflict    = DATA.filter(a => ['DISAGREEMENT','DIVERGENCE'].includes(a.state)).length;
-const strongNarr   = DATA.filter(a => a.narr > 60);
-const nStrongNeg   = strongNarr.filter(a => a.rel < 0).length;
-const nStrongTotal = strongNarr.length;
+const nNarrLeading  = DATA.filter(a => a.narr >= 60 && a.rel <  0).length;
+const nGettingPaid  = DATA.filter(a => a.narr >= 60 && a.rel >= 0).length;
+const nPriceAhead   = DATA.filter(a => a.narr <  60 && a.rel >= 0).length;
+const nNoSignal     = DATA.filter(a => a.narr <  60 && a.rel <  0).length;
 
 document.getElementById('stats-strip').innerHTML = `
   <div class="stat-item">
-    <span class="stat-n green">${nConfirmed}</span>
-    <span class="stat-lbl">confirming</span>
+    <span class="stat-n" style="color:#ef4444">${nNarrLeading}</span>
+    <span class="stat-lbl">narrative leading (unconfirmed)</span>
   </div>
   <div class="stat-item">
-    <span class="stat-n blue">${nStrongNeg}<span style="font-size:14px;font-weight:400;color:var(--dim)"> / ${nStrongTotal}</span></span>
-    <span class="stat-lbl">strong narrative, weak price</span>
+    <span class="stat-n" style="color:#22c55e">${nGettingPaid}</span>
+    <span class="stat-lbl">confirmed</span>
   </div>
   <div class="stat-item">
-    <span class="stat-n orange">${nConflict}</span>
-    <span class="stat-lbl">in conflict</span>
+    <span class="stat-n" style="color:#a855f7">${nPriceAhead}</span>
+    <span class="stat-lbl">price leading (unconfirmed)</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-n" style="color:#666680">${nNoSignal}</span>
+    <span class="stat-lbl">no signal</span>
   </div>
 `;
 
@@ -626,39 +771,42 @@ function badge(state) {
   return `<span class="badge" style="color:${c.fg};background:${c.bg}">${state}</span>`;
 }
 
-function narrBar(narr, state) {
-  const c = STATE_COLOR[state] || STATE_COLOR.UNCLEAR;
+function narrBar(narr, dir, color) {
   const w = Math.round((narr / 100) * 60);
+  const label = (dir < 0 ? '−' : '+') + narr;
   return `
     <div class="narr-wrap">
       <div class="narr-bar-bg">
-        <div class="narr-bar-fill" style="width:${w}px;background:${c.fg};opacity:0.7"></div>
+        <div class="narr-bar-fill" style="width:${w}px;background:${color};opacity:0.7"></div>
       </div>
-      <span class="narr-val">${narr}</span>
+      <span class="narr-val" style="color:${color}">${label}</span>
     </div>`;
 }
 
-function retCell(rel) {
-  const cls = rel > 0.2 ? 'pos' : rel < -0.2 ? 'neg' : 'neu';
+function retCell(rel, fg) {
   const sign = rel > 0 ? '+' : '';
-  return `<td class="cell-return ${cls}">${sign}${rel.toFixed(1)}%</td>`;
+  const color = fg;
+  return `<td class="cell-return" style="color:${color}">${sign}${rel.toFixed(1)}%</td>`;
+}
+
+function bucketColor(nds) {
+  return nds > 15 ? '#2b7fff' : nds < -15 ? '#ef4444' : '#888888';
 }
 
 function ndsCell(a) {
-  const cls = a.nds > 5 ? 'pos' : a.nds < -5 ? 'neg' : 'neu';
+  const c = quadrantColor(a.narr, a.rel);
   const sign = a.nds > 0 ? '+' : '';
-  return `<td class="cell-nds ${cls}">${sign}${a.nds.toFixed(1)}</td>`;
+  return `<td class="cell-nds" style="color:${c}">${sign}${a.nds.toFixed(1)}</td>`;
 }
 
 function renderTable(actors, sortKey, sortAsc) {
   const cols = [
-    { key:'t',     label:'Actor',     cls:''           },
-    { key:'nds',   label:'NDS',       cls:''           },
-    { key:'narr',  label:'Narrative', cls:''           },
-    { key:'rel',   label:'5D Rel',    cls:'col-ret'    },
-    { key:'state', label:'State',     cls:'col-state'  },
-    { key:'story', label:'Story',     cls:'col-story'  },
-    { key:'read',  label:'Read',      cls:'col-read'   },
+    { key:'t',    label:'Actor',     cls:'' },
+    { key:'nds',  label:'NDS',       cls:'' },
+    { key:'rel',  label:'5D Rel',    cls:'' },
+    { key:'narr', label:'Narrative', cls:'' },
+    { key:'gap',  label:'Gap',       cls:'col-spark' },
+    { key:'read', label:'Read',      cls:'' },
   ];
 
   const head = cols.map(c =>
@@ -666,17 +814,18 @@ function renderTable(actors, sortKey, sortAsc) {
        onclick="reSort('${c.key}')">${c.label}</th>`
   ).join('');
 
-  const rows = actors.map(a => `
+  const rows = actors.map(a => {
+    const bc = quadrantColor(a.narr, a.rel);
+    return `
     <tr class="clickable-row" onclick="(window.top||window).location='/actor/${a.t.toLowerCase()}'">
-      <td class="cell-actor" style="color:${(STATE_COLOR[a.state]||STATE_COLOR.UNCLEAR).fg};font-weight:700">${a.t}</td>
+      <td class="cell-actor" style="color:${bc};font-weight:700">${a.t}${a.exp ? '<span style="font-size:8px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#a855f7;border:1px solid rgba(168,85,247,0.3);border-radius:2px;padding:1px 4px;margin-left:5px;vertical-align:middle">user added</span>' : ''}</td>
       ${ndsCell(a)}
-      <td>${narrBar(a.narr, a.state)}</td>
-      ${retCell(a.rel)}
-      <td class="cell-state col-state" style="color:${(STATE_COLOR[a.state]||STATE_COLOR.UNCLEAR).fg}">${a.state.toLowerCase()}</td>
-      <td class="cell-story col-story">${a.story || ''}</td>
-      <td class="cell-read">${a.read}</td>
-    </tr>`
-  ).join('');
+      ${retCell(a.rel, bc)}
+      <td>${narrBar(a.narr, a.dir, bc)}</td>
+      <td class="cell-spark col-spark"><canvas id="ms-${a.t}" width="80" height="34"></canvas></td>
+      <td class="cell-read">${a.story}<span class="cell-read-state">${a.read}</span></td>
+    </tr>`;
+  }).join('');
 
   return `
     <table class="lb-table">
@@ -701,9 +850,11 @@ function renderAll() {
       return _sortAsc ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
     });
   } else {
-    actors.sort((a, b) => b.nds - a.nds);
+    actors.sort((a, b) => b.rel - a.rel);
   }
-  container.innerHTML = `<div class="section">${renderTable(actors, _sortKey, _sortAsc)}</div>`;
+  const sortDesc = _sortKey ? _sortKey.toUpperCase() : 'MARKET MOVE (5D RELATIVE RETURN)';
+  container.innerHTML = `<div style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#3a3a5c;margin-bottom:12px">SORTED BY · ${sortDesc}</div><div class="section">${renderTable(actors, _sortKey, _sortAsc)}</div>`;
+  drawAllMiniSparks();
 }
 
 function reSort(key) {
@@ -712,7 +863,382 @@ function reSort(key) {
   renderAll();
 }
 
+// ══════════════════════════════════════════════════════════════════
+//  Scatter chart
+// ══════════════════════════════════════════════════════════════════
+
+function hexRgb(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+
+const NARR_THRESH = 60;
+const REL_THRESH  = 0;
+const _rels = DATA.map(a => a.rel);
+const X_MIN = Math.floor(Math.min(..._rels) / 5) * 5 - 5;
+const X_MAX = Math.ceil(Math.max(..._rels) / 5) * 5 + 5;
+
+function quadrantColor(narr, rel) {
+  if (narr >= NARR_THRESH && rel <  REL_THRESH) return '#ef4444'; // narrative leading, not paying
+  if (narr >= NARR_THRESH && rel >= REL_THRESH) return '#22c55e'; // getting paid
+  if (narr <  NARR_THRESH && rel >= REL_THRESH) return '#a855f7'; // price ahead of story
+  return '#666680';                                                // no signal
+}
+
+const Y_MIN = 27,  Y_MAX = 102;
+const maxAbsNDS  = Math.max(...DATA.map(a => Math.abs(a.nds)));
+const dotRadius  = nds => 5 + (Math.abs(nds) / maxAbsNDS) * 18;
+
+let scatterPts = [];
+
+function renderScatter() {
+  const wrap   = document.querySelector('.chart-canvas-wrap');
+  const canvas = document.getElementById('lb-chart');
+  const dpr    = window.devicePixelRatio || 1;
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  canvas.width  = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const PAD_L = 44, PAD_R = 44, PAD_T = 14, PAD_B = 36;
+  const cW = W - PAD_L - PAD_R, cH = H - PAD_T - PAD_B;
+  const toX = v => PAD_L + ((v - X_MIN) / (X_MAX - X_MIN)) * cW;
+  const toY = v => PAD_T + (1 - (v - Y_MIN) / (Y_MAX - Y_MIN)) * cH;
+  const qx = toX(REL_THRESH), qy = toY(NARR_THRESH);
+
+  // Background
+  ctx.fillStyle = '#111116';
+  ctx.fillRect(0, 0, W, H);
+
+  // Narrative-leading zone tint (top-left)
+  const zoneGrad = ctx.createRadialGradient(
+    PAD_L + (qx - PAD_L) * 0.5, PAD_T + (qy - PAD_T) * 0.65, 0,
+    PAD_L + (qx - PAD_L) * 0.5, PAD_T + (qy - PAD_T) * 0.65,
+    Math.max(qx - PAD_L, qy - PAD_T) * 1.0
+  );
+  zoneGrad.addColorStop(0,   'rgba(239,68,68,0.10)');
+  zoneGrad.addColorStop(0.5, 'rgba(239,68,68,0.04)');
+  zoneGrad.addColorStop(1,   'rgba(239,68,68,0)');
+  ctx.save();
+  ctx.beginPath(); ctx.rect(PAD_L, PAD_T, qx - PAD_L, qy - PAD_T); ctx.clip();
+  ctx.fillStyle = zoneGrad; ctx.fillRect(PAD_L, PAD_T, qx - PAD_L, qy - PAD_T);
+  ctx.restore();
+
+  // Threshold lines
+  ctx.strokeStyle = '#2a2a3c'; ctx.lineWidth = 1; ctx.setLineDash([4, 6]);
+  ctx.beginPath(); ctx.moveTo(qx, PAD_T); ctx.lineTo(qx, PAD_T + cH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD_L, qy); ctx.lineTo(PAD_L + cW, qy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Axis labels
+  ctx.font = '400 9px "SF Mono", monospace'; ctx.fillStyle = '#7878a0';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (const v of [30, 60, 90]) { ctx.fillText(v, PAD_L - 5, toY(v)); }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  { const step = (X_MAX - X_MIN) > 40 ? 10 : 5;
+    for (let v = Math.ceil(X_MIN/step)*step; v <= X_MAX; v += step) {
+      const tx = toX(v); if (tx < PAD_L - 10 || tx > PAD_L + cW + 10) continue;
+      ctx.fillText((v > 0 ? '+' : '') + v + '%', tx, PAD_T + cH + 5);
+    }
+  }
+
+  // Quadrant labels
+  ctx.font = '600 10px -apple-system, sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(239,68,68,0.85)';
+  ctx.fillText('Narrative leading (unconfirmed)', PAD_L + 8, PAD_T + 6);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(34,197,94,0.80)';
+  ctx.fillText('Confirmed', PAD_L + cW - 6, PAD_T + 6);
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'rgba(168,85,247,0.75)';
+  ctx.fillText('Price leading (unconfirmed)', PAD_L + cW - 6, PAD_T + cH - 6);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'rgba(102,102,128,0.55)';
+  ctx.fillText('No signal', PAD_L + 8, PAD_T + cH - 6);
+
+  // Compute pts
+  scatterPts = DATA.map(a => ({
+    ...a,
+    px: toX(a.rel),
+    py: toY(a.narr),
+    r:  dotRadius(a.nds),
+    fg: quadrantColor(a.narr, a.rel),
+  }));
+
+  // Draw dots large → small
+  [...scatterPts].sort((a, b) => b.r - a.r).forEach(p => {
+    const [r,g,b] = hexRgb(p.fg);
+    const isNoSignal = p.narr < NARR_THRESH && p.rel < REL_THRESH;
+    const alpha = isNoSignal ? 0.35 : 0.72;
+    if (Math.abs(p.nds) > 30) {
+      const grad = ctx.createRadialGradient(p.px, p.py, 0, p.px, p.py, p.r * 4);
+      grad.addColorStop(0, `rgba(${r},${g},${b},0.15)`);
+      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.beginPath(); ctx.arc(p.px, p.py, p.r * 4, 0, Math.PI * 2);
+      ctx.fillStyle = grad; ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(p.px, p.py, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`; ctx.fill();
+    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha * 0.6})`; ctx.lineWidth = 1; ctx.stroke();
+  });
+
+  // Labels with collision avoidance: non-no-signal first, then no-signal fills remaining space
+  const placed = [];
+  function labelFits(x, y, w, h) {
+    for (const b of placed) {
+      if (x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y) return false;
+    }
+    return true;
+  }
+  function tryLabel(p, font, color, size) {
+    ctx.save();
+    ctx.font = font;
+    ctx.textBaseline = 'middle';
+    const rightSide = p.px < PAD_L + cW * 0.65;
+    const xOff = rightSide ? p.r + 6 : -(p.r + 6);
+    const lw = ctx.measureText(p.t).width;
+    const lx = rightSide ? p.px + xOff : p.px + xOff - lw;
+    const ly = p.py - size / 2;
+    if (!labelFits(lx - 2, ly - 2, lw + 4, size + 4)) { ctx.restore(); return false; }
+    placed.push({ x: lx - 2, y: ly - 2, w: lw + 4, h: size + 4 });
+    ctx.fillStyle = color;
+    ctx.textAlign = rightSide ? 'left' : 'right';
+    ctx.fillText(p.t, p.px + xOff, p.py);
+    ctx.restore();
+    return true;
+  }
+
+  // Pass 1: non-no-signal actors (sorted by |NDS| desc, full color)
+  scatterPts
+    .filter(p => p.narr >= NARR_THRESH || p.rel >= REL_THRESH)
+    .sort((a, b) => Math.abs(b.nds) - Math.abs(a.nds))
+    .forEach(p => tryLabel(p, '600 11px -apple-system, sans-serif', p.fg, 11));
+
+  // Pass 2: no-signal actors fill remaining space (lighter, smaller)
+  scatterPts
+    .filter(p => p.narr < NARR_THRESH && p.rel < REL_THRESH)
+    .sort((a, b) => Math.abs(b.nds) - Math.abs(a.nds))
+    .forEach(p => tryLabel(p, '500 10px -apple-system, sans-serif', 'rgba(102,102,128,0.45)', 10));
+}
+
+const lbTooltip = document.getElementById('lb-tooltip');
+document.getElementById('lb-chart').addEventListener('mousemove', e => {
+  const rect = e.target.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  let hit = null;
+  for (const p of scatterPts) {
+    if (Math.hypot(p.px - mx, p.py - my) <= p.r + 6) { hit = p; break; }
+  }
+  if (hit) {
+    const sign = v => v > 0 ? '+' : '';
+    const quadLabel = hit.narr >= NARR_THRESH && hit.rel <  REL_THRESH ? 'narrative leading (unconfirmed)'
+                    : hit.narr >= NARR_THRESH && hit.rel >= REL_THRESH ? 'confirmed'
+                    : hit.narr <  NARR_THRESH && hit.rel >= REL_THRESH ? 'price leading (unconfirmed)'
+                    : 'no signal';
+    lbTooltip.innerHTML = `
+      <div class="tt-ticker" style="color:${hit.fg}">${hit.t}</div>
+      <div class="tt-row"><span class="tt-key" style="color:${hit.fg}">${quadLabel}</span></div>
+      <div class="tt-row"><span class="tt-key">NDS</span><span class="tt-val" style="color:${hit.fg};font-weight:700">${sign(hit.nds)}${hit.nds.toFixed(1)}</span></div>
+      <div class="tt-row"><span class="tt-key">5D Rel</span><span class="tt-val">${sign(hit.rel)}${hit.rel.toFixed(1)}%</span></div>
+      <div class="tt-row"><span class="tt-key">Narrative</span><span class="tt-val">${hit.narr}</span></div>
+      <div class="tt-row" style="margin-top:6px;color:#c0c0d8;line-height:1.4;max-width:180px">${hit.story}</div>
+      <div class="tt-row" style="margin-top:3px;font-style:italic;color:#7878a0">${hit.read}</div>`;
+    let tx = mx + 16, ty = my + 10;
+    const wrap = document.querySelector('.chart-canvas-wrap');
+    if (tx + 180 > wrap.clientWidth)  tx = mx - 188;
+    if (ty + 130 > wrap.clientHeight) ty = my - 138;
+    lbTooltip.style.left = tx + 'px'; lbTooltip.style.top = ty + 'px';
+    lbTooltip.style.display = 'block';
+    e.target.style.cursor = 'pointer';
+  } else { lbTooltip.style.display = 'none'; e.target.style.cursor = 'default'; }
+});
+document.getElementById('lb-chart').addEventListener('mouseleave', () => { lbTooltip.style.display = 'none'; });
+document.getElementById('lb-chart').addEventListener('click', e => {
+  const rect = e.target.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  for (const p of scatterPts) {
+    if (Math.hypot(p.px - mx, p.py - my) <= p.r + 6) {
+      (window.top || window).location = '/actor/' + p.t.toLowerCase();
+      break;
+    }
+  }
+});
+window.addEventListener('resize', renderScatter);
+
+// ══════════════════════════════════════════════════════════════════
+//  Mini gap sparklines
+// ══════════════════════════════════════════════════════════════════
+
+function seededRnd(str) {
+  let s = 0;
+  for (let i = 0; i < str.length; i++) s = s * 31 + str.charCodeAt(i);
+  return () => { s = Math.imul(s, 1664525) + 1013904223 | 0; return (s >>> 1) / 0x7fffffff; };
+}
+
+function drawMiniSpark(canvas, actor) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = 80, H = 34;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const rnd = seededRnd(actor.t);
+  const n = 30;
+
+  const narrStart = Math.max(25, actor.narr - 18 + (rnd() - 0.5) * 10);
+  const narr = Array.from({length: n}, (_, i) => {
+    const t = i / (n - 1);
+    return Math.max(0, Math.min(100, narrStart + (actor.narr - narrStart) * t + (rnd() - 0.5) * 8));
+  });
+  narr[n - 1] = actor.narr;
+
+  const priceNow = Math.max(5, Math.min(95, 50 + actor.rel * 1.8));
+  const priceStart = Math.max(5, Math.min(95, 50 + (rnd() - 0.5) * 22));
+  const price = Array.from({length: n}, (_, i) => {
+    const t = i / (n - 1);
+    return Math.max(0, Math.min(100, priceStart + (priceNow - priceStart) * t + (rnd() - 0.5) * 8));
+  });
+  price[n - 1] = priceNow;
+
+  const gaps = narr.map((nv, i) => actor.dir === -1 ? (nv + price[i] - 100) : (nv - price[i]));
+  const maxAbs = Math.max(1, ...gaps.map(g => Math.abs(g))) * 1.15;
+  const PAD = 2;
+  const cW = W - PAD * 2, cH = H - PAD * 2;
+  const toX  = i => PAD + (i / (n - 1)) * cW;
+  const toYg = v => PAD + (0.5 - v / (2 * maxAbs)) * cH;
+  const zeroY = toYg(0);
+  const cutoff = Math.floor(n * 0.8);
+
+  const color = quadrantColor(actor.narr, actor.rel);
+  const [cr, cg, cb] = hexRgb(color);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 0.5; ctx.setLineDash([2, 3]);
+  ctx.beginPath(); ctx.moveTo(PAD, zeroY); ctx.lineTo(PAD + cW, zeroY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath(); ctx.moveTo(toX(0), zeroY);
+  for (let i = 0; i <= cutoff; i++) ctx.lineTo(toX(i), toYg(gaps[i]));
+  ctx.lineTo(toX(cutoff), zeroY); ctx.closePath();
+  ctx.fillStyle = `rgba(${cr},${cg},${cb},0.09)`; ctx.fill();
+
+  ctx.beginPath(); ctx.moveTo(toX(cutoff), zeroY);
+  for (let i = cutoff; i < n; i++) ctx.lineTo(toX(i), toYg(gaps[i]));
+  ctx.lineTo(toX(n - 1), zeroY); ctx.closePath();
+  ctx.fillStyle = `rgba(${cr},${cg},${cb},0.50)`; ctx.fill();
+
+  ctx.strokeStyle = `rgba(${cr},${cg},${cb},0.35)`;
+  ctx.lineWidth = 1; ctx.lineJoin = 'round'; ctx.beginPath();
+  for (let i = 0; i <= cutoff; i++) {
+    i === 0 ? ctx.moveTo(toX(i), toYg(gaps[i])) : ctx.lineTo(toX(i), toYg(gaps[i]));
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = `rgba(${cr},${cg},${cb},0.90)`;
+  ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = cutoff; i < n; i++) {
+    i === cutoff ? ctx.moveTo(toX(i), toYg(gaps[i])) : ctx.lineTo(toX(i), toYg(gaps[i]));
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = `rgba(${cr},${cg},${cb},1)`;
+  ctx.beginPath(); ctx.arc(toX(n - 1), toYg(gaps[n - 1]), 2, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawAllMiniSparks() {
+  DATA.forEach(a => {
+    const el = document.getElementById('ms-' + a.t);
+    if (el) drawMiniSpark(el, a);
+  });
+}
+
 renderAll();
+renderScatter();
+
+// ══════════════════════════════════════════════════════════════════
+//  Regime badge
+// ══════════════════════════════════════════════════════════════════
+(function computeRegime() {
+  const confirmed = DATA.filter(a => a.narr >= 60 && a.rel >= 0).length;
+  const leading   = DATA.filter(a => a.narr >= 60 && a.rel <  0).length;
+  const badge = document.getElementById('regime-badge');
+  if (!badge) return;
+  let text;
+  if (leading >= confirmed * 2)    text = 'Downside confirmation · upside not paying';
+  else if (confirmed >= leading * 2) text = 'Upside confirmation · narratives validated';
+  else if (leading > confirmed)    text = 'Downside confirmation > upside';
+  else if (confirmed > leading)    text = 'Upside confirmation > downside';
+  else                             text = 'Mixed confirmation · no dominant regime';
+  badge.textContent = 'Current regime · ' + text;
+})();
+
+// ══════════════════════════════════════════════════════════════════
+//  Leaderboard feedback
+// ══════════════════════════════════════════════════════════════════
+function recordFeedback(vote) {
+  document.querySelectorAll('#feedback-bar button').forEach(b => {
+    b.classList.toggle('voted', b.dataset.vote === vote);
+  });
+  fetch('https://formspree.io/f/xreorqov', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'leaderboard-vote', vote, date: new Date().toISOString() }),
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  Suggest a company
+// ══════════════════════════════════════════════════════════════════
+function openSuggest() {
+  document.getElementById('suggest-modal').classList.add('open');
+  document.getElementById('suggest-ticker').focus();
+}
+function closeSuggest() {
+  document.getElementById('suggest-modal').classList.remove('open');
+  document.getElementById('suggest-ticker').value = '';
+  document.getElementById('suggest-story').value = '';
+  document.getElementById('suggest-thanks').style.display = 'none';
+  document.getElementById('suggest-form').style.display = '';
+}
+async function submitSuggest() {
+  const ticker = document.getElementById('suggest-ticker').value.trim().toUpperCase();
+  const story  = document.getElementById('suggest-story').value.trim();
+  if (!ticker) return;
+  document.getElementById('suggest-form').style.display = 'none';
+  document.getElementById('suggest-thanks').style.display = 'block';
+  await fetch('https://formspree.io/f/xreorqov', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'suggest-company', ticker, story }),
+  });
+  setTimeout(closeSuggest, 1800);
+}
+document.getElementById('suggest-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSuggest();
+});
 </script>
+
+<!-- Suggest a company button -->
+<button class="suggest-btn" onclick="openSuggest()">+ Suggest a company</button>
+
+<!-- Suggest modal -->
+<div class="modal-overlay" id="suggest-modal">
+  <div class="modal">
+    <h3>What narrative should we be tracking?</h3>
+    <p>No account needed. We read every suggestion.</p>
+    <div id="suggest-form">
+      <input id="suggest-ticker" placeholder="Ticker (e.g. NVDA)" autocomplete="off" />
+      <textarea id="suggest-story" placeholder="What's the story?"></textarea>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeSuggest()">Cancel</button>
+        <button class="btn-submit" onclick="submitSuggest()">Submit</button>
+      </div>
+    </div>
+    <div class="modal-thanks" id="suggest-thanks">Got it — thanks.</div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -2,6 +2,8 @@
 """Full pipeline: fetch → filter → embed → detect → track → summarise → propagate → pressure → watchlist → visualise → report."""
 import sys
 import subprocess
+import shutil
+from pathlib import Path
 
 PYTHON = sys.executable
 
@@ -14,6 +16,7 @@ def run(script, label):
 
 steps = [
     ("fetch_today.py",                  "Fetch latest data"),
+    ("fetch_prices.py",                 "Fetch latest prices"),
     ("filter_events.py",                "Filter events"),
     ("embed_incremental.py",            "Embed new events"),
     ("detect_actor_storms.py",          "Detect actor storms"),
@@ -35,6 +38,8 @@ steps = [
     ("generate_leaderboard.py",         "Generate narrative leaderboard"),
     ("render_leaderboard_image.py",     "Render leaderboard social image"),
     ("generate_narrative_charts.py",    "Generate narrative vs price charts"),
+    ("generate_storm_objects.py",       "Build storm objects for frontend"),
+    ("generate_thread_objects.py",      "Build thread objects for frontend"),
 ]
 
 print("Storm Pipeline")
@@ -51,3 +56,13 @@ print(f"\n{'='*60}")
 print("✅ Pipeline complete!")
 print("  master_report.html is ready to open in a browser")
 print('='*60)
+
+# Copy master_report.html → topicspace-site/public/reports/latest.html
+ROOT = Path(__file__).parent.parent
+report_src  = ROOT / "master_report.html"
+report_dest = ROOT.parent / "topicspace-site" / "public" / "reports" / "latest.html"
+if report_src.exists() and report_dest.parent.exists():
+    shutil.copy2(report_src, report_dest)
+    print(f"  Copied report → {report_dest}")
+elif not report_dest.parent.exists():
+    print(f"  ⚠ Reports dir not found: {report_dest.parent}")

@@ -21,7 +21,7 @@ print(f"Date range: {yesterday} to {today}")
 actors = ['NVDA', 'AMD', 'TSM', 'MSFT', 'AMZN', 'GOOGL', 'ASML', 'AVGO',
           'META', 'ORCL', 'ADBE', 'CRM', 'SNOW', 'TSLA',
           'ARM', 'SMCI', 'DELL', 'INTC', 'MU', 'CRWV', 'NBIS',
-          'PLTR', 'VRT', 'ANET', 'CEG', 'VST']
+          'PLTR', 'VRT', 'ANET', 'CEG', 'VST', 'DDOG', 'ZETA']
 finnhub_events = []
 for actor in actors:
     events = fetch_finnhub_company_news(actor, str(yesterday), str(today))
@@ -65,6 +65,8 @@ queries = [
     ('Arista Networks AI ethernet switching datacenter',                    ['ANET']),
     ('"Constellation Energy" OR CEG nuclear "data center" OR AI power',     ['CEG']),
     ('Vistra energy nuclear "data center" OR "AI power" OR VST',            ['VST']),
+    ('Datadog OR DDOG OR "datadog observability" OR "datadog AI"',           ['DDOG']),
+    ('"Zeta Global" OR ZETA OR "Zeta CDP" OR "Zeta marketing AI"',          ['ZETA']),
 ]
 newsapi_events = []
 for query, source_actors in queries:

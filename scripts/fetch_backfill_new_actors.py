@@ -13,7 +13,7 @@ from src.ingest_sec import fetch_sec_submissions
 from src.merge_events import dedupe_events, load_jsonl, write_jsonl
 
 START_DATE = '2026-02-01'
-END_DATE   = '2026-03-31'
+END_DATE   = '2026-04-30'
 
 NEW_COMPANIES = [
     ('META', '0001326801'),
@@ -36,6 +36,8 @@ NEW_COMPANIES = [
     ('ANET', None),   # Arista Networks — AI-cluster networking
     ('CEG',  None),   # Constellation Energy — nuclear power for AI data centers
     ('VST',  None),   # Vistra Energy — gas/nuclear power operator
+    ('DDOG', '0001789310'),   # Datadog — AI-native observability
+    ('ZETA', '0001851003'),   # Zeta Global — AI-native customer data platform
     # OPENAI and ANTHROPIC are private — NewsAPI only, no Finnhub/SEC
 ]
 
@@ -63,6 +65,8 @@ NEWSAPI_QUERIES = [
     ('ANET',    'Arista Networks AI ethernet switching datacenter', ['ANET']),
     ('CEG',     '"Constellation Energy" nuclear "data center" OR AI power', ['CEG']),
     ('VST',     'Vistra energy nuclear "data center" OR "AI power"',         ['VST']),
+    ('DDOG',    'Datadog OR DDOG OR "datadog observability" OR "datadog AI"', ['DDOG']),
+    ('ZETA',    '"Zeta Global" OR ZETA OR "Zeta CDP" OR "Zeta marketing AI"', ['ZETA']),
 ]
 
 output_path = Path('data/normalized/tech_ecosystem.jsonl')
@@ -128,5 +132,5 @@ for actor in ['NVDA', 'AMD', 'TSM', 'MSFT', 'AMZN', 'GOOGL', 'ASML', 'AVGO',
               'META', 'ORCL', 'ADBE', 'CRM', 'SNOW', 'TSLA',
               'ARM', 'SMCI', 'DELL', 'INTC', 'MU', 'CRWV', 'NBIS', 'SKHX',
               'PLTR', 'OPENAI', 'ANTHROPIC',
-              'VRT', 'ANET', 'CEG', 'VST']:
+              'VRT', 'ANET', 'CEG', 'VST', 'DDOG', 'ZETA']:
     print(f'  {actor:<6} {actor_counts.get(actor, 0):>5}')

@@ -858,6 +858,62 @@ def render_json(sections: dict, date: str) -> str:
     return render_compass_json(sections, date, ecosystem="ai")
 
 
+# ── AI tab override ────────────────────────────────────────────────────────────
+# Applied post-compose when compass output is too weak to reflect leaderboard reality.
+
+_WEAK_COMPASS_OVERRIDE = (
+    "Mixed signals. Downside still confirming in software, while selective upside "
+    "and early follow-through are emerging in infrastructure and adjacent names."
+)
+
+# Phrases that indicate the compass drifted into generic/abstract framing — override regardless
+_BANNED_STATE_PHRASES = [
+    "fragmenting",
+    "deployment out",
+    "fragmentation",
+]
+
+# Entity names that indicate a WATCH signal has no real ticker match (generic fallback)
+_GENERIC_ENTITY_NAMES = {
+    "governments", "regulatory bodies", "ai companies", "industry",
+    "investors", "companies", "regulators", "policymakers",
+}
+
+
+def _compass_needs_override(pkg: dict) -> bool:
+    """
+    Return True if the compass output is too weak or abstract to reflect leaderboard reality.
+
+    Triggers:
+    - 0 LEAN_IN signals in the composition output
+    - majority BE_CAREFUL signals (more BE_CAREFUL than all others combined)
+    - any WATCH signal has only generic entity names (no real tickers)
+    - system_state contains a banned phrase
+    """
+    signals = pkg.get("selected_signals", [])
+    state   = pkg.get("system_state", "") or ""
+
+    lean_in    = [s for s in signals if s.get("bucket") == "LEAN_IN"]
+    be_careful = [s for s in signals if s.get("bucket") == "BE_CAREFUL"]
+
+    if len(lean_in) == 0:
+        return True
+
+    if len(be_careful) > len(signals) - len(be_careful):
+        return True
+
+    watch = [s for s in signals if s.get("bucket") == "WATCH"]
+    for sig in watch:
+        entities = [e.lower() for e in sig.get("affected_entities", [])]
+        if entities and all(e in _GENERIC_ENTITY_NAMES for e in entities):
+            return True
+
+    if any(phrase in state.lower() for phrase in _BANNED_STATE_PHRASES):
+        return True
+
+    return False
+
+
 # ── Site JSON rendering ────────────────────────────────────────────────────────
 
 _BUCKET_UPPER = {
@@ -1201,15 +1257,15 @@ def render_site_json(
         infra_fams   = {"infrastructure", "compute_capacity", "semiconductor_supply",
                         "infrastructure_delivery", "energy_power"}
         if len(lean_in_s) >= 2:
-            system_state = f"{len(lean_in_s)} narratives strengthening across the system."
+            system_state = f"{len(lean_in_s)} narratives strengthening. Multiple behaviors coexisting."
         elif len(lean_in_s) == 1 and any(s["narrative_family"] in infra_fams for s in lean_in_s):
-            system_state = "Delivery race forming. Model race fading."
+            system_state = "Transitional. Infrastructure narrative strengthening; multiple behaviors coexisting."
         elif len(lean_in_s) == 1:
-            system_state = "One leading narrative. Others fading or fragmented."
+            system_state = "Transitional. One narrative strengthening; multiple behaviors coexisting."
         elif len(step_back_s) >= 3:
-            system_state = "System cooling — no leading narratives yet."
+            system_state = "Transitional. Multiple behaviors coexisting; no single regime dominant."
         else:
-            system_state = "Fragmented signals. No clear leaders."
+            system_state = "Transitional. Multiple behaviors coexisting; no single regime dominant."
 
         if lean_in_s:
             top = lean_in_s[0]
@@ -1319,6 +1375,11 @@ def main():
             date        = date_str,
             use_llm     = not args.no_llm,
         )
+
+        # Override weak/abstract state framing before writing site JSON
+        if _compass_needs_override(pkg):
+            pkg["system_state"] = _WEAK_COMPASS_OVERRIDE
+            print(f"  [override] system_state → weak compass detected, applying leaderboard-aligned override")
 
         print(f"  [compose] system_state: {pkg['system_state']}")
         print(f"  [compose] top_read:     {pkg['top_read']}")

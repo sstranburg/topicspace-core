@@ -43,8 +43,11 @@ TICKERS = [
     "NVDA", "MRVL", "MSFT", "ARM",  "PLTR", "META", "ADBE", "MU",
     "ORCL", "SMCI", "INTC", "AMD",  "TSLA", "DELL", "GOOGL", "ANET",
     "NBIS", "AVGO", "AMZN", "TSM",  "VRT",  "CRM",  "CRWV", "SOFI",
-    "AAPL", "ASML", "SNOW",
+    "AAPL", "ASML", "SNOW", "DDOG", "CEG",  "VST",  "ZETA",
+    "USAR", "MP",
 ]
+
+EXPERIMENTAL_TICKERS = {"USAR", "MP"}
 
 # Hardcoded overrides for state (for names with known persistent dynamics)
 STATE_OVERRIDES = {
@@ -54,13 +57,28 @@ STATE_OVERRIDES = {
 
 # Short reads by state (fallback)
 STATE_READS = {
-    "CONFIRMED":    "breakout confirming story",
-    "EARLY":        "narrative finding price",
-    "REPRICING":    "story intact, price softer",
-    "DIVERGENCE":   "price rejecting story",
-    "DISAGREEMENT": "conflict unresolved",
-    "MACRO":        "moving with tape",
-    "UNCLEAR":      "no clean read",
+    "CONFIRMED":        "price confirming narrative",
+    "EARLY":            "price starting to follow",
+    "REPRICING":        "price lagging narrative",
+    "DIVERGENCE":       "story not being paid",
+    "NEG_CONFIRMATION": "selloff confirming narrative",
+    "DISAGREEMENT":     "price rejecting negative narrative",
+    "MACRO":            "moving with tape",
+    "PRICE-LED":        "price ahead of story",
+    "UNCLEAR":          "no follow-through",
+}
+
+# Narrative direction: +1 = positive (tailwind), -1 = negative (headwind)
+# Omitted tickers default to +1
+ACTOR_DIRECTIONS = {
+    "MU":   -1,   # HBM demand miss → bearish
+    "TSLA": -1,   # brand drag, recession risk → bearish
+    "SOFI": -1,   # competition pressure → bearish
+    "SNOW": -1,   # growth stalling → bearish
+    "CRWV": -1,   # IPO hype fading → bearish
+    "CRM":  -1,   # Agentforce fading → bearish
+    "INTC": -1,   # foundry pivot skepticism → bearish
+    "TSM":  -1,   # geopolitical risk dominant → bearish
 }
 
 # Per-ticker narrative descriptions (what the story is actually about)
@@ -92,37 +110,26 @@ NARRATIVES = {
     "AAPL":  "AI features rollout + India manufacturing",
     "ASML":  "EUV demand tied to AI chip cycle",
     "SNOW":  "Data cloud growth narrative stalling",
+    "DDOG":  "AI-native observability; enterprise monitoring adoption in AI stacks",
+    "CEG":   "Nuclear power capacity for AI data centers; hyperscaler offtake deals",
+    "VST":   "Gas and nuclear power generation serving AI data center demand",
+    "ZETA":  "AI-native customer data platform; enterprise marketing automation adoption",
+    "USAR":  "Rare earth supply chain; domestic critical minerals push",
+    "MP":    "Rare earth mining; China tariff tailwind and supply chain angle",
 }
 
-# Per-ticker read overrides
+# Per-ticker read overrides (only where state default is insufficient)
+# Values here must come from the canonical vocabulary used by STATE_READS,
+# or a clearly distinct phrase that the morning summary can interpret unambiguously.
+# Do NOT use: "price ahead of narrative" (ambiguous with direction)
+# DO use: "price ahead of story" (bullish), "price confirming negative story" (bearish)
 READ_OVERRIDES = {
-    "NVDA":  "infra rotation, market not yet paying up",
-    "MSFT":  "Copilot bet building, price just starting to follow",
-    "MRVL":  "revenue acceleration finding the stock",
-    "ARM":   "architecture licensing bet breaking out",
-    "PLTR":  "strong story, price not following",
-    "META":  "capex narrative intact, price softer",
-    "ADBE":  "earnings narrative confirmed by price",
-    "MU":    "HBM story hard rejected after earnings",
-    "ORCL":  "recovered from selloff, targets rising",
-    "SMCI":  "VAST Data deal, price not moving yet",
-    "INTC":  "market not buying the foundry pivot",
-    "AMD":   "AI GPU story, flat on the week",
-    "TSLA":  "brand drag overriding any AI narrative",
-    "DELL":  "AI server demand not landing in price",
-    "GOOGL": "AI pressure not breaking it yet",
-    "ANET":  "infra narrative strong, price declining",
-    "NBIS":  "European AI story not landing",
-    "AVGO":  "insider noise fading, moving with tape",
-    "AMZN":  "custom silicon + Globalstar deal noise",
-    "TSM":   "geopolitical risk trumping AI demand",
-    "VRT":   "power/cooling story, market not paying up",
-    "CRM":   "Agentforce fading, price up on macro",
-    "CRWV":  "IPO hype cooling, price following narrative down",
-    "SOFI":  "fintech competition, no clear direction",
-    "AAPL":  "AI features not yet moving the needle",
-    "ASML":  "EUV cycle tied to AI, macro driving",
-    "SNOW":  "growth story stalling, no catalyst visible",
+    "MRVL":  "early confirmation forming",        # EARLY but stronger signal than default
+    "AMD":   "narrative active, price flat",       # REPRICING but NDS near zero, rel flat
+    "AVGO":  "moving with tape",                   # UNCLEAR but narrative too weak to flag
+    "ADBE":  "price ahead of story",               # classified MACRO; NDS strongly negative
+    "ARM":   "price ahead of story",               # extreme price lead on bullish narrative
+    "INTC":  "price confirming negative story",    # NEG_CONFIRMATION, NDS slightly negative
 }
 
 
@@ -214,10 +221,16 @@ def compute_narr_score(ticker, pressure_recs, leadership, bucket):
     return min(95, round(score))
 
 
-def classify_state(ticker, narr, rel):
+def classify_state(ticker, narr, rel, direction=1):
     if ticker in STATE_OVERRIDES:
         return STATE_OVERRIDES[ticker]
 
+    # Negative narrative: bearish states
+    if direction < 0:
+        if rel > 2.0:   return "DISAGREEMENT"    # price rising against bearish narrative
+        return "NEG_CONFIRMATION"                 # price flat or falling with bearish narrative
+
+    # Positive narrative: existing logic
     if narr >= 65 and rel >= 5.0:
         return "CONFIRMED"
     if narr >= 55 and rel >= 1.5:
@@ -228,18 +241,24 @@ def classify_state(ticker, narr, rel):
         return "REPRICING"
     if rel < -6.0:
         return "DIVERGENCE"
+    # Price running ahead of narrative: outperforming but story not there
+    price_score = max(0, min(100, 50 + rel * 5))
+    nds = narr - price_score
+    if rel > 2.0 and narr < 60 and nds < -20:
+        return "PRICE-LED"
     if narr < 40:
         return "UNCLEAR"
     return "MACRO"
 
 
 def conflict_flag(state, narr, rel):
-    return state in ("DIVERGENCE", "DISAGREEMENT") and narr >= 60
+    return state in ("DIVERGENCE", "DISAGREEMENT", "NEG_CONFIRMATION") and narr >= 60
 
 
 def build_actors(pressure_by_actor, leadership, buckets, rel_returns):
     rows = []
     for t in TICKERS:
+        direction = ACTOR_DIRECTIONS.get(t, 1)
         rel  = rel_returns.get(t)
         if rel is None:
             rel = 0.0
@@ -247,16 +266,19 @@ def build_actors(pressure_by_actor, leadership, buckets, rel_returns):
             narr  = 35
         else:
             narr  = compute_narr_score(t, pressure_by_actor.get(t, []), leadership, buckets.get(t, ""))
-            state = classify_state(t, narr, rel)
+            state = classify_state(t, narr, rel, direction)
 
         conflict = conflict_flag(state, narr, rel)
         read = READ_OVERRIDES.get(t, STATE_READS.get(state, "no clean read"))
         narrative = NARRATIVES.get(t, "")
 
-        price_score = max(0, min(100, 50 + rel * 5))
-        nds = round(narr - price_score, 1)
+        # Signed NDS: direction × (narr − 50) − rel × 5
+        # For dir=+1 this equals the old formula without the 0–100 cap on price_score
+        nds = round(direction * (narr - 50) - rel * 5, 1)
 
-        rows.append(dict(t=t, state=state, narr=narr, rel=rel, conflict=conflict, read=read, narrative=narrative, nds=nds))
+        rows.append(dict(t=t, state=state, narr=narr, rel=rel, dir=direction,
+                         conflict=conflict, read=read, narrative=narrative, nds=nds,
+                         exp=t in EXPERIMENTAL_TICKERS))
 
     # sort by NDS descending
     rows.sort(key=lambda r: r["nds"], reverse=True)
@@ -272,48 +294,253 @@ def actors_js(rows):
         narrative_escaped = r["narrative"].replace("'", "\\'")
         line = (
             f"  {{ t:'{r['t']}', state:'{r['state']}', "
-            f"narr:{r['narr']}, rel:{rel_str}, nds:{r['nds']}, "
+            f"narr:{r['narr']}, rel:{rel_str}, nds:{r['nds']}, dir:{r['dir']}, "
             f"conflict:{conflict_str}, read:'{r['read']}', "
-            f"story:'{narrative_escaped}' }},"
+            f"story:'{narrative_escaped}', exp:{'true' if r['exp'] else 'false'} }},"
         )
         lines.append(line)
     lines.append("];")
     return "\n".join(lines)
 
 
+EARLY_CONF_READS = {"price starting to follow", "early confirmation forming"}
+
+# Read types eligible for cluster detection (≥3 actors same read = system-level signal)
+CLUSTER_READS = {
+    "price rejecting negative narrative": "bearish rejection",
+    "price ahead of story":              "price-led movement",
+    "story not being paid":              "narrative divergence",
+    "selloff confirming narrative":      "downside confirmation",
+}
+
+
+def detect_clusters(rows: list) -> dict[str, list[str]]:
+    """
+    Group actors by read type. Return {read: [tickers]} for any group ≥3.
+    Sorted largest cluster first.
+    """
+    groups: dict[str, list[str]] = defaultdict(list)
+    for r in rows:
+        if r["read"] in CLUSTER_READS:
+            groups[r["read"]].append(r["t"])
+    return dict(
+        sorted(
+            {read: tickers for read, tickers in groups.items() if len(tickers) >= 3}.items(),
+            key=lambda x: -len(x[1])
+        )
+    )
+
+
+def format_clusters(clusters: dict[str, list[str]]) -> str:
+    """Render all clusters as comma-separated surface lines."""
+    parts = []
+    for read, tickers in clusters.items():
+        label = CLUSTER_READS[read]
+        parts.append(f"Cluster of {label} forming: {', '.join(tickers)}.")
+    return " ".join(parts)
+
+
 def headline(rows, rel_returns):
-    confirmed = [r["t"] for r in rows if r["state"] == "CONFIRMED"]
+    clusters   = detect_clusters(rows)
+    confirmed  = [r["t"] for r in rows if r["state"] == "CONFIRMED"]
+    # Early confirmation: EARLY state or read override — not yet clean but directionally forming
+    early_conf = [r["t"] for r in rows
+                  if r["read"] in EARLY_CONF_READS and r["t"] not in confirmed]
     diverging  = [r["t"] for r in rows if r["state"] == "DIVERGENCE"]
+    price_led  = [r["t"] for r in rows if r["state"] in ("MACRO", "POS_MACRO")]
     n_down = sum(1 for r in rows if r["rel"] < 0)
     total  = len([r for r in rows if r["rel"] != 0.0])
 
-    if confirmed:
-        insight = f"{', '.join(confirmed[:2])} confirming. Most others moving with or below the tape."
-    else:
-        insight = f"No confirmed narratives. {n_down} of {total} high-narrative names down on the week."
+    # Cluster prefix: surface before per-actor reads when a cluster is present
+    cluster_prefix = (format_clusters(clusters) + " ") if clusters else ""
 
     if confirmed:
-        takeaway = f"{confirmed[0]} breaking out. " + (
-            f"{', '.join(diverging[:3])} diverging." if diverging else "Infrastructure still not confirmed."
+        others = [t for t in (diverging + price_led) if t not in confirmed]
+        insight = (
+            cluster_prefix
+            + f"{', '.join(confirmed[:2])} confirming. "
+            + (f"{', '.join(others[:2])} price-led. " if others else "")
+            + "Multiple behaviors coexisting on the board."
+        )
+    elif early_conf:
+        insight = (
+            cluster_prefix
+            + f"No clean confirmation — only early follow-through forming"
+            f" ({', '.join(early_conf)})."
+            f" {n_down} of {total} names down."
         )
     else:
-        takeaway = "Narratives are expanding. Market isn't confirming them."
+        n_price_led = len(price_led)
+        insight = (
+            cluster_prefix
+            + f"{n_down} of {total} names down."
+            + (f" {', '.join(price_led[:2])} price-led." if n_price_led else "")
+            + " Multiple behaviors coexisting."
+        )
+
+    # Takeaway: dominant cluster drives the lead if present, otherwise actor-level
+    if clusters:
+        top_read, top_tickers = next(iter(clusters.items()))
+        top_label = CLUSTER_READS[top_read]
+        takeaway = (
+            f"{len(top_tickers)}-name {top_label} cluster: {', '.join(top_tickers[:3])}."
+            + (f" {', '.join(confirmed[:1])} confirming." if confirmed else "")
+        )
+    elif confirmed:
+        takeaway = f"{confirmed[0]} breaking out. " + (
+            f"{', '.join(diverging[:3])} diverging." if diverging else
+            (f"{', '.join(price_led[:2])} price-led." if price_led else "Board behavior mixed.")
+        )
+    elif early_conf:
+        takeaway = (
+            f"Early follow-through forming — {', '.join(early_conf[:2])}. "
+            + (f"{', '.join(diverging[:2])} diverging." if diverging else "Multiple behaviors coexisting.")
+        )
+    else:
+        takeaway = (
+            "Multiple behaviors coexisting. "
+            + (f"{', '.join(diverging[:2])} diverging." if diverging else "No early confirmation yet.")
+        )
 
     return insight, takeaway
 
 
+def page_title(rows, buckets):
+    """
+    Generate a short title for actors.json meta.page_title.
+    Reflects board TENSION, not direction — never a binary or directional claim.
+    Titles are short, punchy, and editorially overrideable after pipeline runs.
+
+    Preferred templates (use exactly when condition matches):
+      "Mixed signals. Price leading in pockets."
+      "No clean confirmation. Early follow-through forming."
+      "Multiple behaviors. No dominant regime."
+    """
+    confirmed  = [r["t"] for r in rows if r["state"] == "CONFIRMED"]
+    early_conf = [r["t"] for r in rows
+                  if r["read"] in EARLY_CONF_READS and r["t"] not in confirmed]
+    price_led  = [r["t"] for r in rows if r["state"] in ("MACRO", "POS_MACRO", "PRICE-LED")]
+    diverging  = [r["t"] for r in rows if r["state"] == "DIVERGENCE"]
+    neg_conf   = [r["t"] for r in rows if r["state"] == "NEG_CONFIRMATION"]
+    disagreem  = [r["t"] for r in rows if r["state"] == "DISAGREEMENT"]
+    n_down     = sum(1 for r in rows if r["rel"] < 0)
+    total      = len([r for r in rows if r["rel"] != 0.0])
+    n_conf     = len(confirmed)
+    n_early    = len(early_conf)
+    n_price    = len(price_led)
+    n_div      = len(diverging)
+    n_neg      = len(neg_conf)
+    n_dis      = len(disagreem)
+    down_ratio = n_down / total if total else 0
+
+    # Broad clean confirmation
+    if n_conf >= 5:
+        return "Broad confirmation. Multiple narratives being validated."
+
+    if n_conf >= 3 and n_price >= 3:
+        return "Confirmation and price-leading coexisting. Multiple behaviors active."
+
+    # Explicit Transitional: high price-led, meaningful confirmation and divergence
+    if n_price >= 8 and n_conf >= 2 and n_div >= 2:
+        return "Multiple behaviors. No dominant regime."
+
+    # No clean confirmation but early follow-through building — surface the tension
+    if n_conf == 0 and n_early >= 3 and n_price >= 4:
+        return "No clean confirmation. Early follow-through forming."
+
+    # Price-led dominant
+    if n_price >= 6:
+        return "Mixed signals. Price leading in pockets."
+
+    if n_price >= 4 and n_conf >= 1:
+        return "Mixed signals. Price leading in pockets."
+
+    # Mixed board: multiple behaviors in balance
+    if n_conf >= 2 and n_price >= 2 and n_div >= 2:
+        return "Multiple behaviors. No dominant regime."
+
+    if n_conf >= 1 and n_price >= 3:
+        return "Mixed signals. Price leading in pockets."
+
+    # Some early confirmation present
+    if n_conf == 0 and n_early >= 1:
+        return "No clean confirmation. Early follow-through forming."
+
+    # Bearish narrative breaking down in multiple names
+    if n_dis >= 4 and n_neg <= 1:
+        return "Bearish narrative losing grip. Price diverging in multiple names."
+
+    if n_dis >= 3 and n_conf >= 1:
+        return "Multiple behaviors. No dominant regime."
+
+    # Mostly down board with pockets of movement
+    if down_ratio > 0.6 and (n_conf >= 1 or n_dis >= 2 or n_early >= 1):
+        return "Mixed signals. Price leading in pockets."
+
+    if down_ratio > 0.6 and n_price >= 2:
+        return "Multiple behaviors. No dominant regime."
+
+    # Divergence heavy: stories active, price not following
+    if n_div >= 5:
+        return "Stories active. Market not following."
+
+    if n_div >= 3 and n_neg >= 3:
+        return "Narrative-price gap widening."
+
+    # Genuinely one-sided downside
+    if n_neg >= 5 and n_conf == 0:
+        return "Broad pressure. Narratives confirming."
+
+    if n_neg >= 3 and n_conf == 0:
+        return "Multiple behaviors. No dominant regime."
+
+    # Default
+    return "Multiple behaviors. No dominant regime."
+
+
 def narrative_context(rows, buckets):
-    lean_in = [r["t"] for r in rows if buckets.get(r["t"]) == "LEAN_IN"]
+    clusters   = detect_clusters(rows)
+    lean_in    = [r["t"] for r in rows if buckets.get(r["t"]) == "LEAN_IN"]
+    confirmed  = [r["t"] for r in rows if r["state"] == "CONFIRMED"]
+    early_conf = [r["t"] for r in rows
+                  if r["read"] in EARLY_CONF_READS and r["t"] not in confirmed]
+    diverging  = [r["t"] for r in rows if r["state"] == "DIVERGENCE"]
+    price_led  = [r["t"] for r in rows if r["state"] in ("MACRO", "POS_MACRO")]
+    n_confirmed = len(confirmed)
+    n_price_led = len(price_led)
+    n_diverging = len(diverging)
+
     if lean_in:
         names = ", ".join(lean_in[:4])
+        cluster_suffix = (" " + format_clusters(clusters)) if clusters else ""
         return (
-            f"The rotation is in motion — software development out, AI infrastructure in. "
-            f"Data center growth is the lone LEAN IN signal ({names}). "
-            f"The market has not confirmed it. Most high-narrative names remain under pressure."
+            f"The system is cooling, but the board shows mixed behavior — price is moving ahead of "
+            f"narrative in some names while others show early follow-through. "
+            f"Narratives strengthening ({names}).{cluster_suffix}"
         )
+
+    # Confirmation clause: distinguish clean from early — never say "no confirmation"
+    if n_confirmed:
+        conf_clause = f"{n_confirmed} confirmed"
+    elif early_conf:
+        conf_clause = f"early follow-through forming ({', '.join(early_conf)})"
+    else:
+        conf_clause = None
+
+    counts = " · ".join(filter(None, [
+        conf_clause,
+        f"{n_price_led} price-led" if n_price_led else None,
+        f"{n_diverging} diverging" if n_diverging else None,
+    ]))
+
+    cluster_suffix = (" " + format_clusters(clusters)) if clusters else ""
+
     return (
-        "Narratives are active but the market is not paying up. "
-        "Most high-pressure names are flat to down on the week."
+        f"The system is cooling, but the board shows mixed behavior — price is moving ahead of "
+        f"narrative in some names while others show early follow-through. "
+        + (f"{counts}. " if counts else "")
+        + "Multiple behaviors coexisting; no single regime dominant."
+        + cluster_suffix
     )
 
 
@@ -524,7 +751,7 @@ def update_html(html: str, actors_block: str, insight: str, context: str,
 
     # Replace inline strings
     html = re.sub(r'<div class="date-tag">.*?</div>',
-                  f'<div class="date-tag">{date_str}</div>', html)
+                  f'<div class="date-tag">Last updated: {date_str}</div>', html)
     html = re.sub(r'<div class="page-insight">.*?</div>',
                   f'<div class="page-insight">{insight}</div>', html)
     html = re.sub(r'<div class="narrative-context">.*?</div>',
@@ -559,6 +786,7 @@ def main():
     actors_block = actors_js(rows)
     insight, takeaway = headline(rows, rel_returns)
     context = narrative_context(rows, buckets)
+    title = page_title(rows, buckets)
 
     print(f"\nTop 5 by NDS:")
     for r in rows[:5]:
@@ -589,6 +817,14 @@ def main():
             rows_with_chart.append({**r, "chart": chart if chart else None})
         actors_json_dest.write_text(json.dumps({
             "date": today.isoformat(),
+            "meta": {
+                "page_title": title,
+                "subhead": context,
+                "page_insight": insight,
+                "narrative_context": context,
+                "takeaway": takeaway,
+                "date_display": format_date(today),
+            },
             "actors": rows_with_chart,
         }, indent=2))
         print(f"Wrote {actors_json_dest}")
