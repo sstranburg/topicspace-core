@@ -48,6 +48,7 @@ from generate_storm_objects import (
     _SORT_ORDER,
     PHASE_SIGNAL_TO_LIFECYCLE,
     ACTOR_STORMS_FILE,
+    build_event_url_map,
 )
 
 ROOT     = Path(__file__).parent.parent
@@ -959,13 +960,21 @@ def main(min_events: int = 5, limit: int = 60) -> None:
     leadership   = load_json(LEADERSHIP_FILE) or []
     prop_chains  = load_json(PROP_FILE) or []
     actors_raw   = load_json(ACTORS_JSON)
-    actor_storms = load_jsonl(ACTOR_STORMS_FILE)
+    actor_storms  = load_jsonl(ACTOR_STORMS_FILE)
+    event_url_map = build_event_url_map()
 
-    actor_storms_map: dict[str, list[str]] = {
-        rec["storm_id"]: (rec.get("cluster_titles_topN") or [])[:3]
-        for rec in actor_storms
-        if rec.get("storm_id")
-    }
+    actor_storms_map: dict[str, list[dict]] = {}
+    for rec in actor_storms:
+        sid = rec.get("storm_id")
+        if not sid:
+            continue
+        sources = []
+        for ev in (rec.get("representative_events") or [])[:3]:
+            title = ev.get("title", "")
+            url   = event_url_map.get(ev.get("event_id", ""))
+            if title:
+                sources.append({"title": title, "url": url})
+        actor_storms_map[sid] = sources
 
     print(f"  Summaries:   {len(summaries)}")
     print(f"  Trajectories:{len(trajectories)}")

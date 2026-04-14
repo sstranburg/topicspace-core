@@ -45,6 +45,11 @@ PROP_FILE         = DATA_DIR / "propagation_chains.json"
 ACTORS_JSON       = SITE_DIR / "actors.json"
 ACTOR_STORMS_FILE = DATA_DIR / "actor_storms.jsonl"
 
+NORMALIZED_DIR        = ROOT / "data" / "normalized"
+TECH_EVENTS_FILE      = NORMALIZED_DIR / "tech_ecosystem.jsonl"
+COMMUNITY_EVENTS_FILE = NORMALIZED_DIR / "community_posts.jsonl"
+CRYPTO_EVENTS_FILE    = NORMALIZED_DIR / "crypto_ecosystem.jsonl"
+
 OUTPUT_FILE = SITE_DIR / "storms.json"
 
 # ── Lifecycle normalization ────────────────────────────────────────────────────
@@ -172,6 +177,22 @@ def load_jsonl(path: Path) -> list[dict]:
     return out
 
 
+def build_event_url_map() -> dict[str, str]:
+    """Build event_id → url map from all normalized event sources.
+
+    Excludes finnhub.io API endpoints — those are internal API URLs,
+    not user-facing article links.
+    """
+    url_map: dict[str, str] = {}
+    for path in [TECH_EVENTS_FILE, COMMUNITY_EVENTS_FILE, CRYPTO_EVENTS_FILE]:
+        for rec in load_jsonl(path):
+            eid = rec.get("event_id")
+            url = rec.get("url") or ""
+            if eid and url and "finnhub.io" not in url:
+                url_map[eid] = url
+    return url_map
+
+
 def load_json(path: Path) -> dict | list | None:
     if not path.exists():
         print(f"  [WARN] missing: {path.name}")
@@ -296,7 +317,7 @@ def build_storm_object(
     lineage_index:    dict[str, list[str]],
     board_state:      dict[str, dict],
     prop_partners:    dict[str, set[str]],
-    actor_storms_map: dict[str, list[str]] | None = None,
+    actor_storms_map: dict[str, list[dict]] | None = None,
 ) -> dict:
     storm_id = summary.get("storm_id", "")
 
@@ -570,14 +591,22 @@ def main(min_events: int = 5, limit: int = 60) -> None:
     leadership   = load_json(LEADERSHIP_FILE) or []
     prop_chains  = load_json(PROP_FILE) or []
     actors_raw   = load_json(ACTORS_JSON)
-    actor_storms = load_jsonl(ACTOR_STORMS_FILE)
+    actor_storms  = load_jsonl(ACTOR_STORMS_FILE)
+    event_url_map = build_event_url_map()
 
-    # Build storm_id → top-3 representative headlines lookup
-    actor_storms_map: dict[str, list[str]] = {
-        rec["storm_id"]: (rec.get("cluster_titles_topN") or [])[:3]
-        for rec in actor_storms
-        if rec.get("storm_id")
-    }
+    # Build storm_id → top-3 {title, url} sources from representative_events
+    actor_storms_map: dict[str, list[dict]] = {}
+    for rec in actor_storms:
+        sid = rec.get("storm_id")
+        if not sid:
+            continue
+        sources = []
+        for ev in (rec.get("representative_events") or [])[:3]:
+            title = ev.get("title", "")
+            url   = event_url_map.get(ev.get("event_id", ""))
+            if title:
+                sources.append({"title": title, "url": url})
+        actor_storms_map[sid] = sources
 
     print(f"  Summaries:   {len(summaries)}")
     print(f"  Trajectories:{len(trajectories)}")
