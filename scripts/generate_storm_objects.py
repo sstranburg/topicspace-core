@@ -180,15 +180,15 @@ def load_jsonl(path: Path) -> list[dict]:
 def build_event_url_map() -> dict[str, str]:
     """Build event_id → url map from all normalized event sources.
 
-    Excludes finnhub.io API endpoints — those are internal API URLs,
-    not user-facing article links.
+    Finnhub URLs (finnhub.io/api/news?id=...) are 302 redirects to the
+    original article and work correctly in browsers.
     """
     url_map: dict[str, str] = {}
     for path in [TECH_EVENTS_FILE, COMMUNITY_EVENTS_FILE, CRYPTO_EVENTS_FILE]:
         for rec in load_jsonl(path):
             eid = rec.get("event_id")
-            url = rec.get("url") or ""
-            if eid and url and "finnhub.io" not in url:
+            url = rec.get("url")
+            if eid and url:
                 url_map[eid] = url
     return url_map
 
