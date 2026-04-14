@@ -43,6 +43,7 @@ LINEAGES_FILE     = DATA_DIR / "cleaned_lineages.json"
 LEADERSHIP_FILE   = DATA_DIR / "narrative_leadership.json"
 PROP_FILE         = DATA_DIR / "propagation_chains.json"
 ACTORS_JSON       = SITE_DIR / "actors.json"
+ACTOR_STORMS_FILE = DATA_DIR / "actor_storms.jsonl"
 
 OUTPUT_FILE = SITE_DIR / "storms.json"
 
@@ -287,14 +288,15 @@ def derive_roles(actor: str, lead: dict) -> dict:
 # ── Storm object builder ───────────────────────────────────────────────────────
 
 def build_storm_object(
-    summary:        dict,
-    pressure_map:   dict[str, dict],
-    traj_map:       dict[str, dict],
-    leadership_map: dict[str, dict],
-    lineage_map:    dict,
-    lineage_index:  dict[str, list[str]],
-    board_state:    dict[str, dict],
-    prop_partners:  dict[str, set[str]],
+    summary:          dict,
+    pressure_map:     dict[str, dict],
+    traj_map:         dict[str, dict],
+    leadership_map:   dict[str, dict],
+    lineage_map:      dict,
+    lineage_index:    dict[str, list[str]],
+    board_state:      dict[str, dict],
+    prop_partners:    dict[str, set[str]],
+    actor_storms_map: dict[str, list[str]] | None = None,
 ) -> dict:
     storm_id = summary.get("storm_id", "")
 
@@ -402,6 +404,10 @@ def build_storm_object(
     # Limited to top 5 by alphabetical sort (no frequency data at this level).
     partners = sorted(prop_partners.get(actor, set()) - {actor})[:5]
 
+    # ── Top sources (representative headlines) ────────────────────────────────
+    # cluster_titles_topN from actor_storms.jsonl — top 3 headlines for this storm.
+    top_sources: list[str] = actor_storms_map.get(storm_id, []) if actor_storms_map else []
+
     # ── Fields not yet derivable from current data ────────────────────────────
     # These are included in the schema spec but have no backing data source yet.
     # Setting to empty arrays rather than omitting so the frontend type is stable.
@@ -453,6 +459,9 @@ def build_storm_object(
         "strengthening_triggers": strengthening_triggers,
         "weakening_triggers":     weakening_triggers,
         "related_signals":        related_signals,
+        # ── Top sources ──
+        # Top 3 representative headlines from cluster_titles_topN (actor_storms.jsonl)
+        "top_sources": top_sources,
         # ── Source quality ──
         "llm_named":      summary.get("llm_used", False),
         "display_source": summary.get("display_source", "heuristic"),
@@ -561,6 +570,14 @@ def main(min_events: int = 5, limit: int = 60) -> None:
     leadership   = load_json(LEADERSHIP_FILE) or []
     prop_chains  = load_json(PROP_FILE) or []
     actors_raw   = load_json(ACTORS_JSON)
+    actor_storms = load_jsonl(ACTOR_STORMS_FILE)
+
+    # Build storm_id → top-3 representative headlines lookup
+    actor_storms_map: dict[str, list[str]] = {
+        rec["storm_id"]: (rec.get("cluster_titles_topN") or [])[:3]
+        for rec in actor_storms
+        if rec.get("storm_id")
+    }
 
     print(f"  Summaries:   {len(summaries)}")
     print(f"  Trajectories:{len(trajectories)}")
@@ -568,6 +585,7 @@ def main(min_events: int = 5, limit: int = 60) -> None:
     print(f"  Lineages:    {len(lineages)}")
     print(f"  Leadership:  {len(leadership)}")
     print(f"  Prop chains: {len(prop_chains)}")
+    print(f"  Actor storms:{len(actor_storms)} (top_sources map: {len(actor_storms_map)} entries)")
 
     pressure_map   = build_pressure_by_storm(pressure)
     traj_map       = build_trajectory_by_actor(trajectories)
@@ -603,7 +621,8 @@ def main(min_events: int = 5, limit: int = 60) -> None:
         try:
             obj = build_storm_object(
                 summary, pressure_map, traj_map, leadership_map,
-                lineages, lineage_index, board_state, prop_partners
+                lineages, lineage_index, board_state, prop_partners,
+                actor_storms_map,
             )
             storms.append(obj)
         except Exception as e:
