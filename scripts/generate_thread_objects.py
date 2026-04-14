@@ -47,6 +47,7 @@ from generate_storm_objects import (
     storm_sort_key,
     _SORT_ORDER,
     PHASE_SIGNAL_TO_LIFECYCLE,
+    ACTOR_STORMS_FILE,
 )
 
 ROOT     = Path(__file__).parent.parent
@@ -958,6 +959,13 @@ def main(min_events: int = 5, limit: int = 60) -> None:
     leadership   = load_json(LEADERSHIP_FILE) or []
     prop_chains  = load_json(PROP_FILE) or []
     actors_raw   = load_json(ACTORS_JSON)
+    actor_storms = load_jsonl(ACTOR_STORMS_FILE)
+
+    actor_storms_map: dict[str, list[str]] = {
+        rec["storm_id"]: (rec.get("cluster_titles_topN") or [])[:3]
+        for rec in actor_storms
+        if rec.get("storm_id")
+    }
 
     print(f"  Summaries:   {len(summaries)}")
     print(f"  Trajectories:{len(trajectories)}")
@@ -995,7 +1003,8 @@ def main(min_events: int = 5, limit: int = 60) -> None:
         try:
             obj = build_storm_object(
                 summary, pressure_map, traj_map, leadership_map,
-                lineages, lineage_index, board_state, prop_partners
+                lineages, lineage_index, board_state, prop_partners,
+                actor_storms_map,
             )
             all_storms.append(obj)
         except Exception as e:
