@@ -44,10 +44,10 @@ TICKERS = [
     "ORCL", "SMCI", "INTC", "AMD",  "TSLA", "DELL", "GOOGL", "ANET",
     "NBIS", "AVGO", "AMZN", "TSM",  "VRT",  "CRM",  "CRWV", "SOFI",
     "AAPL", "ASML", "SNOW", "DDOG", "CEG",  "VST",  "ZETA",
-    "USAR", "MP",
+    "USAR", "MP", "ODC",
 ]
 
-EXPERIMENTAL_TICKERS = {"USAR", "MP"}
+EXPERIMENTAL_TICKERS = {"USAR", "MP", "ODC"}
 
 # Hardcoded overrides for state (for names with known persistent dynamics)
 STATE_OVERRIDES = {
@@ -116,6 +116,7 @@ NARRATIVES = {
     "ZETA":  "AI-native customer data platform; enterprise marketing automation adoption",
     "USAR":  "Rare earth supply chain; domestic critical minerals push",
     "MP":    "Rare earth mining; China tariff tailwind and supply chain angle",
+    "ODC":   "Sorbent products manufacturing; industrial materials play",
 }
 
 # Per-ticker read overrides (only where state default is insufficient)
@@ -123,13 +124,29 @@ NARRATIVES = {
 # or a clearly distinct phrase that the morning summary can interpret unambiguously.
 # Do NOT use: "price ahead of narrative" (ambiguous with direction)
 # DO use: "price ahead of story" (bullish), "price confirming negative story" (bearish)
+#
+# IMPORTANT: overrides must stay compatible with the derived state. When the
+# underlying state changes (e.g. REPRICING → CONFIRMED), review and remove stale overrides.
+# The build-time check below will flag incompatible override/state pairings.
 READ_OVERRIDES = {
-    "MRVL":  "early confirmation forming",        # EARLY but stronger signal than default
-    "AMD":   "narrative active, price flat",       # REPRICING but NDS near zero, rel flat
-    "AVGO":  "moving with tape",                   # UNCLEAR but narrative too weak to flag
-    "ADBE":  "price ahead of story",               # classified MACRO; NDS strongly negative
-    "ARM":   "price ahead of story",               # extreme price lead on bullish narrative
     "INTC":  "price confirming negative story",    # NEG_CONFIRMATION, NDS slightly negative
+}
+
+# Build-time compatibility: override read phrase → states it is semantically valid for.
+# Used to flag stale overrides when underlying state changes.
+_OVERRIDE_STATE_COMPATIBLE: dict[str, frozenset] = {
+    "price confirming narrative":         frozenset({"CONFIRMED"}),
+    "price starting to follow":           frozenset({"EARLY"}),
+    "price lagging narrative":            frozenset({"REPRICING"}),
+    "story not being paid":               frozenset({"DIVERGENCE", "REPRICING"}),
+    "selloff confirming narrative":       frozenset({"NEG_CONFIRMATION"}),
+    "price rejecting negative narrative": frozenset({"DISAGREEMENT"}),
+    "moving with tape":                   frozenset({"MACRO", "UNCLEAR"}),
+    "price ahead of story":               frozenset({"PRICE-LED", "MACRO"}),
+    "no follow-through":                  frozenset({"UNCLEAR"}),
+    "narrative active, price flat":       frozenset({"REPRICING", "UNCLEAR", "EARLY"}),
+    "early confirmation forming":         frozenset({"EARLY", "CONFIRMED"}),
+    "price confirming negative story":    frozenset({"NEG_CONFIRMATION", "DISAGREEMENT"}),
 }
 
 
@@ -280,6 +297,23 @@ def build_actors(pressure_by_actor, leadership, buckets, rel_returns):
                          conflict=conflict, read=read, narrative=narrative, nds=nds,
                          exp=t in EXPERIMENTAL_TICKERS))
 
+    # Build-time read/state compatibility check.
+    # Flags overrides that are no longer valid after a state transition.
+    conflicts: list[str] = []
+    for row in rows:
+        override = READ_OVERRIDES.get(row["t"])
+        if not override:
+            continue
+        compatible = _OVERRIDE_STATE_COMPATIBLE.get(override, frozenset())
+        if compatible and row["state"] not in compatible:
+            conflicts.append(
+                f"  {row['t']:6s}: override='{override}' is incompatible with state={row['state']}"
+            )
+    if conflicts:
+        print("[WARN] Stale read overrides detected — review READ_OVERRIDES in generate_leaderboard.py:")
+        for c in conflicts:
+            print(c)
+
     # sort by NDS descending
     rows.sort(key=lambda r: r["nds"], reverse=True)
     return rows
@@ -341,40 +375,58 @@ def format_clusters(clusters: dict[str, list[str]]) -> str:
 
 
 def headline(rows, rel_returns):
+    """
+    Generate insight + takeaway lines for the leaderboard.
+
+    COUNT SEMANTICS NOTE — these counts are board-level (price-narrative convergence),
+    not signal-layer counts (cluster momentum/density). They are intentionally different:
+      - board confirmed  = state == CONFIRMED: narr ≥ 65 AND rel ≥ 5.0 (price + narrative aligned)
+      - board price-led  = state == PRICE-LED: price outrunning a weak narrative
+      - signal LEAN_IN   = cluster momentum/density signal (no price requirement)
+    Do not conflate these counts across surfaces. When both surfaces are shown together,
+    qualify: "confirmed on the board" vs "confirmed in signal layer".
+    """
     clusters   = detect_clusters(rows)
     confirmed  = [r["t"] for r in rows if r["state"] == "CONFIRMED"]
     # Early confirmation: EARLY state or read override — not yet clean but directionally forming
     early_conf = [r["t"] for r in rows
                   if r["read"] in EARLY_CONF_READS and r["t"] not in confirmed]
     diverging  = [r["t"] for r in rows if r["state"] == "DIVERGENCE"]
-    price_led  = [r["t"] for r in rows if r["state"] in ("MACRO", "POS_MACRO")]
+    # PRICE-LED = price running ahead of narrative; MACRO = moving with tape (separate concept)
+    price_led  = [r["t"] for r in rows if r["state"] == "PRICE-LED"]
     n_down = sum(1 for r in rows if r["rel"] < 0)
     total  = len([r for r in rows if r["rel"] != 0.0])
+    n_price_led = len(price_led)
 
     # Cluster prefix: surface before per-actor reads when a cluster is present
     cluster_prefix = (format_clusters(clusters) + " ") if clusters else ""
 
     if confirmed:
-        others = [t for t in (diverging + price_led) if t not in confirmed]
+        # Qualification: is this selective (price-led outnumbers confirmed) or broad?
+        selective = n_price_led > len(confirmed)
+        conf_label = "Selective confirmation" if selective else "Confirmation"
+        others = [t for t in price_led if t not in confirmed]
         insight = (
             cluster_prefix
-            + f"{', '.join(confirmed[:2])} confirming. "
-            + (f"{', '.join(others[:2])} price-led. " if others else "")
-            + "Multiple behaviors coexisting on the board."
+            + f"{conf_label} — {', '.join(confirmed[:2])} confirming. "
+            + (f"{n_price_led}-name price-led cluster forming. " if n_price_led >= 3 else
+               f"{', '.join(others[:2])} price-led. " if others else "")
+            + ("Market repricing faster than narrative confirms." if selective
+               else "Multiple behaviors coexisting on the board.")
         )
     elif early_conf:
         insight = (
             cluster_prefix
-            + f"No clean confirmation — only early follow-through forming"
-            f" ({', '.join(early_conf)})."
+            + f"Early follow-through forming — {', '.join(early_conf[:2])}."
             f" {n_down} of {total} names down."
+            + (f" {n_price_led}-name price-led cluster present." if n_price_led >= 3 else "")
         )
     else:
-        n_price_led = len(price_led)
         insight = (
             cluster_prefix
             + f"{n_down} of {total} names down."
-            + (f" {', '.join(price_led[:2])} price-led." if n_price_led else "")
+            + (f" {n_price_led}-name price-led cluster: {', '.join(price_led[:2])}." if n_price_led >= 3 else
+               f" {', '.join(price_led[:2])} price-led." if price_led else "")
             + " Multiple behaviors coexisting."
         )
 
@@ -382,14 +434,23 @@ def headline(rows, rel_returns):
     if clusters:
         top_read, top_tickers = next(iter(clusters.items()))
         top_label = CLUSTER_READS[top_read]
+        selective = n_price_led > len(confirmed)
+        conf_suffix = (
+            f" Selective confirmation — {', '.join(confirmed[:1])} confirming."
+            if confirmed and selective else
+            f" {', '.join(confirmed[:1])} confirming." if confirmed else ""
+        )
         takeaway = (
             f"{len(top_tickers)}-name {top_label} cluster: {', '.join(top_tickers[:3])}."
-            + (f" {', '.join(confirmed[:1])} confirming." if confirmed else "")
+            + conf_suffix
         )
     elif confirmed:
-        takeaway = f"{confirmed[0]} breaking out. " + (
-            f"{', '.join(diverging[:3])} diverging." if diverging else
-            (f"{', '.join(price_led[:2])} price-led." if price_led else "Board behavior mixed.")
+        selective = n_price_led > len(confirmed)
+        takeaway = (
+            (f"Selective confirmation — {confirmed[0]} among confirmed names. " if selective
+             else f"{confirmed[0]} confirming. ")
+            + (f"{', '.join(diverging[:2])} diverging." if diverging else
+               f"{n_price_led} names price-led." if n_price_led else "Board behavior mixed.")
         )
     elif early_conf:
         takeaway = (

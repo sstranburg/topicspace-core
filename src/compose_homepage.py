@@ -128,6 +128,19 @@ _WEAK_PHRASES = {
     "market engagement",
     "china taiwan chip semiconductor",
     "bom:",
+    # entity-residue patterns from term-join fallback
+    "china taiwan iran",
+    "chip says anthropic",
+    "claude oracle software",
+    "says anthropic deal",
+    "highlighted zacks",
+    "chatgpt gemini going",
+    "alternatives? win",
+    "alternatives win linux",
+    "nemotron-3 nano",
+    "steve jobs once",
+    "epstein files",
+    "zacks bull bear",
 }
 
 
@@ -581,11 +594,19 @@ GOOD system_state:
     "Rotating — model layer out, delivery forming"
     "Infrastructure delivery layer consolidating"
     "Model attention exiting, delivery absorbing"
+    "Selective confirmation forming — price-led cluster dominant"
 
 BAD system_state:
-    "Active but dispersed"  ← no direction
-    "Fragmented"            ← describes state without direction
-    "Mixed signals"         ← meaningless
+    "Active but dispersed"          ← no direction
+    "Fragmented"                    ← describes state without direction
+    "Mixed signals"                 ← meaningless
+    "Broad confirmation building"   ← overstates; use "selective" when price-led names outnumber confirmed
+    "Confirmation forming"          ← too vague; qualify which layer or type
+
+PRECISION RULE: If price-led names outnumber confirmed names on the board, do NOT describe
+the system as broadly confirming. Use "selective confirmation" or "confirmation forming in
+pockets" to reflect the actual distribution. Prefer narrower claims over broad market-sweeping
+language. When in doubt, qualify.
 """
 
 

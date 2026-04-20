@@ -506,8 +506,69 @@ def cluster_titles(events: list[Event], n_clusters: int = N_CLUSTERS) -> list[di
 
 # ── LLM labeling ──────────────────────────────────────────────────────────────
 
+# Concept-first fallback labels by cluster family.
+# Used when the term-join fallback is entity/residue-heavy.
+_BUCKET_FAMILY_LABELS: dict[str, str] = {
+    "infrastructure_delivery": "Data center infrastructure growth",
+    "compute_capacity":        "AI compute capacity signal",
+    "semiconductor_supply":    "Chip supply narrative",
+    "geopolitical":            "Geopolitical supply-chain risk",
+    "regulatory_policy":       "Regulatory risk to AI adoption",
+    "model_technology":        "AI model competition",
+    "enterprise_deployment":   "Software AI adoption signal",
+    "partnership_deals":       "AI partnership momentum",
+    "energy_power":            "Power infrastructure signal",
+    "market_volatility":       "Market repricing signal",
+    "market_noise":            "General market activity",
+    "talent_research":         "AI talent and research signal",
+}
+
+# Words that indicate a term-join fallback is entity/residue-heavy rather than conceptual.
+_LABEL_RESIDUE_WORDS = {
+    "says", "deal", "stock", "stocks", "today", "week", "going",
+    "anyone", "win", "advice", "alternatives", "highlighted", "bull",
+    "bear", "nano", "aggressive", "uncensored", "brushed", "spins",
+}
+_LABEL_COUNTRY_WORDS = {"china", "taiwan", "iran", "russia", "india", "korea"}
+# AI product/company names used as bare tokens (indicate entity residue, not concepts)
+_LABEL_ENTITY_TOKENS = {
+    "claude", "chatgpt", "gemini", "gpt", "llm", "llms", "openai", "anthropic",
+    "copilot", "gemma", "grok", "mistral", "llama", "deepseek",
+    "oracle", "zacks", "benzinga", "cnbc", "bloomberg",
+}
+
+
+def _term_join_is_weak(label: str, cluster: dict) -> bool:
+    """True if the 4-term fallback label is entity-heavy or residue-heavy.
+
+    Checks for: residue verbs, country names, AI product name tokens,
+    and actor tickers that ended up in the top_terms list.
+    """
+    words = [w.lower().strip("():,?!'\"") for w in label.split() if w.strip()]
+    actors_lower = {a.lower() for a in cluster.get("actors", [])}
+    junk = sum(
+        1 for w in words
+        if w in _LABEL_RESIDUE_WORDS
+        or w in _LABEL_COUNTRY_WORDS
+        or w in _LABEL_ENTITY_TOKENS
+        or w in actors_lower
+    )
+    return len(words) > 0 and junk / len(words) >= 0.5
+
+
+def _concept_first_fallback(cluster: dict) -> str:
+    """Return a concept-first label derived from the cluster's bucket family."""
+    family = "_".join(cluster["cluster_id"].split("_")[:-1])
+    return _BUCKET_FAMILY_LABELS.get(family, "Narrative signal forming")
+
+
 def label_cluster(cluster: dict, use_llm: bool = True) -> dict:
-    fallback_label = " ".join(cluster["top_terms"][:4]).title()
+    raw_terms_label = " ".join(cluster["top_terms"][:4]).title()
+    # Prefer concept-first fallback when raw term-join is entity/residue-heavy
+    fallback_label = (
+        raw_terms_label if not _term_join_is_weak(raw_terms_label, cluster)
+        else _concept_first_fallback(cluster)
+    )
 
     if not use_llm:
         return {**cluster, "narrative": fallback_label, "explanation": "", "label_source": "terms"}
