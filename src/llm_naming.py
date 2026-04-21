@@ -8,12 +8,25 @@ import openai
 load_dotenv()
 
 SPECULATIVE_WORDS = {'likely', 'could', 'may', 'might', 'possibly', 'perhaps', 'probably'}
-GENERIC_PHRASES = {'developments', 'activity', 'market activity', 'trends', 'updates', 'news', 'moves'}
+GENERIC_PHRASES = {
+    'developments', 'activity', 'market activity', 'trends', 'updates', 'news', 'moves',
+    'announcement', 'product launch', 'prediction',
+}
 FORBIDDEN_INTERPRETIVE_PHRASES = {
     'focus on', 'strategy', 'conviction', 'market presence', 'positioning',
     'outlook', 'thesis', 'wall street concerns overblown', 'sleeping giant',
     'bull case', 'backed up the truck', 'bear case', 'hidden gem'
 }
+# Publisher and brokerage names that indicate source residue rather than narrative content.
+# An LLM headline containing these terms is naming the source, not the story.
+PUBLISHER_NAMES = frozenset({
+    'motley fool', 'wedbush', 'hsbc', 'rbc', 'goldman sachs', 'da davidson',
+    'zacks', 'barclays', 'morgan stanley', 'jpmorgan', 'j.p. morgan',
+    'wells fargo', 'bank of america', 'ubs', 'jefferies', 'bernstein',
+    'cnbc', 'bloomberg', 'seeking alpha', 'seekingalpha', 'benzinga',
+    'citigroup', 'piper sandler', 'needham', 'oppenheimer', 'cantor fitzgerald',
+    'td cowen', 'stifel', 'raymond james', 'truist', 'baird', 'mizuho',
+})
 
 _client = None
 
@@ -165,6 +178,11 @@ def validate_llm_label(llm_headline, llm_one_liner, heuristic_headline):
         if phrase in headline_lower:
             rejection_reasons.append('forbidden_phrase')
             return False, f"Contains forbidden interpretive phrase: {phrase}", rejection_reasons
+
+    for pub in PUBLISHER_NAMES:
+        if pub in headline_lower:
+            rejection_reasons.append('publisher_residue')
+            return False, f"Contains publisher/source name: {pub}", rejection_reasons
 
     for word in SPECULATIVE_WORDS:
         if word in headline_lower:

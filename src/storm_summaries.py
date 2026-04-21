@@ -19,8 +19,32 @@ WEAK_DESCRIPTOR_WORDS = {
     'platforms', 'platform', 'surge', 'surges', 'surging', 'soaring',
     'plunging', 'tumbling', 'rallying', 'rally', 'rallies', 'developments',
     'development', 'updates', 'update', 'news', 'moves', 'move', 'shift',
-    'shifts', 'change', 'changes', 'trend', 'trends', 'activity', 'activities'
+    'shifts', 'change', 'changes', 'trend', 'trends', 'activity', 'activities',
+    # Weak standalone qualifiers that produce garbage like "High developments around X"
+    'high', 'low', 'broad', 'significant', 'notable', 'increased', 'decreased',
+    'various', 'multiple', 'recent', 'continued', 'ongoing',
 }
+
+# Publisher, media outlet, and brokerage names that should never become a storm's
+# primary phrase. These appear as top bigrams/themes in analyst-heavy article titles
+# and produce source-shaped names like "Wedbush developments around MSFT".
+PUBLISHER_SOURCE_TERMS = frozenset({
+    # Media / publications
+    "motley", "fool", "cnbc", "bloomberg", "reuters",
+    "seekingalpha", "seeking", "benzinga", "thestreet", "wsj", "barrons",
+    # Brokerages / investment banks
+    "wedbush", "hsbc", "rbc", "goldman", "sachs", "davidson",
+    "zacks", "barclays", "morgan", "stanley", "jpmorgan", "citigroup",
+    "jefferies", "bernstein", "piper", "sandler", "needham",
+    "oppenheimer", "cantor", "cowen", "stifel", "raymond", "truist",
+    "baird", "td", "mizuho", "dbs", "nomura", "bofa",
+})
+
+
+def _is_publisher_residue(phrase: str) -> bool:
+    """True if phrase consists primarily of publisher/brokerage metadata."""
+    words = phrase.lower().split()
+    return bool(words) and any(w in PUBLISHER_SOURCE_TERMS for w in words)
 
 # Domain-specific phrases (prioritized) - expanded lexicon
 DOMAIN_PHRASES = [
@@ -109,7 +133,7 @@ def extract_entity_actions(titles, actors):
             elif 'expand' in verb:
                 patterns.append('expansion')
             elif 'launch' in verb:
-                patterns.append('product launch')
+                patterns.append('launch')
             elif 'invest' in verb:
                 patterns.append('investment')
             elif 'build' in verb or 'built' in verb:
@@ -117,7 +141,7 @@ def extract_entity_actions(titles, actors):
             elif 'acquire' in verb:
                 patterns.append('acquisition')
             elif 'announce' in verb:
-                patterns.append('announcement')
+                patterns.append('disclosure')
     
     # Remove duplicates while preserving order
     seen = set()
@@ -173,23 +197,42 @@ def extract_bigrams(titles, min_freq=2):
     return [bigram for bigram, count in bigram_counts.most_common(10) if count >= min_freq]
 
 
+_GENERIC_ACTION_PHRASES = {"product launch", "announcement", "prediction", "launch", "disclosure"}
+
 def generate_headline(themes, bigrams, domain_phrases, entity_actions, actors):
     """Generate clean analyst-style headline using actor-aware templates."""
-    # Priority: domain_phrases > entity_actions > bigrams > themes
-    
-    # Select primary phrase
-    if domain_phrases:
-        primary = domain_phrases[0]
-        secondary = domain_phrases[1] if len(domain_phrases) > 1 else None
-    elif entity_actions:
-        primary = entity_actions[0]
-        secondary = entity_actions[1] if len(entity_actions) > 1 else None
-    elif bigrams:
-        primary = bigrams[0]
-        secondary = bigrams[1] if len(bigrams) > 1 else None
-    elif themes:
-        primary = themes[0]
-        secondary = themes[1] if len(themes) > 1 else None
+    # Priority: domain_phrases > entity_actions > bigrams > themes.
+    # Publisher/source residue is filtered from all candidate lists before selection.
+    # Generic action wrappers (announcement, product launch, prediction) are also filtered
+    # — they name the event type, not the narrative.
+
+    def _clean(lst):
+        """Remove publisher residue and weak standalone qualifiers from candidate list."""
+        return [
+            p for p in (lst or [])
+            if not _is_publisher_residue(p)
+            and not (len(p.split()) == 1 and p.lower() in WEAK_DESCRIPTOR_WORDS)
+        ]
+
+    clean_domain  = _clean(domain_phrases)
+    # Strip generic action wrappers that produce clunky headlines
+    clean_actions = [p for p in _clean(entity_actions) if p.lower() not in _GENERIC_ACTION_PHRASES]
+    clean_bigrams = _clean(bigrams)
+    clean_themes  = _clean(themes)
+
+    # Select primary phrase from cleaned candidates
+    if clean_domain:
+        primary   = clean_domain[0]
+        secondary = clean_domain[1] if len(clean_domain) > 1 else None
+    elif clean_actions:
+        primary   = clean_actions[0]
+        secondary = clean_actions[1] if len(clean_actions) > 1 else None
+    elif clean_bigrams:
+        primary   = clean_bigrams[0]
+        secondary = clean_bigrams[1] if len(clean_bigrams) > 1 else None
+    elif clean_themes:
+        primary   = clean_themes[0]
+        secondary = clean_themes[1] if len(clean_themes) > 1 else None
     else:
         primary = None
         secondary = None
@@ -217,12 +260,12 @@ def generate_headline(themes, bigrams, domain_phrases, entity_actions, actors):
     
     if actor_count == 1:
         # Single actor templates
-        if primary in ['partnership', 'legal dispute', 'expansion', 'acquisition']:
+        if primary in ['partnership', 'legal dispute', 'expansion', 'acquisition', 'investment']:
             return f"{primary_title} involving {actor_str}"
-        elif primary in ['product launch', 'announcement']:
-            return f"{primary_title} from {actor_str}"
+        elif primary in ['buildout']:
+            return f"{primary_title} narrative around {actor_str}"
         else:
-            return f"{primary_title} developments around {actor_str}"
+            return f"{primary_title} narrative around {actor_str}"
     
     elif actor_count == 2:
         # Two actor templates - emphasize relationships

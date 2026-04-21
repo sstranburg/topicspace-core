@@ -512,11 +512,11 @@ _BUCKET_FAMILY_LABELS: dict[str, str] = {
     "infrastructure_delivery": "Data center infrastructure growth",
     "compute_capacity":        "AI compute capacity signal",
     "semiconductor_supply":    "Chip supply narrative",
-    "geopolitical":            "Geopolitical supply-chain risk",
-    "regulatory_policy":       "Regulatory risk to AI adoption",
-    "model_technology":        "AI model competition",
-    "enterprise_deployment":   "Software AI adoption signal",
-    "partnership_deals":       "AI partnership momentum",
+    "geopolitical":            "Geopolitical supply-chain pressure",
+    "regulatory_policy":       "Regulatory uncertainty stalling adoption clarity",
+    "model_technology":        "AI model competition signal",
+    "enterprise_deployment":   "Enterprise AI deployment signal",
+    "partnership_deals":       "Partnership discussion forming, commitments unconfirmed",
     "energy_power":            "Power infrastructure signal",
     "market_volatility":       "Market repricing signal",
     "market_noise":            "General market activity",
@@ -923,8 +923,9 @@ def render_json(sections: dict, date: str) -> str:
 # Applied post-compose when compass output is too weak to reflect leaderboard reality.
 
 _WEAK_COMPASS_OVERRIDE = (
-    "Mixed signals. Downside still confirming in software, while selective upside "
-    "and early follow-through are emerging in infrastructure and adjacent names."
+    "Provisional. No strong adoption signal — regulatory uncertainty persists, "
+    "infrastructure discussion continues, and early follow-through is forming "
+    "but not yet confirmed across names."
 )
 
 # Phrases that indicate the compass drifted into generic/abstract framing — override regardless
@@ -1324,9 +1325,9 @@ def render_site_json(
         elif len(lean_in_s) == 1:
             system_state = "Transitional. One narrative strengthening; multiple behaviors coexisting."
         elif len(step_back_s) >= 3:
-            system_state = "Transitional. Multiple behaviors coexisting; no single regime dominant."
+            system_state = "Transitional. Multiple behaviors coexisting; no single pattern dominant."
         else:
-            system_state = "Transitional. Multiple behaviors coexisting; no single regime dominant."
+            system_state = "Transitional. Multiple behaviors coexisting; no single pattern dominant."
 
         if lean_in_s:
             top = lean_in_s[0]

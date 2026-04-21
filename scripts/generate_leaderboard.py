@@ -43,7 +43,7 @@ TICKERS = [
     "NVDA", "MRVL", "MSFT", "ARM",  "PLTR", "META", "ADBE", "MU",
     "ORCL", "SMCI", "INTC", "AMD",  "TSLA", "DELL", "GOOGL", "ANET",
     "NBIS", "AVGO", "AMZN", "TSM",  "VRT",  "CRM",  "CRWV", "SOFI",
-    "AAPL", "ASML", "SNOW", "DDOG", "CEG",  "VST",  "ZETA",
+    "AAPL", "ASML", "SNOW", "DDOG", "CEG",  "VST",  "ZETA",  "NFLX",
     "USAR", "MP", "ODC",
 ]
 
@@ -114,6 +114,7 @@ NARRATIVES = {
     "CEG":   "Nuclear power capacity for AI data centers; hyperscaler offtake deals",
     "VST":   "Gas and nuclear power generation serving AI data center demand",
     "ZETA":  "AI-native customer data platform; enterprise marketing automation adoption",
+    "NFLX":  "Ad-supported tier growth; AI personalization and live sports expansion",
     "USAR":  "Rare earth supply chain; domestic critical minerals push",
     "MP":    "Rare earth mining; China tariff tailwind and supply chain angle",
     "ODC":   "Sorbent products manufacturing; industrial materials play",
@@ -475,7 +476,7 @@ def page_title(rows, buckets):
     Preferred templates (use exactly when condition matches):
       "Mixed signals. Price leading in pockets."
       "No clean confirmation. Early follow-through forming."
-      "Multiple behaviors. No dominant regime."
+      "Multiple behaviors. No dominant pattern."
     """
     confirmed  = [r["t"] for r in rows if r["state"] == "CONFIRMED"]
     early_conf = [r["t"] for r in rows
@@ -503,7 +504,7 @@ def page_title(rows, buckets):
 
     # Explicit Transitional: high price-led, meaningful confirmation and divergence
     if n_price >= 8 and n_conf >= 2 and n_div >= 2:
-        return "Multiple behaviors. No dominant regime."
+        return "Multiple behaviors. No dominant pattern."
 
     # No clean confirmation but early follow-through building — surface the tension
     if n_conf == 0 and n_early >= 3 and n_price >= 4:
@@ -518,7 +519,7 @@ def page_title(rows, buckets):
 
     # Mixed board: multiple behaviors in balance
     if n_conf >= 2 and n_price >= 2 and n_div >= 2:
-        return "Multiple behaviors. No dominant regime."
+        return "Multiple behaviors. No dominant pattern."
 
     if n_conf >= 1 and n_price >= 3:
         return "Mixed signals. Price leading in pockets."
@@ -532,14 +533,14 @@ def page_title(rows, buckets):
         return "Bearish narrative losing grip. Price diverging in multiple names."
 
     if n_dis >= 3 and n_conf >= 1:
-        return "Multiple behaviors. No dominant regime."
+        return "Multiple behaviors. No dominant pattern."
 
     # Mostly down board with pockets of movement
     if down_ratio > 0.6 and (n_conf >= 1 or n_dis >= 2 or n_early >= 1):
         return "Mixed signals. Price leading in pockets."
 
     if down_ratio > 0.6 and n_price >= 2:
-        return "Multiple behaviors. No dominant regime."
+        return "Multiple behaviors. No dominant pattern."
 
     # Divergence heavy: stories active, price not following
     if n_div >= 5:
@@ -553,38 +554,33 @@ def page_title(rows, buckets):
         return "Broad pressure. Narratives confirming."
 
     if n_neg >= 3 and n_conf == 0:
-        return "Multiple behaviors. No dominant regime."
+        return "Multiple behaviors. No dominant pattern."
 
     # Default
     return "Multiple behaviors. No dominant regime."
 
 
 def narrative_context(rows, buckets):
-    clusters   = detect_clusters(rows)
-    lean_in    = [r["t"] for r in rows if buckets.get(r["t"]) == "LEAN_IN"]
-    confirmed  = [r["t"] for r in rows if r["state"] == "CONFIRMED"]
-    early_conf = [r["t"] for r in rows
-                  if r["read"] in EARLY_CONF_READS and r["t"] not in confirmed]
-    diverging  = [r["t"] for r in rows if r["state"] == "DIVERGENCE"]
-    price_led  = [r["t"] for r in rows if r["state"] in ("MACRO", "POS_MACRO")]
-    n_confirmed = len(confirmed)
-    n_price_led = len(price_led)
-    n_diverging = len(diverging)
+    clusters    = detect_clusters(rows)
+    lean_in     = [r["t"] for r in rows if buckets.get(r["t"]) == "LEAN_IN"]
+    confirmed   = [r["t"] for r in rows if r["state"] == "CONFIRMED"]
+    early_conf  = [r["t"] for r in rows
+                   if r["read"] in EARLY_CONF_READS and r["t"] not in confirmed]
+    diverging   = [r["t"] for r in rows if r["state"] == "DIVERGENCE"]
+    price_led_s = [r["t"] for r in rows if r["state"] == "PRICE-LED"]
+    n_confirmed  = len(confirmed)
+    n_early      = len(early_conf)
+    n_price_led  = len(price_led_s)
+    n_diverging  = len(diverging)
+    total        = len([r for r in rows if r["rel"] != 0.0])
 
-    if lean_in:
-        names = ", ".join(lean_in[:4])
-        cluster_suffix = (" " + format_clusters(clusters)) if clusters else ""
-        return (
-            f"The system is cooling, but the board shows mixed behavior — price is moving ahead of "
-            f"narrative in some names while others show early follow-through. "
-            f"Narratives strengthening ({names}).{cluster_suffix}"
-        )
+    cluster_suffix = (" " + format_clusters(clusters)) if clusters else ""
 
     # Confirmation clause: distinguish clean from early — never say "no confirmation"
     if n_confirmed:
         conf_clause = f"{n_confirmed} confirmed"
     elif early_conf:
-        conf_clause = f"early follow-through forming ({', '.join(early_conf)})"
+        conf_clause = f"early follow-through forming ({', '.join(early_conf[:3])})"
     else:
         conf_clause = None
 
@@ -594,15 +590,52 @@ def narrative_context(rows, buckets):
         f"{n_diverging} diverging" if n_diverging else None,
     ]))
 
-    cluster_suffix = (" " + format_clusters(clusters)) if clusters else ""
+    # Derive a state-aware opening line rather than hardcoding "cooling"
+    if lean_in and n_confirmed >= 2:
+        opener = (
+            f"Selective expansion — {', '.join(lean_in[:3])} showing narrative strength. "
+            f"Confirmation present but not broad."
+        )
+    elif lean_in and n_early >= 2:
+        opener = (
+            f"Narratives strengthening in pockets ({', '.join(lean_in[:3])}), "
+            f"with early follow-through forming but not yet clean confirmation."
+        )
+    elif lean_in:
+        names = ", ".join(lean_in[:4])
+        opener = (
+            f"Selective signal — narratives strengthening in {names}. "
+            f"Board otherwise mixed."
+        )
+    elif n_confirmed >= 3:
+        opener = (
+            f"Confirmation building — {', '.join(confirmed[:3])} with narrative and price aligned. "
+            f"Multiple behaviors coexisting."
+        )
+    elif n_confirmed >= 1 and n_price_led >= 4:
+        opener = (
+            f"Selective confirmation present ({', '.join(confirmed[:2])}), "
+            f"but price-led movement dominates — {n_price_led} of {total} names running ahead of narrative."
+        )
+    elif n_price_led >= 6:
+        opener = (
+            f"Price is broadly ahead of narrative — {n_price_led} of {total} names in price-led states. "
+            f"Confirmation absent; early follow-through {('forming in ' + ', '.join(early_conf[:2])) if early_conf else 'not yet visible'}."
+        )
+    elif n_early >= 3 and n_confirmed == 0:
+        opener = (
+            f"No broad confirmation yet — early follow-through forming "
+            f"({', '.join(early_conf[:3])}), but price-led dislocation still dominant."
+        )
+    elif n_diverging >= 4:
+        opener = (
+            f"Narrative-price gap widening — {n_diverging} names with active stories and price not following. "
+            f"Multiple behaviors coexisting."
+        )
+    else:
+        opener = "Board shows mixed behavior — multiple states active, no dominant pattern."
 
-    return (
-        f"The system is cooling, but the board shows mixed behavior — price is moving ahead of "
-        f"narrative in some names while others show early follow-through. "
-        + (f"{counts}. " if counts else "")
-        + "Multiple behaviors coexisting; no single regime dominant."
-        + cluster_suffix
-    )
+    return opener + (f" {counts}." if counts else "") + cluster_suffix
 
 
 def record_history(rows: list, today: date):
