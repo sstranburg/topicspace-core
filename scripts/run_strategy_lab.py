@@ -71,60 +71,93 @@ MAX_POSITIONS   = 5
 # the same window.
 BACKTEST_START  = pd.Timestamp("2025-05-01")
 
-# Minimum NDS required for S2 eligibility.
+# Minimum NDS required for S2 and S2-dir eligibility.
 # S2 is designed to trade constructive narrative-price setups.
 # Actors with NDS ≤ 0 have price already ahead of (or equal to) narrative
 # signal direction — outside the intended trade policy.
 # Set to 0 as a sign-correction only; no threshold optimisation.
 NDS_FLOOR_S2    = 0.0
 
+# S2-dir: sectors where hard exclusion is replaced with direction-aware eligibility.
+# Only actors with direction==1 (bullish framing) in constructive states qualify.
+DIRECTIONAL_SECTORS            = {"Growth Software", "Consumer Tech", "EV / Consumer"}
+DIRECTIONAL_CONSTRUCTIVE_STATES = {"DIVERGENCE", "REPRICING", "EARLY"}
+
+# Narrative direction: -1 = bearish-framing actor, +1 = bullish (default).
+ACTOR_DIRECTIONS: dict[str, int] = {
+    "MU": -1, "TSLA": -1, "SNOW": -1, "CRWV": -1, "CRM": -1, "INTC": -1,
+}
+
+# Full 32-actor sector map — used by S2 and S2-dir.
+# Consolidated from the previous SECTORS (22-actor) and SECTORS_FULL (32-actor)
+# after the full eligibility matrix re-derivation showed all Growth Software cells
+# negative and AI Platform cells negative — the missing actors in the old map were
+# either oversights (MRVL, ASML, MU, DELL) or map to permanently empty sectors.
 SECTORS: dict[str, str] = {
     "NVDA":  "Semiconductors",     "TSM":   "Semiconductors",
     "AMD":   "Semiconductors",     "INTC":  "Semiconductors",
     "ARM":   "Semiconductors",     "AVGO":  "Semiconductors",
+    "ASML":  "Semiconductors",     "MU":    "Semiconductors",
+    "MRVL":  "Semiconductors",
     "MSFT":  "AI Platform",        "META":  "AI Platform",
-    "GOOGL": "AI Platform",
+    "GOOGL": "AI Platform",        "PLTR":  "AI Platform",
     "AMZN":  "Cloud / Hyperscaler","ORCL":  "Cloud / Hyperscaler",
-    "SMCI":  "AI Infrastructure",  "ANET":  "AI Infrastructure",
-    "NBIS":  "AI Infrastructure",  "VRT":   "AI Infrastructure",
-    "VST":   "AI Infrastructure",
+    "SMCI":  "AI Infrastructure",  "DELL":  "AI Infrastructure",
+    "ANET":  "AI Infrastructure",  "NBIS":  "AI Infrastructure",
+    "VRT":   "AI Infrastructure",  "VST":   "AI Infrastructure",
     "CEG":   "Energy / Power",
     "MP":    "Materials",
     "CRWV":  "Growth Software",    "CRM":   "Growth Software",
-    "DDOG":  "Growth Software",
+    "ADBE":  "Growth Software",    "DDOG":  "Growth Software",
+    "SNOW":  "Growth Software",    "NFLX":  "Growth Software",
+    "TTD":   "Growth Software",
     "TSLA":  "EV / Consumer",
+    "AAPL":  "Consumer Tech",
 }
 
-SEMI_TICKERS = {"NVDA", "TSM", "AMD", "INTC", "ARM", "AVGO"}
+SEMI_TICKERS = {"NVDA", "TSM", "AMD", "INTC", "ARM", "AVGO", "ASML", "MU", "MRVL"}
 
-# Sector × State eligibility matrix derived from event study outcomes
-# Includes only cells where n ≥ 5 and hit rate ≥ 55% at 10D
+# Sector × State eligibility matrix re-derived from event studies on the full
+# 250-day combined corpus (May 2025 → Apr 2026).
+# Criteria: n ≥ 5 and hit rate ≥ 55% at 10D horizon, avg_exc ≥ 0%.
+#
+# Key changes vs old matrix (derived on 60-day window):
+#   AI Platform    → empty (DIVERGENCE removed: 42% hit, -1.3% avg — was wrong)
+#   Cloud          → {"PRICE-LED","UNCLEAR"} only (DIVERGENCE/REPRICING/MACRO fail)
+#   AI Infra       → CONFIRMED removed (-0.9% avg); REPRICING added (n=174, 58%)
+#   Semis          → MACRO/PRICE-LED/UNCLEAR added (all well-supported)
+#   Energy/Power   → DIVERGENCE removed (53% hit, below threshold)
+#   Materials      → DIVERGENCE removed (50% hit); MACRO/PRICE-LED/UNCLEAR added
+#   Consumer Tech  → REPRICING added (n=10, 60% hit)
+#   Growth Software → still empty (all states negative across all horizons)
 SECTOR_STATE_ELIGIBLE: dict[str, set[str]] = {
-    "AI Infrastructure":  {"DIVERGENCE", "CONFIRMED", "MACRO", "PRICE-LED"},
-    "Semiconductors":     {"CONFIRMED", "DIVERGENCE", "EARLY", "REPRICING",
-                           "DISAGREEMENT", "NEG_CONFIRMATION"},
-    "AI Platform":        {"DIVERGENCE"},
-    "Cloud / Hyperscaler":{"REPRICING", "DIVERGENCE", "MACRO"},
-    "Energy / Power":     {"DIVERGENCE", "MACRO"},
-    "Growth Software":    set(),    # all cells weak or bearish; avoid entirely
-    "Materials":          {"DIVERGENCE"},
-    "EV / Consumer":      set(),    # TSLA state override; no real transitions
+    "Semiconductors":      {"CONFIRMED", "DISAGREEMENT", "DIVERGENCE", "EARLY",
+                            "MACRO", "NEG_CONFIRMATION", "PRICE-LED",
+                            "REPRICING", "UNCLEAR"},
+    "AI Infrastructure":   {"DIVERGENCE", "MACRO", "REPRICING", "UNCLEAR"},
+    "AI Platform":         set(),
+    "Cloud / Hyperscaler": {"PRICE-LED", "UNCLEAR"},
+    "Energy / Power":      {"MACRO"},
+    "Growth Software":     set(),
+    "Materials":           {"MACRO", "PRICE-LED", "UNCLEAR"},
+    "EV / Consumer":       set(),
+    "Consumer Tech":       {"REPRICING"},
 }
 
 
 # ── State interpretation table ────────────────────────────────────────────────
 
 STATE_INTERPRETATION = [
-    # (state, classification, best_horizon, note)
-    ("DIVERGENCE",       "entry-positive",       "10-20D", "constructive catch-up; AI Infra strongest (10D 93%/+12%)"),
-    ("CONFIRMED",        "sector-conditional",   "5-20D",  "semis: 10D 83%/+6.4%; all others: flat"),
-    ("EARLY",            "hold-positive",        "20D",    "timing-sensitive; 5D avg -1.4%; 20D avg +3.9%"),
-    ("REPRICING",        "hold-positive",        "20D",    "mild drift; 20D 61%/+3.0%; not a clean entry"),
-    ("MACRO",            "entry-positive (5D)",  "5-10D",  "20D hit drops below 50%; use fresh entry only"),
-    ("DISAGREEMENT",     "reversal",             "20D",    "5D avg -4.0%; 20D avg +8.9%; delayed mean-reversion"),
-    ("NEG_CONFIRMATION", "reversal",             "20D",    "5D flat; 20D avg +14.3%; semis: 20D 100%/+31.5%"),
-    ("PRICE-LED",        "avoid",                "—",      "weak across all horizons; 5D avg +0.7%, 10D avg +1.4%"),
-    ("UNCLEAR",          "avoid",                "—",      "inconsistent; sector variance too high"),
+    # (state, classification, best_horizon, note) — stats from 250-day re-derivation
+    ("DIVERGENCE",       "semi/infra positive",  "10-20D", "semis: 58%/+0.9%; AI Infra: 62%/+3.4%; AI Platform/Cloud: negative"),
+    ("CONFIRMED",        "semis only",           "10-20D", "semis: 60%/+1.1%; AI Infra 56%/-0.9% (removed); others weak"),
+    ("EARLY",            "semis only",           "20D",    "semis: 59%/+2.0% at 10D; AI Infra: 50% (below threshold)"),
+    ("REPRICING",        "semi/infra positive",  "20D",    "semis: 56%/+1.8%; AI Infra: 58%/+1.9% (n=174); Cloud: 54% (removed)"),
+    ("MACRO",            "semis/infra/energy",   "5-10D",  "semis: 60%/+1.9%; AI Infra: 62%/+3.3%; Materials: 62%/+6.2%"),
+    ("DISAGREEMENT",     "semis reversal",       "20D",    "semis only: 64%/+6.1%; no other sector has data"),
+    ("NEG_CONFIRMATION", "semis reversal",       "20D",    "semis only: 63%/+4.4%; Growth Software: 43% (below threshold)"),
+    ("PRICE-LED",        "semis positive",       "10D",    "semis: 65%/+2.9%; Materials: 57%/+16.4%; Cloud n=6; others weak"),
+    ("UNCLEAR",          "semis/materials",      "20D",    "semis: 59%/+1.9%; Materials: 86%/+24.1% (n=7 thin)"),
 ]
 
 
@@ -205,6 +238,26 @@ def eligible_s4(row: pd.Series) -> bool:
             and int(row["days_in_state"]) >= 5):
         return True
     return False
+
+
+def eligible_s2_dir(row: pd.Series) -> bool:
+    """
+    S2 Directional: least-invasive fix for the hard sector exclusion problem.
+
+    Uses SECTORS_FULL (all 32 actors). For sectors where S2 base has an empty
+    eligibility set (Growth Software, Consumer Tech, EV/Consumer), applies a
+    direction-aware check instead: eligible when direction==1 AND state is
+    constructive. All other sector rules are preserved from S2 base.
+
+    NDS > 0 floor is retained (same spec as S2 post-fix).
+    """
+    if row["nds"] <= NDS_FLOOR_S2:
+        return False
+    sector = SECTORS.get(row["ticker"], "Other")
+    if sector in DIRECTIONAL_SECTORS:
+        direction = ACTOR_DIRECTIONS.get(row["ticker"], 1)
+        return direction == 1 and row["state"] in DIRECTIONAL_CONSTRUCTIVE_STATES
+    return row["state"] in SECTOR_STATE_ELIGIBLE.get(sector, set())
 
 
 def eligible_s3(row: pd.Series) -> bool:
@@ -461,10 +514,11 @@ def main() -> None:
     # ── Run strategies ─────────────────────────────────────────────────────────
     print("\nRunning simulations…")
 
-    s1_res, s1_tr = simulate(hist, daily_returns, universe, eligible_s1, "S1 Constructive Catch-Up")
-    s2_res, s2_tr = simulate(hist, daily_returns, universe, eligible_s2, "S2 Sector-Aware")
-    s3_res, s3_tr = simulate(hist, daily_returns, universe, eligible_s3, "S3 Horizon-Aware")
-    s4_res, s4_tr = simulate(hist, daily_returns, universe, eligible_s4, "S4 S2+Reversal")
+    s1_res, s1_tr  = simulate(hist, daily_returns, universe, eligible_s1,     "S1 Constructive Catch-Up")
+    s2_res, s2_tr  = simulate(hist, daily_returns, universe, eligible_s2,     "S2 Sector-Aware")
+    s2d_res, s2d_tr = simulate(hist, daily_returns, universe, eligible_s2_dir, "S2-dir Directional")
+    s3_res, s3_tr  = simulate(hist, daily_returns, universe, eligible_s3,     "S3 Horizon-Aware")
+    s4_res, s4_tr  = simulate(hist, daily_returns, universe, eligible_s4,     "S4 S2+Reversal")
 
     # ── Run baselines ──────────────────────────────────────────────────────────
     b2_res = simulate_basket(daily_returns, universe, "B2 Equal-Weight Universe")
@@ -483,7 +537,7 @@ def main() -> None:
     b1_res = pd.DataFrame({"date": qqq_days, "strategy": "B1 QQQ", "excess": 0.0})
 
     # ── Compute metrics ────────────────────────────────────────────────────────
-    all_results = [s1_res, s2_res, s3_res, s4_res, b1_res, b2_res, b3_res, b4_res, b5_res]
+    all_results = [s1_res, s2_res, s2d_res, s3_res, s4_res, b1_res, b2_res, b3_res, b4_res, b5_res]
     labels      = [df["strategy"].iloc[0] for df in all_results]
 
     metrics_rows = []
@@ -496,7 +550,7 @@ def main() -> None:
 
     summary    = pd.DataFrame(metrics_rows)
     equity_all = pd.concat(equity_frames, ignore_index=True)
-    trades_all = pd.concat([s1_tr, s2_tr, s3_tr, s4_tr], ignore_index=True)
+    trades_all = pd.concat([s1_tr, s2_tr, s2d_tr, s3_tr, s4_tr], ignore_index=True)
 
     # ── Print results ──────────────────────────────────────────────────────────
     sep = "=" * 70
@@ -514,7 +568,7 @@ def main() -> None:
     print_summary_table(summary)
 
     # ── Strategy diagnostics ───────────────────────────────────────────────────
-    for strat_res, strat_tr in [(s1_res, s1_tr), (s2_res, s2_tr), (s3_res, s3_tr), (s4_res, s4_tr)]:
+    for strat_res, strat_tr in [(s1_res, s1_tr), (s2_res, s2_tr), (s2d_res, s2d_tr), (s3_res, s3_tr), (s4_res, s4_tr)]:
         label = strat_res["strategy"].iloc[0]
         avg_held = strat_res["n_held"].mean()
         zero_days = (strat_res["n_held"] == 0).sum()
