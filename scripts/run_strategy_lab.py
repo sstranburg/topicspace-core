@@ -61,9 +61,15 @@ HISTORY_FILE = ROOT / "data" / "derived" / "backtest_history.parquet"
 PRICES_DIR   = ROOT / "data" / "derived" / "prices"
 OUT_DIR      = ROOT / "data" / "derived" / "event_studies"
 
-VARIANT       = "mid_floor"
-MIN_COVERAGE  = 40.0
-MAX_POSITIONS = 5
+VARIANT         = "mid_floor"
+MIN_COVERAGE    = 40.0
+MAX_POSITIONS   = 5
+
+# Backtest window start — must match run_event_studies.py exactly.
+# Rows before this date are excluded from coverage calculation, universe
+# selection, and portfolio simulation so all three scripts operate on
+# the same window.
+BACKTEST_START  = pd.Timestamp("2025-05-01")
 
 SECTORS: dict[str, str] = {
     "NVDA":  "Semiconductors",     "TSM":   "Semiconductors",
@@ -121,6 +127,7 @@ def load_history() -> tuple[pd.DataFrame, list[str]]:
     hist = pd.read_parquet(HISTORY_FILE)
     hist = hist[hist["variant"] == VARIANT].copy()
     hist["date"] = pd.to_datetime(hist["date"])
+    hist = hist[hist["date"] >= BACKTEST_START].copy()
     hist = hist.sort_values(["ticker", "date"]).reset_index(drop=True)
 
     coverage = (
@@ -434,6 +441,12 @@ def main() -> None:
 
     print("Loading daily returns…")
     closes, daily_returns = load_daily_returns(universe)
+    # Trim to backtest window — hist is already filtered to BACKTEST_START,
+    # and daily_returns must match so simulation, hit rates, and Sharpe all
+    # use the same day count. Price data before BACKTEST_START is irrelevant
+    # to strategy evaluation and distorts metrics if left in.
+    closes        = closes[closes.index >= BACKTEST_START]
+    daily_returns = daily_returns[daily_returns.index >= BACKTEST_START]
     print(f"  {len(daily_returns)} trading days, {len(daily_returns.columns)} tickers")
 
     # ── Run strategies ─────────────────────────────────────────────────────────

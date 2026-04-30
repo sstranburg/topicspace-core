@@ -11,10 +11,19 @@ Three narr formula variants test floor sensitivity:
   mid_floor — floor=20, intermediate
   low_floor — floor=0,  maximum spread; tests compression hypothesis
 
+Corpus modes (--corpus flag):
+  combined    (default) — production corpus + backfill file
+                          use for all backtest work after running
+                          fetch_backfill_historical.py
+  production  — production corpus only (tech_ecosystem_filtered.jsonl)
+                use to reproduce original v1 results on the 60-day window
+
 Usage:
   source venv/bin/activate && python scripts/build_backtest_history.py
+  source venv/bin/activate && python scripts/build_backtest_history.py --corpus production
 """
 
+import argparse
 import json
 import sys
 from bisect import bisect_left, bisect_right
@@ -27,10 +36,11 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-ROOT        = Path(__file__).parent.parent
-EVENTS_FILE = ROOT / "data" / "normalized" / "tech_ecosystem_filtered.jsonl"
-PRICES_DIR  = ROOT / "data" / "derived" / "prices"
-OUTPUT_FILE = ROOT / "data" / "derived" / "backtest_history.parquet"
+ROOT             = Path(__file__).parent.parent
+EVENTS_FILE      = ROOT / "data" / "normalized" / "tech_ecosystem_filtered.jsonl"
+BACKFILL_FILE    = ROOT / "data" / "normalized" / "tech_ecosystem_backfill.jsonl"
+PRICES_DIR       = ROOT / "data" / "derived" / "prices"
+OUTPUT_FILE      = ROOT / "data" / "derived" / "backtest_history.parquet"
 
 # Exclude thin-coverage actors (SOFI, ZETA, USAR, ODC)
 TICKERS = [
@@ -121,18 +131,51 @@ def compute_nds(direction: int, narr: int, rel: float) -> float:
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 
-def load_events() -> dict[str, list[str]]:
-    """Return {ticker: sorted list of YYYY-MM-DD date strings from events corpus}."""
+def load_events(corpus: str = "combined") -> dict[str, list[str]]:
+    """
+    Return {ticker: sorted list of YYYY-MM-DD date strings from events corpus}.
+
+    corpus="combined"   reads production corpus + backfill file (default)
+    corpus="production" reads production corpus only
+    """
+    files_to_read: list[Path] = [EVENTS_FILE]
+    if corpus == "combined":
+        if BACKFILL_FILE.exists():
+            files_to_read.append(BACKFILL_FILE)
+        else:
+            print("  [warn] --corpus combined requested but backfill file not found; "
+                  "run fetch_backfill_historical.py first. Falling back to production only.")
+
+    # Deduplicate across files by event_id so a cross-corpus duplicate is counted once.
+    seen_ids: set[str] = set()
     actor_dates: dict[str, list[str]] = defaultdict(list)
-    with open(EVENTS_FILE) as f:
-        for line in f:
-            e = json.loads(line)
-            ts = e.get("timestamp", "")[:10]
-            if not ts:
-                continue
-            for actor in e.get("actors", []):
-                if actor in TICKERS_SET:
-                    actor_dates[actor].append(ts)
+    counts: dict[str, int] = {}
+
+    for path in files_to_read:
+        n = 0
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                e = json.loads(line)
+                eid = e.get("event_id", "")
+                if eid and eid in seen_ids:
+                    continue
+                if eid:
+                    seen_ids.add(eid)
+                ts = e.get("timestamp", "")[:10]
+                if not ts:
+                    continue
+                for actor in e.get("actors", []):
+                    if actor in TICKERS_SET:
+                        actor_dates[actor].append(ts)
+                        n += 1
+        counts[path.name] = n
+
+    label = "combined" if len(files_to_read) > 1 else "production"
+    print(f"  corpus={label}  " + "  ".join(f"{k}: {v:,}" for k, v in counts.items()))
+
     return {t: sorted(v) for t, v in actor_dates.items()}
 
 
@@ -173,8 +216,17 @@ def count_events(dates: list[str], lo: str, hi: str) -> int:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    print("Loading events…")
-    actor_dates = load_events()
+    parser = argparse.ArgumentParser(description="Build backtest history parquet")
+    parser.add_argument(
+        "--corpus",
+        choices=["combined", "production"],
+        default="combined",
+        help="combined (default): production + backfill; production: production only",
+    )
+    args = parser.parse_args()
+
+    print(f"Loading events (--corpus {args.corpus})…")
+    actor_dates = load_events(corpus=args.corpus)
     total_event_pairs = sum(len(v) for v in actor_dates.values())
     print(f"  {total_event_pairs:,} event-date pairs across {len(actor_dates)} actors")
 

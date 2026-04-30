@@ -37,9 +37,15 @@ HISTORY_FILE = ROOT / "data" / "derived" / "backtest_history.parquet"
 PRICES_DIR   = ROOT / "data" / "derived" / "prices"
 OUT_DIR      = ROOT / "data" / "derived" / "event_studies"
 
-VARIANT      = "mid_floor"
-MIN_COVERAGE = 40.0      # % sufficient-data days required for universe inclusion
-HORIZONS     = [5, 10, 20]
+VARIANT         = "mid_floor"
+MIN_COVERAGE    = 40.0      # % sufficient-data days required for universe inclusion
+HORIZONS        = [5, 10, 20]
+
+# Backtest window start — rows before this date are excluded from coverage
+# calculation, universe selection, and entry detection.
+# Set to first month with dense backfill event data so the universe is stable
+# across corpus modes (production-only vs combined) and comparable to v1.
+BACKTEST_START  = pd.Timestamp("2025-05-01")
 
 # Actors with a hardcoded permanent state — they will never produce a real transition
 PERMANENT_OVERRIDES: set[str] = {"TSLA"}
@@ -85,12 +91,18 @@ SECTORS: dict[str, str] = {
 def load_history() -> tuple[pd.DataFrame, list[str], dict]:
     """
     Load backtest history, compute universe, return:
-      (full_variant_df, universe_tickers, coverage_dict)
-    Full variant df includes all rows (sufficient and not) for transition detection.
+      (windowed_variant_df, universe_tickers, coverage_dict)
+
+    Rows before BACKTEST_START are dropped before coverage calculation and
+    universe selection so that:
+      - the 2024 dead zone (no events) does not dilute coverage percentages
+      - the universe is stable and comparable across corpus modes
+      - strategy simulation and benchmark comparison use the same window
     """
     hist = pd.read_parquet(HISTORY_FILE)
     hist = hist[hist["variant"] == VARIANT].copy()
     hist["date"] = pd.to_datetime(hist["date"])
+    hist = hist[hist["date"] >= BACKTEST_START].copy()
     hist = hist.sort_values(["ticker", "date"]).reset_index(drop=True)
 
     coverage = (
