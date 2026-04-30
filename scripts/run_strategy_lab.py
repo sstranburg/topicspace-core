@@ -71,6 +71,13 @@ MAX_POSITIONS   = 5
 # the same window.
 BACKTEST_START  = pd.Timestamp("2025-05-01")
 
+# Minimum NDS required for S2 eligibility.
+# S2 is designed to trade constructive narrative-price setups.
+# Actors with NDS ≤ 0 have price already ahead of (or equal to) narrative
+# signal direction — outside the intended trade policy.
+# Set to 0 as a sign-correction only; no threshold optimisation.
+NDS_FLOOR_S2    = 0.0
+
 SECTORS: dict[str, str] = {
     "NVDA":  "Semiconductors",     "TSM":   "Semiconductors",
     "AMD":   "Semiconductors",     "INTC":  "Semiconductors",
@@ -181,9 +188,11 @@ def eligible_s1(row: pd.Series) -> bool:
 
 
 def eligible_s2(row: pd.Series) -> bool:
-    """Sector-Aware: eligibility matrix from event study outcomes."""
+    """Sector-Aware: eligibility matrix from event study outcomes, NDS > 0 floor."""
     sector = SECTORS.get(row["ticker"], "Other")
-    return row["state"] in SECTOR_STATE_ELIGIBLE.get(sector, set())
+    if row["state"] not in SECTOR_STATE_ELIGIBLE.get(sector, set()):
+        return False
+    return row["nds"] > NDS_FLOOR_S2
 
 
 def eligible_s4(row: pd.Series) -> bool:
