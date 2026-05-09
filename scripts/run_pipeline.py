@@ -3,6 +3,8 @@
 import sys
 import subprocess
 import shutil
+import base64
+import re
 from pathlib import Path
 
 PYTHON = sys.executable
@@ -36,10 +38,15 @@ steps = [
     ("plot_watchlist_matrix.py",        "Plot watchlist matrix"),
     ("generate_master_report.py",       "Generate master report"),
     ("generate_leaderboard.py",         "Generate narrative leaderboard"),
+    ("generate_crypto_leaderboard.py",  "Generate crypto leaderboard"),
     ("render_leaderboard_image.py",     "Render leaderboard social image"),
     ("generate_narrative_charts.py",    "Generate narrative vs price charts"),
     ("generate_storm_objects.py",       "Build storm objects for frontend"),
     ("generate_thread_objects.py",      "Build thread objects for frontend"),
+    ("build_event_index.py",            "Build per-actor event index"),
+    ("compute_storm_cohesion.py",       "Compute per-actor storm cohesion"),
+    ("generate_alerts.py",              "Generate narrative alerts"),
+    ("generate_briefing.py",            "Generate daily briefing"),
 ]
 
 print("Storm Pipeline")
@@ -58,11 +65,38 @@ print("  master_report.html is ready to open in a browser")
 print('='*60)
 
 # Copy master_report.html → topicspace-site/public/reports/latest.html
+# Images are inlined as base64 so the HTML is self-contained when served from /reports/
 ROOT = Path(__file__).parent.parent
 report_src  = ROOT / "master_report.html"
 report_dest = ROOT.parent / "topicspace-site" / "public" / "reports" / "latest.html"
 if report_src.exists() and report_dest.parent.exists():
-    shutil.copy2(report_src, report_dest)
-    print(f"  Copied report → {report_dest}")
+    html = report_src.read_text(encoding='utf-8')
+
+    def _inline_img(m):
+        src = m.group(1)
+        # Only inline local relative paths (skip data: and http)
+        if src.startswith('data:') or src.startswith('http'):
+            return m.group(0)
+        img_path = report_src.parent / src
+        if not img_path.exists():
+            return m.group(0)
+        ext = img_path.suffix.lstrip('.').lower()
+        mime = 'image/svg+xml' if ext == 'svg' else f'image/{ext}'
+        b64 = base64.b64encode(img_path.read_bytes()).decode('ascii')
+        return f'src="data:{mime};base64,{b64}"'
+
+    html = re.sub(r'src="([^"]+)"', _inline_img, html)
+    report_dest.write_text(html, encoding='utf-8')
+    print(f"  Copied report (images inlined) → {report_dest}")
 elif not report_dest.parent.exists():
     print(f"  ⚠ Reports dir not found: {report_dest.parent}")
+
+# Copy events_by_actor.json → topicspace-site/public/ for the intel feature.
+# Read by lib/intel/fields.ts loadRecentEvents() + themeScan().
+events_src  = ROOT / "data" / "derived" / "events_by_actor.json"
+events_dest = ROOT.parent / "topicspace-site" / "public" / "events_by_actor.json"
+if events_src.exists() and events_dest.parent.exists():
+    shutil.copyfile(events_src, events_dest)
+    print(f"  Copied events index → {events_dest}")
+elif not events_src.exists():
+    print(f"  ⚠ events_by_actor.json not found at {events_src} (run build_event_index.py)")
