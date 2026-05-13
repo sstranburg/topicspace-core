@@ -18,11 +18,18 @@ from statistics import mean
 
 DERIVED = pathlib.Path(__file__).resolve().parents[1] / "data" / "derived"
 
-SCOPES = [
-    ("combined", "expectation_field_history.jsonl",       "expectation_field_events.jsonl"),
-    ("E-001",    "expectation_field_history_E-001.jsonl", "expectation_field_events_E-001.jsonl"),
-    ("E-002",    "expectation_field_history_E-002.jsonl", "expectation_field_events_E-002.jsonl"),
-]
+def _discover_scopes() -> list[tuple[str, str, str]]:
+    """Discover all per-family scopes from the on-disk history files."""
+    scopes: list[tuple[str, str, str]] = [
+        ("combined", "expectation_field_history.jsonl", "expectation_field_events.jsonl"),
+    ]
+    for p in sorted(DERIVED.glob("expectation_field_history_E-*.jsonl")):
+        fam = p.stem.split("_")[-1]  # E-001, E-006, etc.
+        scopes.append((fam, p.name, f"expectation_field_events_{fam}.jsonl"))
+    return scopes
+
+
+SCOPES = _discover_scopes()
 
 
 def load_jsonl(path: pathlib.Path) -> list[dict]:

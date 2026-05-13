@@ -1,0 +1,215 @@
+# topicspace tracked questions — seed expectations
+#
+# Human-edited. Each entry becomes a `seed_expectation` node in the question graph.
+# Re-running `scripts/seed_questions.py` is idempotent: matching ids will not be
+# duplicated; if a seed's title/prompt/entities change here, the loader updates
+# the existing graph node and bumps last_updated_at. The runtime-computed
+# confidence (owned by refresh_question_briefs.py) is preserved.
+#
+# Schema for each seed:
+#   id                  stable identifier (e.g. Q-001)
+#   title               one-line human-readable question
+#   prompt              full question body, fed to /intel when briefed
+#   entities            tracked tickers for the /intel brief call (≤3 for basket)
+#   cohort              OPTIONAL — full scope the question covers. The trigger
+#                       system (Phase C) reasons over this set. Defaults to
+#                       entities. Use cohort when the question is *about* a
+#                       wider population than fits in a single brief.
+#   themes              concept tags (free-form, no enum)
+#   brief_type          claim | explain | basket  — matches /intel modes
+#   time_window_days    how far back briefs should look
+#   confidence          high | medium | low — initial confidence only (preserved
+#                       across reloads once a brief has updated it)
+#   notes               freeform context (optional)
+#
+# Practical constraint (intel endpoint, 2026-05 — gpt-4o, 30K TPM tier):
+#   - `claim` mode is best for single-ticker theses (12 events + 30 theme scans)
+#   - `basket` mode with ≤3 tickers gets storms + 8 events + 25 themes per ticker
+#   - `basket` mode with >3 tickers degrades to alerts-only (very thin)
+#   - `explain` mode with ≥4 tickers blows the per-minute token budget
+#   So: keep `entities` ≤ 3 for multi-ticker questions and use `basket` mode.
+#   Name the broader cohort in the prompt text — `entities` should be a
+#   representative subset that tests the thesis cleanly.
+
+- id: Q-001
+  title: Is AI hardware still outperforming software?
+  prompt: |
+    Test whether the hardware-software bifurcation from R-001 (+4.92pp 10D forward
+    excess, t=13.5) is holding, widening, or reversing.
+
+    The full hardware cohort to consider is: NVDA, AMD, SMCI, DELL, INTC, ARM, AVGO,
+    TSM, ASML, MU, MRVL. The full software cohort is: CRM, ADBE, DDOG, SNOW, CRWV.
+
+    Compare the representative trio below — AMD (hardware confirming), DELL (hardware
+    confirming, server side), and CRM (software, downside-confirming). Does the gap
+    between confirming hardware and confirming-negative software hold? Note any
+    sub-cohorts inside hardware (e.g. power-adjacent vs chips) that are diverging.
+  entities: [AMD, DELL, CRM]
+  cohort: [NVDA, AMD, SMCI, DELL, INTC, ARM, AVGO, TSM, ASML, MU, MRVL,
+           VRT, ANET, VST, CEG]
+  themes: [hw_sw_gap, R-001, expectation_01]
+  brief_type: basket
+  time_window_days: 30
+  confidence: high
+  notes: |
+    Seeded from the five model-implied expectations Writing and R-001.
+    Trio = brief-call subset (includes CRM as the SW reference).
+    Cohort = the *group treated as one class* by the parent question — i.e.
+    hardware. Software is the reference, not the claim subject, so it's
+    excluded from cohort. Power-adjacent VRT/VST/CEG/ANET are included so
+    cluster_split can detect whether they diverge from chip/server confirmers.
+
+- id: Q-002
+  title: Does the loud divergence cluster resolve downward?
+  prompt: |
+    The 'story not being paid' divergence cohort (positive narrative, negative
+    relative price) has persisted for multiple updates. Test whether this cohort
+    eventually resolves with price moving down to meet the narrative, or whether
+    the narrative deflates instead.
+
+    The full divergence cohort is: ANET, VST, ZETA, NFLX, TTD, MSFT, META, PLTR,
+    CEG, MELI. Use the representative trio below — ANET (largest divergence,
+    networking infra), MSFT (mega-cap software), NFLX (consumer/ads). Are these
+    three trending downward, sideways, or recovering? Is the divergence read
+    persistent or rotating?
+  entities: [ANET, MSFT, NFLX]
+  cohort: [ANET, VST, ZETA, NFLX, TTD, MSFT, META, PLTR, CEG, MELI]
+  themes: [divergence_cohort, expectation_02]
+  brief_type: basket
+  time_window_days: 30
+  confidence: high
+  notes: |
+    Trio spans three sectors of the divergence cohort: networking infra, mega-cap
+    software, consumer/ads. Persistence across all three is the strongest signal.
+
+- id: Q-003
+  title: Does MELI snap back quickly?
+  prompt: |
+    MELI moved into the 'story not being paid' divergence cohort after a sharp
+    relative drawdown. Test whether the snap-back happens within a typical
+    earnings reaction window or whether MELI continues to lag — making it
+    structurally similar to the broader divergence cohort rather than a clean
+    mean-reversion candidate.
+  entities: [MELI]
+  themes: [meli, expectation_03]
+  brief_type: claim
+  time_window_days: 14
+  confidence: medium
+
+- id: Q-004
+  title: Does contested hardware continue to lead?
+  prompt: |
+    The contested hardware basket (names where narrative is mixed or bearish but
+    price is rising) has been the surprise leader. Test whether this leadership
+    is broadening to more contested names, narrowing to a sub-set, or breaking
+    down.
+
+    The full contested hardware cohort is: INTC, MU, MRVL, NBIS, VRT. Use the
+    representative trio below — MU (negative-narrative memory, big rel), INTC
+    (foundry skepticism, big rel), NBIS (neocloud, more uncertain). Are these
+    three still leading, or has the rolling-over we saw in MRVL and VRT spread?
+  entities: [MU, INTC, NBIS]
+  cohort: [INTC, MU, MRVL, NBIS, VRT]
+  themes: [contested_hardware, expectation_04]
+  brief_type: basket
+  time_window_days: 30
+  confidence: medium
+
+- id: Q-005
+  title: Do celebrity hardware names continue to lag their peers?
+  prompt: |
+    The 'obvious winner' hardware names (NVDA, SMCI, VST, CEG) have been
+    underperforming less obvious infrastructure plays. Test whether this lag
+    holds across the full group or whether the obvious-winner category is
+    splitting — e.g. chips/servers (NVDA, SMCI) catching up while power-adjacent
+    (VST, CEG) continues to lag.
+
+    Compare the representative trio below — NVDA (chip celebrity), VST (power
+    celebrity), CEG (nuclear celebrity). Are chips/servers behaving differently
+    from power-adjacent names today?
+  entities: [NVDA, VST, CEG]
+  cohort: [NVDA, SMCI, VST, CEG]
+  themes: [celebrity_hardware, expectation_05]
+  brief_type: basket
+  time_window_days: 30
+  confidence: medium
+
+- id: Q-006
+  title: Are hyperscaler AI capex commitments paying off coherently?
+  prompt: |
+    The AI-buildout thesis depends on the hyperscalers — the names actually
+    paying for the compute, datacenters, and infrastructure. Test whether this
+    cohort moves coherently on the AI-capex story or whether it has begun to
+    fragment into AI winners and capex-penalized.
+
+    The full hyperscaler cohort is: MSFT, GOOGL, AMZN, META, ORCL. Use the
+    representative trio below — MSFT (Azure, OpenAI), GOOGL (Gemini, TPU),
+    AMZN (Bedrock, retail AI). Is the cohort tracking as a single
+    AI-deployment story, or are individual names being penalized for capex
+    intensity?
+  entities: [MSFT, GOOGL, AMZN]
+  cohort: [MSFT, GOOGL, AMZN, META, ORCL]
+  themes: [hyperscaler_capex, ai_buyside, expectation_06]
+  brief_type: basket
+  time_window_days: 30
+  confidence: high
+
+- id: Q-007
+  title: Is the commodity hardware re-rating narrative-backed or sentiment-only?
+  prompt: |
+    Memory, CPU, and server names (MU, INTC, AMD, DELL, SMCI) have been
+    leading on price in 2026 despite mixed or negative narrative scores at the
+    start of the year. Test whether this re-rating is supported by improving
+    fundamentals/narrative or whether it is a sentiment overshoot that will
+    eventually correct.
+
+    The full commodity hardware cohort is: MU, INTC, AMD, DELL, SMCI. Use the
+    representative trio below — MU (memory, large positive return on negative
+    narrative), INTC (foundry skepticism, large positive return), AMD (chip
+    confirmation). Is narrative catching up to price, or is the gap widening?
+  entities: [MU, INTC, AMD]
+  cohort: [MU, INTC, AMD, DELL, SMCI]
+  themes: [commodity_hardware, price_led_rally, expectation_07]
+  brief_type: basket
+  time_window_days: 30
+  confidence: medium
+
+- id: Q-008
+  title: Does growth software retain market support against the AI-disruption narrative?
+  prompt: |
+    Growth software names have been under sustained narrative-positive but
+    price-negative pressure — the dominant story is AI eats software margins.
+    Test whether the full growth software cohort follows this pattern or
+    whether some names defend their market position.
+
+    The full growth software cohort is: CRM, CRWV, ADBE, SNOW, DDOG, NFLX, TTD.
+    Use the representative trio below — CRM (legacy SaaS, downside confirmation),
+    DDOG (observability, price-confirmed bullish), CRWV (neocloud, fresh
+    listing). Are these three drifting as one cohort or splitting into AI
+    disrupted and AI accelerated?
+  entities: [CRM, DDOG, CRWV]
+  cohort: [CRM, CRWV, ADBE, SNOW, DDOG, NFLX, TTD]
+  themes: [growth_software, ai_disruption, expectation_08]
+  brief_type: basket
+  time_window_days: 30
+  confidence: medium
+
+- id: Q-009
+  title: Does the AI power and infrastructure backbone hold as one story?
+  prompt: |
+    The AI-needs-power-and-connectivity thesis claims a coherent narrative
+    arc across energy generation, datacenter power equipment, and
+    network/server infrastructure. Test whether these names actually move as
+    a cohort or whether the story fragments by category.
+
+    The full backbone cohort is: CEG, VST, VRT, NBIS, ANET. Use the
+    representative trio below — CEG (nuclear power generation), VRT
+    (datacenter power equipment), ANET (networking silicon). Are these three
+    tracking the same buildout story, or has the cohort begun to split into
+    power-side vs connectivity-side narratives?
+  entities: [CEG, VRT, ANET]
+  cohort: [CEG, VST, VRT, NBIS, ANET]
+  themes: [ai_backbone, power_connectivity, expectation_09]
+  brief_type: basket
+  time_window_days: 30
+  confidence: medium

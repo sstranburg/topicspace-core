@@ -27,15 +27,19 @@ from typing import Optional
 # ── Paths ────────────────────────────────────────────────────────────────────
 
 DERIVED = pathlib.Path(__file__).resolve().parents[1] / "data" / "derived"
-REPLAY_FILES = [
-    DERIVED / "expectation_replay_history_Q-001_20251119.jsonl",
-    DERIVED / "expectation_replay_history_Q-001_20260210.jsonl",
-    DERIVED / "expectation_replay_history_Q-002_20251119.jsonl",
-    DERIVED / "expectation_replay_history_Q-002_20260210.jsonl",
-]
+
+# Auto-discover all expectation replay history files.
+def _discover_replay_files() -> list[pathlib.Path]:
+    return sorted(DERIVED.glob("expectation_replay_history_Q-*_*.jsonl"))
+
+REPLAY_FILES = _discover_replay_files()
 
 # topicspace renamed Q- handles to E- for the writing; keep that mapping.
-HANDLE_RENAME = {"Q-001": "E-001", "Q-002": "E-002"}
+HANDLE_RENAME = {
+    "Q-001": "E-001", "Q-002": "E-002",
+    "Q-006": "E-006", "Q-007": "E-007",
+    "Q-008": "E-008", "Q-009": "E-009",
+}
 
 # ── Snapshot construction ───────────────────────────────────────────────────
 
@@ -288,8 +292,9 @@ def main() -> None:
     write_jsonl(DERIVED / "expectation_field_history.jsonl", combined_hist)
     write_jsonl(DERIVED / "expectation_field_events.jsonl",  combined_events)
 
-    # per family
-    for fam in ("E-001", "E-002"):
+    # per family (auto-discover from the data)
+    families = sorted({r["family"] for r in all_rows if r["family"]})
+    for fam in families:
         fam_rows = [r for r in all_rows if r["family"] == fam]
         hist, events = build_scope(fam_rows, fam)
         write_jsonl(DERIVED / f"expectation_field_history_{fam}.jsonl", hist)
