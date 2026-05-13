@@ -130,10 +130,16 @@ def load_actor_states() -> dict[str, dict[str, str]]:
 
 # ── Per-row position ────────────────────────────────────────────────────────
 
-def expectation_position(row: dict, actor_states: dict[str, dict[str, str]]) -> tuple[float, int]:
-    """Compute (direction_value, cohort_breadth) for this expectation row."""
-    actors = row.get("supporting_actors", []) or []
-    as_of = row["as_of"]
+def claim_position(birth_row: dict, actor_states: dict[str, dict[str, str]]) -> tuple[float, int]:
+    """Compute the CLAIM coordinates for an expectation, frozen at birth.
+
+    Position represents what the expectation predicted, not what the
+    current evidence shows. The supporting_actors at birth are by definition
+    the actors matching the claim, so their mean state-direction at birth
+    encodes the predicted direction. Breadth is the cohort scope at birth.
+    """
+    actors = birth_row.get("supporting_actors", []) or []
+    as_of = birth_row["as_of"]
     if actors:
         dirs = []
         for t in actors:
@@ -146,15 +152,32 @@ def expectation_position(row: dict, actor_states: dict[str, dict[str, str]]) -> 
         direction_val = 0.0
 
     breadth = (
-        row.get("n_supporting", 0)
-        + row.get("n_conflicting", 0)
-        + row.get("n_neutral", 0)
-        + row.get("n_missing", 0)
+        birth_row.get("n_supporting", 0)
+        + birth_row.get("n_conflicting", 0)
+        + birth_row.get("n_neutral", 0)
+        + birth_row.get("n_missing", 0)
     )
     if breadth == 0:
-        # fall back to cohort hint via supporting_actors only
         breadth = len(actors)
     return direction_val, breadth
+
+
+def build_claim_index(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> dict[str, tuple[float, int]]:
+    """expectation_id -> (claim_direction, claim_breadth), fixed at first appearance.
+
+    Parents appear in the data at days_alive=0 (their T0). Children appear at
+    days_alive=1 (born_at + 1, since the replay loop snapshots the day after a
+    split). We use first-appearance regardless, since the LLM's claim was set
+    at the split moment and the supporting cohort is the same on day+1.
+    """
+    out: dict[str, tuple[float, int]] = {}
+    by_id_sorted: dict[str, list[dict]] = collections.defaultdict(list)
+    for r in rows:
+        by_id_sorted[r["expectation_id"]].append(r)
+    for eid, rs in by_id_sorted.items():
+        first = min(rs, key=lambda x: x["as_of"])
+        out[eid] = claim_position(first, actor_states)
+    return out
 
 
 # ── Build daily grids ───────────────────────────────────────────────────────
@@ -190,7 +213,23 @@ def _member_dict(r: dict) -> dict:
 
 
 def build_grids(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> list[dict]:
-    """Returns one record per date with the 3×3 grid populated."""
+    """Returns one record per date with the 3×3 grid populated.
+
+    Each expectation occupies a FIXED position (its claim direction + claim
+    breadth) computed at birth. Density, pressure, births, retirements are
+    measured per cell over time. Flux is parent→child refinement movement
+    in claim-space, credited on the child's birth day.
+    """
+    # Pre-compute claim positions for every expectation
+    claim_idx = build_claim_index(rows, actor_states)
+
+    # Parent lookup for every expectation
+    parent_of: dict[str, str] = {}
+    for r in rows:
+        eid = r["expectation_id"]
+        if eid not in parent_of:
+            parent_of[eid] = r.get("parent_expectation_id") or ""
+
     # Index active rows by date
     by_day: dict[str, list[dict]] = collections.defaultdict(list)
     retire_by_day: dict[str, set[str]] = collections.defaultdict(set)
@@ -201,38 +240,46 @@ def build_grids(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> li
             retire_by_day[r["as_of"]].add(r["expectation_id"])
 
     all_dates = sorted(by_day.keys())
-    prior_cell_by_id: dict[str, str] = {}
+    last_cell_by_id: dict[str, str] = {}
+    seen_ids: set[str] = set()
     daily_records: list[dict] = []
 
     for d in all_dates:
         grid = {c: empty_cell() for c in CELLS}
-        # Members per cell on this date
         members_by_cell: dict[str, list[dict]] = collections.defaultdict(list)
-        current_cell_by_id: dict[str, str] = {}
 
         for r in by_day[d]:
-            dir_val, breadth = expectation_position(r, actor_states)
+            eid = r["expectation_id"]
+            pos = claim_idx.get(eid)
+            if pos is None:
+                pos = claim_position(r, actor_states)
+            dir_val, breadth = pos
             c = cell_id(direction_bin(dir_val), breadth_bin(breadth))
-            current_cell_by_id[r["expectation_id"]] = c
+            last_cell_by_id[eid] = c
             grid[c]["density"] += 1
             if r.get("status") == "weakening":
                 grid[c]["weakening"] += 1
-            if r.get("days_alive", -1) == 0:
+
+            # Birth detection: first time we see this expectation_id
+            if eid not in seen_ids:
+                seen_ids.add(eid)
                 grid[c]["born"] += 1
+                parent_id = parent_of.get(eid, "")
+                if parent_id:
+                    parent_pos = claim_idx.get(parent_id)
+                    if parent_pos:
+                        parent_cell = cell_id(direction_bin(parent_pos[0]), breadth_bin(parent_pos[1]))
+                        if parent_cell != c:
+                            grid[c]["flux_in"]  += 1
+                            grid[parent_cell]["flux_out"] += 1
+
             members_by_cell[c].append(_member_dict(r))
 
-        # retirements on this date — credit them to whichever cell they were in yesterday
+        # retirements credited to the cell they claimed
         for eid in retire_by_day.get(d, ()):
-            prior = prior_cell_by_id.get(eid)
-            if prior:
-                grid[prior]["retired"] += 1
-
-        # flux: compare each id's cell today vs yesterday
-        for eid, cell_today in current_cell_by_id.items():
-            cell_prior = prior_cell_by_id.get(eid)
-            if cell_prior and cell_prior != cell_today:
-                grid[cell_today]["flux_in"]  += 1
-                grid[cell_prior]["flux_out"] += 1
+            claimed = last_cell_by_id.get(eid)
+            if claimed:
+                grid[claimed]["retired"] += 1
 
         # derived pressure per cell
         for c in CELLS:
@@ -251,8 +298,6 @@ def build_grids(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> li
             "grid": grid,
             "members": {c: members_by_cell.get(c, []) for c in CELLS},
         })
-
-        prior_cell_by_id = current_cell_by_id
 
     return daily_records
 
