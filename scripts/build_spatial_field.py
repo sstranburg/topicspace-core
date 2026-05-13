@@ -163,6 +163,32 @@ def empty_cell() -> dict:
     return {"density": 0, "weakening": 0, "born": 0, "retired": 0, "flux_in": 0, "flux_out": 0}
 
 
+HANDLE_RENAME = {
+    "Q-001": "E-001", "Q-002": "E-002",
+    "Q-006": "E-006", "Q-007": "E-007",
+    "Q-008": "E-008", "Q-009": "E-009",
+}
+
+
+def _shorten(text: str, n: int = 130) -> str:
+    text = (text or "").replace("\n", " ").strip()
+    return text if len(text) <= n else text[: n - 1].rsplit(" ", 1)[0] + "…"
+
+
+def _member_dict(r: dict) -> dict:
+    return {
+        "id":           r["expectation_id"],
+        "family":       HANDLE_RENAME.get(r.get("question_handle", ""), r.get("question_handle", "")),
+        "is_parent":    r.get("parent_expectation_id") is None,
+        "days_alive":   r.get("days_alive", 0),
+        "status":       r.get("status", ""),
+        "supporting":   r.get("supporting_actors", []) or [],
+        "n_supporting": r.get("n_supporting", 0),
+        "statement":    _shorten(r.get("statement", "")),
+        "implied_kind": r.get("implied_kind", ""),
+    }
+
+
 def build_grids(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> list[dict]:
     """Returns one record per date with the 3×3 grid populated."""
     # Index active rows by date
@@ -180,6 +206,8 @@ def build_grids(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> li
 
     for d in all_dates:
         grid = {c: empty_cell() for c in CELLS}
+        # Members per cell on this date
+        members_by_cell: dict[str, list[dict]] = collections.defaultdict(list)
         current_cell_by_id: dict[str, str] = {}
 
         for r in by_day[d]:
@@ -191,6 +219,7 @@ def build_grids(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> li
                 grid[c]["weakening"] += 1
             if r.get("days_alive", -1) == 0:
                 grid[c]["born"] += 1
+            members_by_cell[c].append(_member_dict(r))
 
         # retirements on this date — credit them to whichever cell they were in yesterday
         for eid in retire_by_day.get(d, ()):
@@ -220,6 +249,7 @@ def build_grids(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> li
                 "flux":     sum(grid[c]["flux_in"]  for c in CELLS),
             },
             "grid": grid,
+            "members": {c: members_by_cell.get(c, []) for c in CELLS},
         })
 
         prior_cell_by_id = current_cell_by_id
@@ -237,6 +267,8 @@ def summarize(daily_records: list[dict]) -> dict:
     cell_retired: collections.Counter = collections.Counter()
     cell_flux_in: collections.Counter = collections.Counter()
     cell_flux_out: collections.Counter = collections.Counter()
+    # Per-cell occupant tracking: cell -> {expectation_id: {days, family, statement, is_parent, ever_retired}}
+    occupants: dict[str, dict[str, dict]] = collections.defaultdict(dict)
 
     total_days = len(daily_records)
     for rec in daily_records:
@@ -249,9 +281,28 @@ def summarize(daily_records: list[dict]) -> dict:
             cell_retired[c] += vals["retired"]
             cell_flux_in[c]  += vals["flux_in"]
             cell_flux_out[c] += vals["flux_out"]
+        for c, members in (rec.get("members") or {}).items():
+            for m in members:
+                eid = m["id"]
+                slot = occupants[c].setdefault(eid, {
+                    "id":         eid,
+                    "family":     m["family"],
+                    "is_parent":  m["is_parent"],
+                    "statement":  m["statement"],
+                    "implied_kind": m["implied_kind"],
+                    "days_in_cell": 0,
+                    "last_status": m["status"],
+                })
+                slot["days_in_cell"] += 1
+                slot["last_status"]   = m["status"]
+                slot["statement"]     = m["statement"]   # keep most-recent compressed text
 
     rows = []
     for c in CELLS:
+        occ_list = sorted(
+            occupants.get(c, {}).values(),
+            key=lambda o: -o["days_in_cell"],
+        )
         rows.append({
             "cell": c,
             "mean_density":  round(cell_density_sum[c] / total_days, 3) if total_days else 0,
@@ -261,6 +312,7 @@ def summarize(daily_records: list[dict]) -> dict:
             "total_retired": cell_retired[c],
             "total_flux_in": cell_flux_in[c],
             "total_flux_out": cell_flux_out[c],
+            "occupants":     occ_list,
         })
 
     return {
