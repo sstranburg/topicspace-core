@@ -304,7 +304,12 @@ def build_grids(rows: list[dict], actor_states: dict[str, dict[str, str]]) -> li
 
 # ── Summary ────────────────────────────────────────────────────────────────
 
-def summarize(daily_records: list[dict]) -> dict:
+def summarize(
+    daily_records: list[dict],
+    claim_idx: dict[str, tuple[float, int]],
+    birth_rows: dict[str, dict],
+    ever_retired: dict[str, bool],
+) -> dict:
     cell_density_sum: collections.Counter = collections.Counter()
     cell_pressure_sum: dict[str, float] = collections.defaultdict(float)
     cell_pressure_n: dict[str, int] = collections.defaultdict(int)
@@ -312,7 +317,6 @@ def summarize(daily_records: list[dict]) -> dict:
     cell_retired: collections.Counter = collections.Counter()
     cell_flux_in: collections.Counter = collections.Counter()
     cell_flux_out: collections.Counter = collections.Counter()
-    # Per-cell occupant tracking: cell -> {expectation_id: {days, family, statement, is_parent, ever_retired}}
     occupants: dict[str, dict[str, dict]] = collections.defaultdict(dict)
 
     total_days = len(daily_records)
@@ -329,25 +333,34 @@ def summarize(daily_records: list[dict]) -> dict:
         for c, members in (rec.get("members") or {}).items():
             for m in members:
                 eid = m["id"]
+                birth = birth_rows.get(eid, {})
+                claim_cohort = list(birth.get("supporting_actors", []) or [])
+                claim_dir_val, claim_breadth_val = claim_idx.get(eid, (0.0, 0))
                 slot = occupants[c].setdefault(eid, {
-                    "id":         eid,
-                    "family":     m["family"],
-                    "is_parent":  m["is_parent"],
-                    "statement":  m["statement"],
-                    "implied_kind": m["implied_kind"],
-                    "days_in_cell": 0,
-                    "last_status": m["status"],
+                    "id":             eid,
+                    "family":         m["family"],
+                    "is_parent":      m["is_parent"],
+                    "statement":      _shorten(birth.get("statement", "")) or m["statement"],
+                    "implied_kind":   birth.get("implied_kind", m["implied_kind"]),
+                    "claim_direction": direction_bin(claim_dir_val),
+                    "claim_breadth":   breadth_bin(claim_breadth_val),
+                    "claim_cohort":    claim_cohort,
+                    "born_at":         birth.get("born_at", ""),
+                    "days_in_cell":    0,
+                    "last_status":     m["status"],
                 })
                 slot["days_in_cell"] += 1
                 slot["last_status"]   = m["status"]
-                slot["statement"]     = m["statement"]   # keep most-recent compressed text
 
     rows = []
     for c in CELLS:
-        occ_list = sorted(
-            occupants.get(c, {}).values(),
-            key=lambda o: -o["days_in_cell"],
-        )
+        occ_list = []
+        for o in occupants.get(c, {}).values():
+            outcome = "retired" if ever_retired.get(o["id"]) else (
+                "weakening" if o["last_status"] == "weakening" else "durable"
+            )
+            occ_list.append({**o, "outcome": outcome})
+        occ_list.sort(key=lambda x: -x["days_in_cell"])
         rows.append({
             "cell": c,
             "mean_density":  round(cell_density_sum[c] / total_days, 3) if total_days else 0,
@@ -385,11 +398,23 @@ def main() -> None:
     states = load_actor_states()
     print(f"loaded {len(rows)} replay rows; {len(states)} tickers with state history")
 
+    # First-appearance row per expectation (carries the claim cohort and statement)
+    birth_rows: dict[str, dict] = {}
+    ever_retired: dict[str, bool] = {}
+    for r in rows:
+        eid = r["expectation_id"]
+        if eid not in birth_rows or r["as_of"] < birth_rows[eid]["as_of"]:
+            birth_rows[eid] = r
+        if r.get("event") == "died":
+            ever_retired[eid] = True
+
+    claim_idx = build_claim_index(rows, states)
+
     daily = build_grids(rows, states)
     write_jsonl(DERIVED / "spatial_field_history.jsonl", daily)
     print(f"[wrote] data/derived/spatial_field_history.jsonl  ({len(daily)} rows)")
 
-    summary = summarize(daily)
+    summary = summarize(daily, claim_idx, birth_rows, ever_retired)
     (DERIVED / "spatial_field_summary.json").write_text(json.dumps(summary, indent=2))
     print(f"[wrote] data/derived/spatial_field_summary.json")
 
