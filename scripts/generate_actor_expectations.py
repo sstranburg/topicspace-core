@@ -389,6 +389,12 @@ def main() -> None:
         except Exception as e:
             print(f"  [error] {e}")
 
+    if args.dry_run:
+        # Dry-run rows are just context dumps — never write them to disk,
+        # since they would otherwise overwrite real LLM-generated content.
+        print(f"[dry-run] generated context for {len(out_rows)} tickers; nothing written")
+        return
+
     payload = {"as_of": actors_data["date"], "expectations": out_rows}
     payload_text = json.dumps(payload, indent=2)
 
@@ -405,8 +411,6 @@ def main() -> None:
     # storm repo at request time).
     site_public = REPO_ROOT.parent / "topicspace-site" / "public"
     if site_public.is_dir():
-        # Mirror to a matching filename: actor_expectations.json or
-        # actor_expectations_<suffix>.json
         site_target = site_public / out_path.name
         site_target.write_text(payload_text)
         print(f"[wrote] {site_target.relative_to(REPO_ROOT.parent)}")
