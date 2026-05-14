@@ -283,8 +283,17 @@ def main() -> None:
         "horizons_d": HORIZONS_D,
         "actors": rows,
     }
+    payload_text = json.dumps(out, indent=2)
     out_path = pathlib.Path(args.out).resolve()
-    out_path.write_text(json.dumps(out, indent=2))
+    out_path.write_text(payload_text)
+
+    # Mirror into topicspace-site/public so the live site can read it on
+    # Vercel (no storm-repo access at request time).
+    site_public = REPO_ROOT.parent / "topicspace-site" / "public"
+    if site_public.is_dir():
+        site_target = site_public / out_path.name
+        site_target.write_text(payload_text)
+        print(f"[wrote] {site_target.relative_to(REPO_ROOT.parent)}")
 
     # ── Console summary ────────────────────────────────────────────────────
     rel_counter: dict[str, int] = {"engine_reliable": 0, "engine_inverted": 0, "engine_unreliable": 0, "insufficient": 0}
