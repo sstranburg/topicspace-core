@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>stacked fields — topicspace</title>
+  <style>
+    :root {
+      --bg: #f8f7f4;
+      --paper: #ffffff;
+      --ink: #1a1a1a;
+      --ink-soft: #2e2e2e;
+      --muted: #6f6f6f;
+      --dim: #9c9c9c;
+      --rule: #d8d6d1;
+      --rule-strong: #b9b6af;
+      --accent: #2d6a64;
+      --accent-dim: #2d6a6422;
+      --serif: "Iowan Old Style", "Charter", "Source Serif Pro", Georgia, serif;
+      --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--serif);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .page {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 80px 56px 100px;
+    }
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: 42px;
+      letter-spacing: -0.015em;
+      margin: 0 0 10px 0;
+      line-height: 1.05;
+    }
+    .subtitle {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 18px;
+      color: var(--muted);
+      margin: 0 0 60px 0;
+      line-height: 1.4;
+    }
+    .stack {
+      display: flex;
+      flex-direction: column-reverse;     /* layer 1 at the bottom visually */
+      gap: 0;
+      position: relative;
+    }
+    .layer {
+      position: relative;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      padding: 22px 28px 24px 28px;
+      margin-bottom: 14px;
+    }
+    .layer:first-child { margin-bottom: 0; }
+    .layer-head {
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+      margin-bottom: 6px;
+    }
+    .layer-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      color: var(--dim);
+    }
+    .layer-title {
+      font-family: var(--serif);
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.005em;
+    }
+    .layer-items {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      padding-left: 64px;        /* aligned with title */
+    }
+    .layer-items .dot {
+      color: var(--dim);
+      margin: 0 8px;
+    }
+
+    /* Arrows between layers (rendered as a thin vertical mark in the gap). */
+    .arrow {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 22px;
+      margin: -10px 0;            /* overlap into the gap */
+      pointer-events: none;
+    }
+    .arrow svg { display: block; }
+
+    /* Accent column on the left, faint */
+    .layer::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 18px;
+      bottom: 18px;
+      width: 2px;
+      background: var(--accent);
+      opacity: 0.10;
+    }
+    .layer.layer-5::before { opacity: 0.55; }
+    .layer.layer-4::before { opacity: 0.42; }
+    .layer.layer-3::before { opacity: 0.30; }
+    .layer.layer-2::before { opacity: 0.20; }
+    .layer.layer-1::before { opacity: 0.12; }
+
+    /* The verbal progression below the stack */
+    .progression {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-top: 56px;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
+    .progression .step {
+      padding: 6px 12px;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+    }
+    .progression .arr {
+      color: var(--dim);
+      font-family: var(--serif);
+      font-size: 14px;
+    }
+
+    .callout {
+      margin-top: 48px;
+      padding: 18px 22px;
+      border-left: 2px solid var(--accent);
+      background: transparent;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 540px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: 70px;
+      padding-top: 26px;
+      border-top: 1px solid var(--rule);
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 16px;
+      color: var(--ink-soft);
+      line-height: 1.55;
+      max-width: 640px;
+    }
+    .footer::before {
+      content: "";
+      display: block;
+      width: 36px;
+      height: 1px;
+      background: var(--rule-strong);
+      margin-bottom: 20px;
+    }
+    .source {
+      margin-top: 56px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 48px 24px 64px; }
+      h1 { font-size: 32px; }
+      .layer-items { padding-left: 0; margin-top: 8px; }
+      .progression { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="eyebrow">topicspace · concept</div>
+    <h1>stacked fields</h1>
+    <div class="subtitle">from raw information to evolving understanding</div>
+
+    <div class="stack">
+      <!-- Layer 1 — bottom (rendered last because of column-reverse) -->
+      <div class="layer layer-1">
+        <div class="layer-head">
+          <div class="layer-num">01</div>
+          <div class="layer-title">raw information</div>
+        </div>
+        <div class="layer-items">
+          articles <span class="dot">·</span>
+          posts <span class="dot">·</span>
+          filings <span class="dot">·</span>
+          commentary <span class="dot">·</span>
+          price action
+        </div>
+      </div>
+
+      <div class="arrow" aria-hidden="true">
+        <svg width="14" height="22" viewBox="0 0 14 22">
+          <line x1="7" y1="2" x2="7" y2="18" stroke="#b9b6af" stroke-width="1" />
+          <polyline points="3,8 7,2 11,8" fill="none" stroke="#b9b6af" stroke-width="1" />
+        </svg>
+      </div>
+
+      <div class="layer layer-2">
+        <div class="layer-head">
+          <div class="layer-num">02</div>
+          <div class="layer-title">information field</div>
+        </div>
+        <div class="layer-items">
+          themes <span class="dot">·</span>
+          attention <span class="dot">·</span>
+          pressure <span class="dot">·</span>
+          momentum <span class="dot">·</span>
+          clustering
+        </div>
+      </div>
+
+      <div class="arrow" aria-hidden="true">
+        <svg width="14" height="22" viewBox="0 0 14 22">
+          <line x1="7" y1="2" x2="7" y2="18" stroke="#b9b6af" stroke-width="1" />
+          <polyline points="3,8 7,2 11,8" fill="none" stroke="#b9b6af" stroke-width="1" />
+        </svg>
+      </div>
+
+      <div class="layer layer-3">
+        <div class="layer-head">
+          <div class="layer-num">03</div>
+          <div class="layer-title">expectation field</div>
+        </div>
+        <div class="layer-items">
+          supported views <span class="dot">·</span>
+          forward hypotheses <span class="dot">·</span>
+          broad vs narrow expectations
+        </div>
+      </div>
+
+      <div class="arrow" aria-hidden="true">
+        <svg width="14" height="22" viewBox="0 0 14 22">
+          <line x1="7" y1="2" x2="7" y2="18" stroke="#b9b6af" stroke-width="1" />
+          <polyline points="3,8 7,2 11,8" fill="none" stroke="#b9b6af" stroke-width="1" />
+        </svg>
+      </div>
+
+      <div class="layer layer-4">
+        <div class="layer-head">
+          <div class="layer-num">04</div>
+          <div class="layer-title">belief-revision field</div>
+        </div>
+        <div class="layer-items">
+          persistence <span class="dot">·</span>
+          weakening <span class="dot">·</span>
+          splitting <span class="dot">·</span>
+          births <span class="dot">·</span>
+          retirements
+        </div>
+      </div>
+
+      <div class="arrow" aria-hidden="true">
+        <svg width="14" height="22" viewBox="0 0 14 22">
+          <line x1="7" y1="2" x2="7" y2="18" stroke="#b9b6af" stroke-width="1" />
+          <polyline points="3,8 7,2 11,8" fill="none" stroke="#b9b6af" stroke-width="1" />
+        </svg>
+      </div>
+
+      <div class="layer layer-5">
+        <div class="layer-head">
+          <div class="layer-num">05</div>
+          <div class="layer-title">performance / truth field</div>
+        </div>
+        <div class="layer-items">
+          durable vs fragile expectations <span class="dot">·</span>
+          early signals <span class="dot">·</span>
+          failure modes <span class="dot">·</span>
+          external outcomes
+        </div>
+      </div>
+    </div>
+
+    <div class="progression" aria-label="verbal progression">
+      <div class="step">information</div>
+      <div class="arr">→</div>
+      <div class="step">expectations</div>
+      <div class="arr">→</div>
+      <div class="step">changing expectations</div>
+      <div class="arr">→</div>
+      <div class="step">evaluation</div>
+    </div>
+
+    <div class="callout">
+      Each field reveals something the layer below cannot.
+    </div>
+
+    <div class="footer">
+      The aim is not only to model the world, but to model how understanding of the world evolves.
+    </div>
+
+    <div class="source">topicspace · stacked fields</div>
+  </main>
+</body>
+</html>
