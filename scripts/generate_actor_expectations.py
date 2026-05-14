@@ -306,7 +306,7 @@ def build_context(ticker: str, actors_data: dict, hist_df) -> str:
 
     CURRENT STATE: {actor.get('state','')}
     READ CLASS:    {actor.get('read','')}
-    NDS (narrative-direction score): {actor.get('nds',0):+.1f}  (positive = bullish narrative pressure)
+    NDS (narrative dislocation score): {actor.get('nds',0):+.1f}  (signed gap: positive = narrative leading price; negative = price leading narrative)
     REL (rel return vs broad tape):  {actor.get('rel',0):+.1f}%
     DAYS IN STATE: {actor.get('days_in_state',0)}
     PRIOR STATE:   {actor.get('prior_state','')}
