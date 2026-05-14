@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TopicSpace — Narrative vs Market Confirmation</title>
+<title>topicspace — Crypto Narrative vs Market</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -91,25 +91,8 @@
     border-radius: 2px;
     padding: 4px 10px;
     margin-top: 4px;
-    margin-bottom: 0;
-  }
-  .date-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
     margin-bottom: 14px;
-    margin-top: 4px;
   }
-  .narrative-map-link {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--repricing);
-    text-decoration: none;
-    opacity: 0.65;
-  }
-  .narrative-map-link:hover { opacity: 1; }
 
   /* ── Summary stats ── */
   .stats-strip {
@@ -549,19 +532,16 @@
 
   <!-- Header -->
   <div class="page-header">
-    <a href="/signals" class="wordmark" style="text-decoration:none"><img src="/banner.png" alt="topicspace" style="height:80px;width:auto;display:block;"></a>
-    <div class="page-title">Downside is being confirmed. Upside isn't.</div>
-    <p class="subhead">Confirmation is happening — but almost entirely on the downside. MRVL is the lone upside exception: the only name where a strong narrative is propagating through the system and being paid by price.</p>
+    <a href="/leaderboard" class="wordmark" style="text-decoration:none"><img src="/banner.png" alt="topicspace" style="height:80px;width:auto;display:block;"></a>
+    <div class="page-title">Crypto — Narrative vs Market</div>
+    <p class="subhead">Narrative-price alignment for BTC, ETH, and SOL. Same state engine as the AI/tech board — narrative strength vs 5-day relative return vs QQQ.</p>
     <div class="regime-badge" id="regime-badge"></div>
-    <div class="page-insight">Cluster of narrative divergence forming: SMCI, MELI, TTD, MP, CEG, VST, CLS, USAR, ARM, ADBE, ANET, ZETA. Cluster of bearish rejection forming: SOFI, SNOW, TSLA, MU. Cluster of downside confirmation forming: CRWV, CRM, TSM. Cluster of price-led movement forming: ALAB, NVDA, COHR. Selective confirmation — DDOG confirming. 3-name price-led cluster forming. Market repricing faster than narrative confirms.</div>
-    <div class="narrative-context">Selective signal — narratives strengthening in MSFT. Board otherwise mixed. 1 confirmed · 3 price-led · 12 diverging. Cluster of narrative divergence forming: SMCI, MELI, TTD, MP, CEG, VST, CLS, USAR, ARM, ADBE, ANET, ZETA. Cluster of bearish rejection forming: SOFI, SNOW, TSLA, MU. Cluster of downside confirmation forming: CRWV, CRM, TSM. Cluster of price-led movement forming: ALAB, NVDA, COHR.</div>
+    <div class="page-insight"> price-led. Mixed behavior.</div>
+    <div class="narrative-context">Mixed behavior. No dominant pattern.</div>
   </div>
 
   <!-- Stats strip -->
-  <div class="date-row">
-    <div class="date-tag">Last updated: May 14, 2026</div>
-    <a href="/lab/narrative-map" class="narrative-map-link">narrative view →</a>
-  </div>
+  <div class="date-tag">Last updated: May 14, 2026</div>
   <div class="stats-strip" id="stats-strip"></div>
 
   <!-- How to read this -->
@@ -578,7 +558,7 @@
       </div>
       <div class="legend-item">
         <strong>5D Relative Return</strong>
-        <span>Stock performance vs its benchmark over the last 5 trading days. Positive = outperforming.</span>
+        <span>Asset performance vs QQQ (Nasdaq-100) over the last 5 trading days. Positive = outperforming tech equities.</span>
       </div>
       <div class="legend-item">
         <strong>Read</strong>
@@ -602,14 +582,14 @@
 
   <!-- Feedback bar -->
   <div class="feedback-bar" id="feedback-bar" style="margin-top:32px;margin-bottom:0">
-    <span>Does this match your view of the market today?</span>
+    <span>Does this match your read on crypto today?</span>
     <button data-vote="yes" onclick="recordFeedback('yes')">Yes</button>
     <button data-vote="no" onclick="recordFeedback('no')">No</button>
   </div>
 
   <!-- Footer -->
   <div class="page-footer">
-    <div class="takeaway">12-name narrative divergence cluster: SMCI, MELI, TTD. Selective confirmation — DDOG confirming.</div>
+    <div class="takeaway">Multiple behaviors coexisting. No dominant pattern.</div>
     <a href="mailto:sue@topicspace.ai" style="font-size:11px;color:#3a3a5c;text-decoration:none;letter-spacing:0.06em;font-family:monospace;">sue@topicspace.ai</a>
   </div>
 
@@ -636,53 +616,14 @@ const STATE_ORDER = ['CONFIRMED','EARLY','REPRICING','DIVERGENCE','NEG_CONFIRMAT
 
 // ══════════════════════════════════════════════════════════════════
 //  Actor data — narrative strength (0–100) × 5d relative return (%)
-//  Sources: state engine Mar–Apr 2026, pipeline signals 2026-05-14
+//  Sources: crypto_ecosystem.jsonl + price data, pipeline 2026-05-14
 // ══════════════════════════════════════════════════════════════════
 
 const ACTORS = [
-  // state, narrative (0-100), rel_5d (% vs benchmark), conflict, short_read, narrative_desc
-  { t:'CRWV', state:'NEG_CONFIRMATION', narr:58, rel:-22.05, nds:102.2, dir:-1, conflict:false, read:'selloff confirming narrative', story:'CoreWeave cloud IPO hype fading', exp:false },
-  { t:'SMCI', state:'DIVERGENCE', narr:90, rel:-10.40, nds:92.0, dir:1, conflict:true, read:'story not being paid', story:'AI server demand; VAST Data partnership', exp:false },
-  { t:'MELI', state:'DIVERGENCE', narr:48, rel:-17.88, nds:87.4, dir:1, conflict:false, read:'story not being paid', story:'LatAm e-commerce + fintech compounder; margin compression vs growth pace', exp:false },
-  { t:'TTD', state:'DIVERGENCE', narr:47, rel:-17.38, nds:83.9, dir:1, conflict:false, read:'story not being paid', story:'Programmatic ad platform; AI-driven buying, connected TV, and open internet vs. walled gardens', exp:false },
-  { t:'MP', state:'DIVERGENCE', narr:57, rel:-15.00, nds:82.0, dir:1, conflict:false, read:'story not being paid', story:'Rare earth mining; China tariff tailwind and supply chain angle', exp:true },
-  { t:'CEG', state:'DIVERGENCE', narr:39, rel:-17.56, nds:76.8, dir:1, conflict:false, read:'story not being paid', story:'Nuclear power capacity for AI data centers; hyperscaler offtake deals', exp:false },
-  { t:'CRM', state:'NEG_CONFIRMATION', narr:39, rel:-11.19, nds:66.9, dir:-1, conflict:false, read:'selloff confirming narrative', story:'Agentforce adoption narrative cooling', exp:false },
-  { t:'VST', state:'DIVERGENCE', narr:52, rel:-12.63, nds:65.2, dir:1, conflict:false, read:'story not being paid', story:'Gas and nuclear power generation serving AI data center demand', exp:false },
-  { t:'AMZN', state:'REPRICING', narr:86, rel:-4.49, nds:58.4, dir:1, conflict:false, read:'price lagging narrative', story:'Custom silicon (Trainium) + Globalstar buyout', exp:false },
-  { t:'CLS', state:'DIVERGENCE', narr:42, rel:-12.71, nds:55.6, dir:1, conflict:false, read:'story not being paid', story:'Contract manufacturing of AI servers and networking infrastructure', exp:false },
-  { t:'USAR', state:'DIVERGENCE', narr:36, rel:-13.84, nds:55.2, dir:1, conflict:false, read:'story not being paid', story:'Rare earth supply chain; domestic critical minerals push', exp:true },
-  { t:'ARM', state:'DIVERGENCE', narr:57, rel:-9.50, nds:54.5, dir:1, conflict:false, read:'story not being paid', story:'Architecture licensing expanding into AI chips', exp:false },
-  { t:'MSFT', state:'REPRICING', narr:79, rel:-4.84, nds:53.2, dir:1, conflict:false, read:'price lagging narrative', story:'Copilot + OpenAI bet gaining traction', exp:false },
-  { t:'SOFI', state:'DISAGREEMENT', narr:48, rel:-8.80, nds:46.0, dir:-1, conflict:false, read:'price rejecting negative narrative', story:'Fintech competition pressures', exp:false },
-  { t:'AVGO', state:'REPRICING', narr:70, rel:-4.76, nds:43.8, dir:1, conflict:false, read:'price lagging narrative', story:'Custom silicon; insider activity cooling', exp:false },
-  { t:'ADBE', state:'DIVERGENCE', narr:50, rel:-8.36, nds:41.8, dir:1, conflict:false, read:'story not being paid', story:'Earnings pressure vs AI creative tools story', exp:false },
-  { t:'NFLX', state:'REPRICING', narr:74, rel:-3.53, nds:41.6, dir:1, conflict:false, read:'price lagging narrative', story:'Ad-supported tier growth; AI personalization and live sports expansion', exp:false },
-  { t:'ANET', state:'DIVERGENCE', narr:50, rel:-7.05, nds:35.2, dir:1, conflict:false, read:'story not being paid', story:'AI networking infrastructure demand', exp:false },
-  { t:'ZETA', state:'DIVERGENCE', narr:37, rel:-9.63, nds:35.2, dir:1, conflict:false, read:'story not being paid', story:'AI-native customer data platform; enterprise marketing automation adoption', exp:false },
-  { t:'ORCL', state:'REPRICING', narr:55, rel:-4.92, nds:29.6, dir:1, conflict:false, read:'price lagging narrative', story:'Cloud + AI infra expansion, rising price targets', exp:false },
-  { t:'TSM', state:'NEG_CONFIRMATION', narr:58, rel:-7.42, nds:29.1, dir:-1, conflict:false, read:'selloff confirming narrative', story:'Advanced node demand; geopolitical risk', exp:false },
-  { t:'PLTR', state:'MACRO', narr:41, rel:-5.52, nds:18.6, dir:1, conflict:false, read:'moving with tape', story:'Government AI contracts + commercial growth', exp:false },
-  { t:'META', state:'REPRICING', narr:57, rel:-2.11, nds:17.5, dir:1, conflict:false, read:'price lagging narrative', story:'AI chips and data center build-out', exp:false },
-  { t:'GOOGL', state:'REPRICING', narr:57, rel:-1.57, nds:14.8, dir:1, conflict:false, read:'price lagging narrative', story:'AI search competition + Waymo', exp:false },
-  { t:'MRVL', state:'REPRICING', narr:61, rel:+0.65, nds:7.8, dir:1, conflict:false, read:'price lagging narrative', story:'AI networking revenue accelerating', exp:false },
-  { t:'WDC', state:'REPRICING', narr:55, rel:-0.46, nds:7.3, dir:1, conflict:false, read:'price lagging narrative', story:'Enterprise HDD demand from AI storage workloads; post-SanDisk spin focus', exp:false },
-  { t:'AAPL', state:'REPRICING', narr:61, rel:+1.32, nds:4.4, dir:1, conflict:false, read:'price lagging narrative', story:'AI features rollout + India manufacturing', exp:false },
-  { t:'ASML', state:'REPRICING', narr:51, rel:-0.34, nds:2.7, dir:1, conflict:false, read:'price lagging narrative', story:'EUV demand tied to AI chip cycle', exp:false },
-  { t:'AMD', state:'EARLY', narr:66, rel:+3.00, nds:1.0, dir:1, conflict:false, read:'price starting to follow', story:'AI GPU competition narrative vs NVDA', exp:false },
-  { t:'DELL', state:'MACRO', narr:41, rel:-0.60, nds:-6.0, dir:1, conflict:false, read:'moving with tape', story:'AI server demand vs margin pressure', exp:false },
-  { t:'VRT', state:'REPRICING', narr:45, rel:+0.36, nds:-6.8, dir:1, conflict:false, read:'price lagging narrative', story:'Power and cooling for AI data centers', exp:false },
-  { t:'SNDK', state:'MACRO', narr:41, rel:-0.08, nds:-8.6, dir:1, conflict:false, read:'moving with tape', story:'Enterprise NAND demand for AI workloads; cheap-multiple value setup', exp:false },
-  { t:'NBIS', state:'MACRO', narr:52, rel:+3.52, nds:-15.6, dir:1, conflict:false, read:'moving with tape', story:'European AI cloud buildout', exp:false },
-  { t:'SNOW', state:'DISAGREEMENT', narr:36, rel:+6.32, nds:-17.6, dir:-1, conflict:false, read:'price rejecting negative narrative', story:'Data cloud growth narrative stalling', exp:false },
-  { t:'ODC', state:'UNCLEAR', narr:35, rel:+1.07, nds:-20.4, dir:1, conflict:false, read:'no follow-through', story:'Sorbent products manufacturing; industrial materials play', exp:true },
-  { t:'ALAB', state:'PRICE-LED', narr:39, rel:+2.04, nds:-21.2, dir:1, conflict:false, read:'price ahead of story', story:'PCIe retimers and fabric switches inside AI server racks', exp:false },
-  { t:'NVDA', state:'PRICE-LED', narr:52, rel:+5.94, nds:-27.7, dir:1, conflict:false, read:'price ahead of story', story:'AI infrastructure buildout; China market share erosion', exp:false },
-  { t:'INTC', state:'DISAGREEMENT', narr:80, rel:+3.72, nds:-48.6, dir:-1, conflict:true, read:'price confirming negative story', story:'Qualcomm acquisition chatter; foundry pivot', exp:false },
-  { t:'TSLA', state:'DISAGREEMENT', narr:69, rel:+8.95, nds:-63.8, dir:-1, conflict:true, read:'price rejecting negative narrative', story:'Brand drag from Musk politics; recession sensitivity', exp:false },
-  { t:'COHR', state:'PRICE-LED', narr:38, rel:+14.41, nds:-84.0, dir:1, conflict:false, read:'price ahead of story', story:'Optical transceivers and photonics for AI data center interconnects', exp:false },
-  { t:'MU', state:'DISAGREEMENT', narr:57, rel:+17.84, nds:-96.2, dir:-1, conflict:false, read:'price rejecting negative narrative', story:'HBM demand uncertain after earnings miss', exp:false },
-  { t:'DDOG', state:'CONFIRMED', narr:67, rel:+40.14, nds:-183.7, dir:1, conflict:false, read:'price confirming narrative', story:'AI-native observability; enterprise monitoring adoption in AI stacks', exp:false },
+  // state, narrative (0-100), rel_5d (% vs QQQ), conflict, short_read, narrative_desc
+  { t:'ETH', state:'UNCLEAR', narr:39, rel:-5.51, nds:16.5, dir:1, conflict:false, read:'no follow-through', story:'L2 ecosystem fragmentation; institutional ETH accumulation; staking yield', exp:false },
+  { t:'BTC', state:'REPRICING', narr:45, rel:-4.09, nds:15.4, dir:1, conflict:false, read:'price lagging narrative', story:'Institutional accumulation; macro hedge; Bitcoin strategic reserve narrative', exp:false },
+  { t:'SOL', state:'UNCLEAR', narr:38, rel:-4.96, nds:12.8, dir:1, conflict:false, read:'no follow-through', story:'Ecosystem reset; real-world asset tokenization; consumer app adoption', exp:false },
 ];
 
 // Deduplicate (TSLA appeared multiple times above)
@@ -1249,8 +1190,8 @@ document.getElementById('suggest-modal').addEventListener('click', e => {
 });
 </script>
 
-<!-- Suggest a company button -->
-<button class="suggest-btn" onclick="openSuggest()">+ Suggest a company</button>
+<!-- Suggest a token button -->
+<button class="suggest-btn" onclick="openSuggest()">+ Suggest a token</button>
 
 <!-- Suggest modal -->
 <div class="modal-overlay" id="suggest-modal">
@@ -1258,7 +1199,7 @@ document.getElementById('suggest-modal').addEventListener('click', e => {
     <h3>What narrative should we be tracking?</h3>
     <p>No account needed. We read every suggestion.</p>
     <div id="suggest-form">
-      <input id="suggest-ticker" placeholder="Ticker (e.g. NVDA)" autocomplete="off" />
+      <input id="suggest-ticker" placeholder="Token (e.g. SOL, TAO)" autocomplete="off" />
       <textarea id="suggest-story" placeholder="What's the story?"></textarea>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeSuggest()">Cancel</button>
