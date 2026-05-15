@@ -310,6 +310,40 @@ def main() -> None:
                 .sort_values("sufficient", ascending=False))
     print(coverage.to_string())
 
+    # ── Daily actor diff (today vs prior trading day) ───────────────────────
+    print("\n=== BUILDING DAILY ACTOR DIFF ===")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "build_actor_diff.py")],
+            capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if line.strip():
+                    print(f"  {line.strip()}")
+        else:
+            print(f"  actor diff failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  actor diff failed: {e}")
+
+    # ── Confidence decomposition ────────────────────────────────────────────
+    print("\n=== BUILDING CONFIDENCE DECOMPOSITION ===")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "build_confidence_decomposition.py")],
+            capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if line.strip():
+                    print(f"  {line.strip()}")
+        else:
+            print(f"  confidence build failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  confidence build failed: {e}")
+
 
 if __name__ == "__main__":
     main()

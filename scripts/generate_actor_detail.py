@@ -556,6 +556,26 @@ def main():
     OUTPUT_FILE.write_text(json.dumps(out, indent=2))
     print(f"\nWrote {OUTPUT_FILE} ({len(ordered)} actors)")
 
+    # ── Source relevance scoring (hybrid rules + LLM borderline) ────────────
+    print("\n  scoring source relevance (core / context / weak / excluded)…")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "score_source_relevance.py")],
+            capture_output=True, text=True, timeout=180,
+        )
+        if result.returncode == 0:
+            # Print just the summary lines from the script
+            for line in result.stdout.splitlines():
+                if line.strip().startswith(("core", "context", "weak", "excluded", "(borderline")):
+                    print(f"  {line.strip()}")
+        else:
+            print(f"  source scoring failed (exit {result.returncode})")
+            if result.stderr:
+                print(f"    stderr: {result.stderr[:300]}")
+    except Exception as e:
+        print(f"  source scoring failed: {e}")
+
 
 if __name__ == "__main__":
     main()
