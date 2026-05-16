@@ -172,12 +172,17 @@ def main():
     # Per (strategy, horizon, ticker) accumulators
     per_actor_rows = []
     # Per (strategy, horizon) global accumulators
-    agg = defaultdict(lambda: {
-        "n_directional": 0,
-        "n_scored":      0,
-        "n_hits":        0,
-        "sum_excess":    0.0,
-    })
+    def _accum():
+        return {
+            "n_directional": 0,
+            "n_scored":      0,
+            "n_hits":        0,
+            "sum_excess":    0.0,
+        }
+
+    agg          = defaultdict(_accum)  # (strategy, horizon)
+    agg_by_rel   = defaultdict(_accum)  # (strategy, horizon, reliability_class)
+    agg_by_state = defaultdict(_accum)  # (strategy, horizon, state)
 
     for ticker in tickers:
         df_t = df[df["ticker"] == ticker].sort_values("date").reset_index(drop=True)
@@ -208,24 +213,44 @@ def main():
                 "random":             predict_random(ticker, i),
             }
 
+            current_state = row["state"]
+
             for h in HORIZONS:
                 if i + h >= n:
                     continue
                 fwd = rels[i + h]
                 for strat, p in preds.items():
-                    key = (strat, h)
-                    a = agg[key]
+                    h_result = hit(p, fwd)
+
+                    # Pivot 1 — (strategy, horizon)
+                    a = agg[(strat, h)]
                     if p != 0:
                         a["n_directional"] += 1
-                    h_result = hit(p, fwd)
                     if h_result is not None:
                         a["n_scored"] += 1
                         if h_result:
                             a["n_hits"] += 1
-                        # Excess return earned by the call (sign-adjusted):
-                        # if predicted +1, the rel itself is the gain;
-                        # if predicted -1, -rel is the gain.
                         a["sum_excess"] += p * fwd
+
+                    # Pivot 2 — (strategy, horizon, reliability_class)
+                    a_rel = agg_by_rel[(strat, h, reliability)]
+                    if p != 0:
+                        a_rel["n_directional"] += 1
+                    if h_result is not None:
+                        a_rel["n_scored"] += 1
+                        if h_result:
+                            a_rel["n_hits"] += 1
+                        a_rel["sum_excess"] += p * fwd
+
+                    # Pivot 3 — (strategy, horizon, state)
+                    a_state = agg_by_state[(strat, h, current_state)]
+                    if p != 0:
+                        a_state["n_directional"] += 1
+                    if h_result is not None:
+                        a_state["n_scored"] += 1
+                        if h_result:
+                            a_state["n_hits"] += 1
+                        a_state["sum_excess"] += p * fwd
 
         # Per-actor breakdown — recompute per (strategy, horizon)
         for strat in ["topicspace_engine", "topicspace_trusted", "price_momentum",
@@ -299,6 +324,44 @@ def main():
     summary_df.to_csv(args.summary, index=False)
     print(f"  wrote {args.summary}  ({len(summary_df)} rows)")
 
+    # ── Write by-reliability CSV ────────────────────────────────────────────
+    by_rel_rows = []
+    for (strat, h, rel), a in sorted(agg_by_rel.items()):
+        hr = round(a["n_hits"] / a["n_scored"], 3) if a["n_scored"] > 0 else None
+        avg_ex = round(a["sum_excess"] / a["n_scored"], 3) if a["n_scored"] > 0 else None
+        by_rel_rows.append({
+            "strategy":         strat,
+            "horizon_d":        h,
+            "reliability_class": rel,
+            "n_directional":    a["n_directional"],
+            "n_scored":         a["n_scored"],
+            "n_hits":           a["n_hits"],
+            "hit_rate":         hr,
+            "avg_excess_pct":   avg_ex,
+        })
+    by_rel_path = OUT_DIR / "baseline_comparison_by_reliability.csv"
+    pd.DataFrame(by_rel_rows).to_csv(by_rel_path, index=False)
+    print(f"  wrote {by_rel_path}  ({len(by_rel_rows)} rows)")
+
+    # ── Write by-state CSV ──────────────────────────────────────────────────
+    by_state_rows = []
+    for (strat, h, state), a in sorted(agg_by_state.items()):
+        hr = round(a["n_hits"] / a["n_scored"], 3) if a["n_scored"] > 0 else None
+        avg_ex = round(a["sum_excess"] / a["n_scored"], 3) if a["n_scored"] > 0 else None
+        by_state_rows.append({
+            "strategy":         strat,
+            "horizon_d":        h,
+            "state":            state,
+            "n_directional":    a["n_directional"],
+            "n_scored":         a["n_scored"],
+            "n_hits":           a["n_hits"],
+            "hit_rate":         hr,
+            "avg_excess_pct":   avg_ex,
+        })
+    by_state_path = OUT_DIR / "baseline_comparison_by_state.csv"
+    pd.DataFrame(by_state_rows).to_csv(by_state_path, index=False)
+    print(f"  wrote {by_state_path}  ({len(by_state_rows)} rows)")
+
     # ── Write markdown table ────────────────────────────────────────────────
     def _get(strat, h):
         return next((x for x in summary_rows
@@ -369,6 +432,64 @@ def main():
                     "and the average excess return is positive after deadband "
                     "filtering. Excess is sign-adjusted: positive means the "
                     "strategy made money on its directional calls.")
+    md_lines.append("")
+    # ── Sliced sections ─────────────────────────────────────────────────────
+    md_lines.append("")
+    md_lines.append("## Where the edge lives — by reliability class")
+    md_lines.append("")
+    md_lines.append("Same six strategies, but partitioned by the actor's backtested reliability "
+                    "class. This tells you whether trusted-variant performance is broad or "
+                    "concentrated in the `engine_reliable` bucket. Showing the 20-day horizon only.")
+    md_lines.append("")
+    md_lines.append("| Strategy | Reliability class | n_scored | Hit rate | Avg excess (pp) |")
+    md_lines.append("|---|---|---|---|---|")
+
+    REL_DISPLAY = [
+        ("engine_reliable",   "trusted"),
+        ("engine_inverted",   "contrarian (flipped)"),
+        ("engine_unreliable", "uncertain"),
+        ("insufficient",      "new"),
+    ]
+    for strat in strat_order:
+        for rel_key, rel_label in REL_DISPLAY:
+            row = next((r for r in by_rel_rows
+                        if r["strategy"] == strat and r["horizon_d"] == 20
+                        and r["reliability_class"] == rel_key), None)
+            if row is None or (row.get("hit_rate") is None and row.get("n_scored", 0) == 0):
+                continue
+            hr_str = (f"{int(round(row['hit_rate'] * 100))}%"
+                      if row['hit_rate'] is not None else "—")
+            ex_str = (f"{row['avg_excess_pct']:+.2f}"
+                      if row['avg_excess_pct'] is not None else "—")
+            md_lines.append(
+                f"| `{strat}` | {rel_label} | {row['n_scored']} | "
+                f"**{hr_str}** | {ex_str} |"
+            )
+
+    md_lines.append("")
+    md_lines.append("## Where the edge lives — by state (20-day horizon, trusted only)")
+    md_lines.append("")
+    md_lines.append("Which states does `topicspace_trusted` actually make money in? "
+                    "States like CONFIRMED and EARLY should show edge; PRICE-LED and DIVERGENCE may not.")
+    md_lines.append("")
+    md_lines.append("| State | n_scored | Hit rate | Avg excess (pp) |")
+    md_lines.append("|---|---|---|---|")
+
+    state_order = ["CONFIRMED", "EARLY", "REPRICING", "DISAGREEMENT", "NEG_CONFIRMATION",
+                   "DIVERGENCE", "PRICE-LED", "UNCLEAR", "MACRO"]
+    for st in state_order:
+        row = next((r for r in by_state_rows
+                    if r["strategy"] == "topicspace_trusted"
+                    and r["horizon_d"] == 20
+                    and r["state"] == st), None)
+        if row is None or row.get("n_scored", 0) == 0:
+            continue
+        hr_str = (f"{int(round(row['hit_rate'] * 100))}%"
+                  if row['hit_rate'] is not None else "—")
+        ex_str = (f"{row['avg_excess_pct']:+.2f}"
+                  if row['avg_excess_pct'] is not None else "—")
+        md_lines.append(f"| **{st}** | {row['n_scored']} | **{hr_str}** | {ex_str} |")
+
     md_lines.append("")
     md_lines.append("**Caveats.**")
     md_lines.append("")
