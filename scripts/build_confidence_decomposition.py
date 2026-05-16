@@ -34,6 +34,7 @@ from typing import Optional
 
 ROOT = Path(__file__).parent.parent
 SCORE_PATH         = ROOT / "data" / "derived" / "actor_predictive_score.json"
+BY_STATE_PATH      = ROOT / "data" / "derived" / "baseline_comparison_by_state.csv"
 ACTORS_PATH        = ROOT.parent / "topicspace-site" / "public" / "actors.json"
 ACTORS_DETAIL_PATH = ROOT.parent / "topicspace-site" / "public" / "actors_detail.json"
 OUT_PATH           = ROOT.parent / "topicspace-site" / "public" / "actor_confidence.json"
@@ -111,6 +112,26 @@ def main():
     score_by_t  = {a["ticker"]: a for a in score["actors"]}
     detail_by_t = {a["t"]:      a for a in detail}
 
+    # Per-state edge (cross-actor) — used by state_reliability component
+    # Filter to topicspace_trusted strategy at the 20d horizon (the headline)
+    state_edge: dict[str, dict] = {}
+    if BY_STATE_PATH.exists():
+        import csv
+        with BY_STATE_PATH.open() as f:
+            for row in csv.DictReader(f):
+                if row["strategy"] != "topicspace_trusted":
+                    continue
+                if row["horizon_d"] != "20":
+                    continue
+                try:
+                    state_edge[row["state"]] = {
+                        "hit_rate":       float(row["hit_rate"]) if row["hit_rate"] else None,
+                        "avg_excess_pct": float(row["avg_excess_pct"]) if row["avg_excess_pct"] else None,
+                        "n_scored":       int(row["n_scored"]),
+                    }
+                except (ValueError, KeyError):
+                    pass
+
     # Sector aggregates (avg best_hit_rate per sector for engine_reliable+inverted)
     sector_hits: dict[str, list[float]] = defaultdict(list)
     for a in score["actors"]:
@@ -142,16 +163,12 @@ def main():
         # sample_size
         n_obs = sa.get("n_observations", 0)
 
-        # state_reliability — look up current state in by_state
+        # state_reliability — cross-actor hit rate for the actor's CURRENT state
+        # (from baseline_comparison_by_state.csv, topicspace_trusted @ 20d).
+        # This measures the *accuracy* of calls from this state, not just
+        # whether the state issues a call at all.
         current_state = a.get("state", "")
-        state_n = 0
-        state_n_directional = 0
-        for st_row in sa.get("by_state", []):
-            if st_row.get("state") == current_state:
-                state_n = st_row.get("n", 0)
-                state_n_directional = st_row.get("n_directional", 0)
-                break
-        state_directional_share = (state_n_directional / state_n) if state_n > 0 else None
+        state_info = state_edge.get(current_state)
 
         # sector_reliability
         sec = sa.get("sector") or "Other"
@@ -192,17 +209,17 @@ def main():
                 "tier":  tier_sample(n_obs),
                 "detail": f"{n_obs} observations",
             },
-            "state_reliability": {
-                "value": state_directional_share,
-                "tier":  ("informative" if (state_directional_share or 0) >= 0.7
-                          else "mixed" if (state_directional_share or 0) >= 0.3
-                          else "mostly_neutral" if state_n > 0 else "unknown"),
+            "state_reliability": (lambda: {
+                "value": state_info["hit_rate"] if state_info else None,
+                "tier":  tier_hit_rate(state_info["hit_rate"] if state_info else None) if state_info else "no_edge_data",
                 "detail": (
-                    f"current state '{current_state}' issues calls "
-                    f"{int(round((state_directional_share or 0)*100))}% of the time"
-                    if state_n > 0 else f"no data for state '{current_state}'"
+                    (f"'{current_state}' hits {int(round(state_info['hit_rate']*100))}% "
+                     f"({state_info['avg_excess_pct']:+.2f}pp avg) at 20d "
+                     f"(n={state_info['n_scored']})")
+                    if state_info and state_info["hit_rate"] is not None
+                    else f"engine emits no directional call from '{current_state}'"
                 ),
-            },
+            })(),
             "sector_reliability": {
                 "value": sec_avg,
                 "tier":  tier_hit_rate(sec_avg),
