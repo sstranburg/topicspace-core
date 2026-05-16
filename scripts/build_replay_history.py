@@ -37,6 +37,7 @@ import pandas as pd
 
 ROOT = Path(__file__).parent.parent
 HIST_PATH = ROOT / "data" / "derived" / "backtest_history.parquet"
+EXP_HIST_DIR = ROOT.parent / "topicspace-site" / "public" / "expectations_history"
 OUT_PATH  = ROOT.parent / "topicspace-site" / "public" / "replay_history.json"
 
 
@@ -80,21 +81,48 @@ def main():
     dates = sorted(df["date"].unique())
     print(f"  {len(dates)} dates × {df['ticker'].nunique()} tickers")
 
+    # Build (date, ticker) -> historical expectation lookup from per-ticker files.
+    # Only the compact fields needed for tile display are kept.
+    exp_lookup: dict[tuple[str, str], dict] = {}
+    if EXP_HIST_DIR.exists():
+        for f in EXP_HIST_DIR.glob("*.json"):
+            try:
+                data = json.loads(f.read_text())
+                for e in data.get("expectations", []):
+                    d = e.get("date")
+                    t = e.get("ticker") or data.get("ticker")
+                    if not (d and t):
+                        continue
+                    exp_lookup[(d, t)] = {
+                        "headline":  (e.get("headline") or "")[:120],
+                        "direction": (e.get("direction") or "").replace("_", " "),
+                        "conviction": round(float(e.get("conviction", 0.5)), 2),
+                    }
+            except Exception:
+                continue
+        print(f"  loaded {len(exp_lookup)} historical expectations")
+
     snapshots = []
     for d in dates:
+        d_str = str(d.date())
         sub = df[df["date"] == d].sort_values("ticker")
         actors = []
         for _, r in sub.iterrows():
-            actors.append({
-                "t":     r["ticker"],
+            t = r["ticker"]
+            row = {
+                "t":     t,
                 "state": r["state"],
                 "narr":  int(r["narr"]),
                 "nds":   round(float(r["nds"]), 1),
                 "rel":   round(float(r["rel"]), 2),
                 "dir":   int(r["direction"]),
-                "read":  state_read(r["ticker"], r["state"]),
-            })
-        snapshots.append({"date": str(d.date()), "actors": actors})
+                "read":  state_read(t, r["state"]),
+            }
+            exp = exp_lookup.get((d_str, t))
+            if exp:
+                row["exp"] = exp
+            actors.append(row)
+        snapshots.append({"date": d_str, "actors": actors})
 
     out = {
         "first_date": str(dates[0].date()),
