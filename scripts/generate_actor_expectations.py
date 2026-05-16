@@ -415,6 +415,26 @@ def main() -> None:
         site_target.write_text(payload_text)
         print(f"[wrote] {site_target.relative_to(REPO_ROOT.parent)}")
 
+    # ── Source provenance — connect sources back to the forward view ────────
+    print("\n  scoring source provenance against forward views…")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(pathlib.Path(__file__).parent / "score_source_provenance.py")],
+            capture_output=True, text=True, timeout=300,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                ls = line.strip()
+                if ls.startswith(("supports", "neutral", "contradicts", "(")):
+                    print(f"    {ls}")
+        else:
+            print(f"  provenance scoring failed (exit {result.returncode})")
+            if result.stderr:
+                print(f"    stderr: {result.stderr[:300]}")
+    except Exception as e:
+        print(f"  provenance scoring failed: {e}")
+
 
 if __name__ == "__main__":
     main()
