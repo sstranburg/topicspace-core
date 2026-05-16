@@ -344,6 +344,23 @@ def main() -> None:
     except Exception as e:
         print(f"  confidence build failed: {e}")
 
+    # ── Replay history export ───────────────────────────────────────────────
+    print("\n=== EXPORTING REPLAY HISTORY ===")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "build_replay_history.py")],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if line.strip():
+                    print(f"  {line.strip()}")
+        else:
+            print(f"  replay history failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  replay history failed: {e}")
+
 
 if __name__ == "__main__":
     main()
