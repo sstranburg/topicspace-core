@@ -415,6 +415,45 @@ def main() -> None:
         site_target.write_text(payload_text)
         print(f"[wrote] {site_target.relative_to(REPO_ROOT.parent)}")
 
+    # Archive today's expectations into per-ticker history files so future
+    # /replay/[ticker] views can show real (not retrospectively reconstructed)
+    # past expectations.
+    import datetime as _dt
+    today = str(_dt.date.today())
+    hist_dir = site_public / "expectations_history"
+    if hist_dir.is_dir():
+        archived = 0
+        for exp in out_rows:
+            ticker = exp.get("ticker")
+            if not ticker or not exp.get("headline"):
+                continue
+            f = hist_dir / f"{ticker}.json"
+            if not f.exists():
+                data = {"ticker": ticker, "n": 0, "expectations": []}
+            else:
+                try:
+                    data = json.loads(f.read_text())
+                except Exception:
+                    data = {"ticker": ticker, "n": 0, "expectations": []}
+            # Replace or append entry for today
+            existing = [e for e in data.get("expectations", []) if e.get("date") != today]
+            existing.append({
+                "date":            today,
+                "ticker":          ticker,
+                "headline":        exp.get("headline", ""),
+                "direction":       exp.get("direction", ""),
+                "conviction":      exp.get("conviction", 0.5),
+                "near_term_view":  exp.get("near_term_view", ""),
+                "fork_conditions": exp.get("fork_conditions", [])[:3],
+            })
+            existing = sorted(existing, key=lambda e: e["date"])
+            data["expectations"] = existing
+            data["n"] = len(existing)
+            f.write_text(json.dumps(data, separators=(",", ":")))
+            archived += 1
+        if archived:
+            print(f"[archived] {archived} expectations into expectations_history/ (today={today})")
+
     # ── Source provenance — connect sources back to the forward view ────────
     print("\n  scoring source provenance against forward views…")
     try:
