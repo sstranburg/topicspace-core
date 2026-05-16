@@ -40,6 +40,30 @@ HIST_PATH = ROOT / "data" / "derived" / "backtest_history.parquet"
 OUT_PATH  = ROOT.parent / "topicspace-site" / "public" / "replay_history.json"
 
 
+# State → plain-English "read" interpretation. Mirrors generate_leaderboard.py
+# (kept inline here so the replay export doesn't import live-pipeline code).
+STATE_READS = {
+    "CONFIRMED":        "price confirming narrative",
+    "EARLY":            "price starting to follow",
+    "REPRICING":        "price lagging narrative",
+    "DIVERGENCE":       "story not being paid",
+    "NEG_CONFIRMATION": "selloff confirming narrative",
+    "DISAGREEMENT":     "price rejecting negative narrative",
+    "MACRO":            "moving with tape",
+    "PRICE-LED":        "price ahead of story",
+    "UNCLEAR":          "no follow-through",
+}
+
+READ_OVERRIDES = {
+    # Per-ticker editorial overrides. Should track generate_leaderboard.py.
+    "INTC": "price confirming negative story",
+}
+
+
+def state_read(ticker: str, state: str) -> str:
+    return READ_OVERRIDES.get(ticker) or STATE_READS.get(state, "no clean read")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", default=str(OUT_PATH))
@@ -68,6 +92,7 @@ def main():
                 "nds":   round(float(r["nds"]), 1),
                 "rel":   round(float(r["rel"]), 2),
                 "dir":   int(r["direction"]),
+                "read":  state_read(r["ticker"], r["state"]),
             })
         snapshots.append({"date": str(d.date()), "actors": actors})
 
