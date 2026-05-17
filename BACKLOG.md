@@ -16,9 +16,9 @@ When marking `Done`, leave the card in place for ~2 weeks then archive to `BACKL
 
 In priority order, the five items to work on next:
 
-1. **F-001 — Build L1 validation backtest.** The gate before any field-architecture work above L1. Semantic density / novelty / drift are now computing on the actor debug panel, but we don't yet know whether they beat event-count `narr`. Fork the state engine, run 5 variants through rolling walk-forward, write up the verdict on /methods §11. Without this, the rest of the field architecture builds on an unmeasured foundation. Single highest-leverage item in the whole backlog.
+1. **F-002 — Cluster lineage table.** Now the highest-leverage Field Architecture item. F-001 finished with an inconclusive verdict (L1 stays in shadow), but L2/L3/L4 don't depend on L1 being promoted — they depend on stable theme IDs. Building lineage matching gives L2 (claim clustering) and L3 (lifecycle fingerprints) a foundation that survives daily cluster recomputations.
 2. **C-002 — Write up R-001 as the case-study Writing.** The bifurcation finding (+4.92pp HW vs SW gap, t=13.5, plus 3 counterintuitive sub-findings) is the strongest research result topicspace has produced. Publishing it is more compelling than another worked example. Research as content.
-3. **F-002 — Cluster lineage table.** Prerequisite for L2 (themes) and L3 (lifecycle fingerprints). Cheap to build (~M effort) and unblocks the rest of the field stack. Worth landing before C-002 if you want to keep the architecture momentum moving.
+3. **F-005 — L2 expectation clustering + /claims page V1.** Biggest product differentiation per unit of work. Embed expectations into the same semantic space, cluster by theme, surface claim-space pages. Depends on F-002 for stable theme IDs. The original reviewer's "claim-space view" finally gets built.
 4. **I-001 — Real durable log store for intel briefs.** Current JSONL is ephemeral on Vercel. Has to land before intel sees real traffic; also starts building QA history.
 5. **R-011 — Update eligibility matrix to incorporate R-001 magnitudes.** Software CONFIRMED is actually negative (−5pp); hardware NEG_CONFIRMATION is +11.6pp. Better to do this AFTER C-002 ships — reader feedback will inform weighting decisions.
 
@@ -509,16 +509,17 @@ The question graph PoC is shipped through Phase E: seed graph (A), refreshed bri
 
 Multi-phase plan to transition from stacked-data (today) to stacked-fields. See `/methods §10` (limitations) and the stacked-fields essay for the framing; this section tracks the engineering work to close the gap.
 
-### F-001 — Build L1 validation backtest (the gate before any field promotion)
+### F-001 — Build L1 validation backtest (the gate before any field promotion) (DONE — 2026-05-17)
 - **category**: Field Architecture
 - **priority**: P1
-- **status**: Ready
+- **status**: Done
 - **effort**: M
 - **owner**: Sue
-- **dependencies**: none (L1 V1 already shipped — embeddings + actor/day features)
-- **why_it_matters**: L1 V1 is computing semantic density / novelty / drift / dispersion but we don't yet know whether semantic density is *better* than the existing event-count `narr`. Until that's measured, L1 is just numbers on a debug panel. Without this backtest we can't promote it; with this backtest we either promote with evidence or refine before building L2.
-- **success_condition**: `scripts/l1_validation_backtest.py` produces a CSV comparing 5+ pressure variants (old `narr`, `semantic_density_7d`, `source_weighted_density`, `novelty_adjusted_density`, `density_momentum`) through the existing rolling walk-forward harness. Output table on `/methods §11`. Verdict is one of: (a) clear winner → promote, (b) inconclusive → keep V1 + investigate, (c) no improvement → keep `narr`, refine field definitions.
-- **notes**: Fork the deterministic state engine in `build_backtest_history.py` to take a configurable pressure input. Run all variants through `walkforward_rolling.py` infrastructure. Report fold-by-fold + aggregate hit rate, avg excess, state stability, false-spike count. Single highest-leverage architecture item until done.
+- **completed**: 2026-05-17
+- **verdict**: **inconclusive — do NOT promote.** Field-derived variants do not materially beat event-count `narr` on the current corpus. `semantic_density_7d` edges narr by 1pp at 20d (54% vs 53%), within noise. Avg/median excess within ±0.15pp across all variants. State stability slightly improved by field variants (~3% fewer transitions/day) but the difference is small. Net: L1 stays in shadow mode.
+- **what_to_do_next**: (a) re-run when corpus extends to 9-12 months; (b) consider variant-specific threshold sweeps (current state engine thresholds are tuned for narr); (c) fix data-quality issue: SNOW/VST events have effectively empty body text → near-zero embedding density (see disagreement report). Improving embed input could lift field variants. None of these is the highest-leverage next move — picking up F-002 (cluster lineage) or F-005 (L2 expectation clustering) is. L2 doesn't depend on L1 promotion; expectations get embedded into the same field regardless of which pressure feeds state.
+- **artifacts**: `scripts/l1_validation_backtest.py` · `/methods §10` · `data/derived/l1_validation_{summary,per_window,stability,disagreements}.{csv,md}`
+- **gate result**: blocks F-008 (production promotion) until materially better variant found. Does NOT block F-002/F-003/F-005/F-006/F-007 — those can proceed since they build on L1 infrastructure (embeddings + field metrics), not on the specific narrative-pressure variant chosen.
 
 ### F-002 — Cluster lineage table for stable theme IDs
 - **category**: Field Architecture
@@ -584,15 +585,15 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 - **success_condition**: Region definitions; `performance_regions` table with rolling walk-forward results; actor-page badges shift from per-actor reliability to per-region calibration ("This expectation sits in a region with positive 20D walk-forward performance"); methods page §08c documenting region-level results.
 - **notes**: Arch doc §9. Reuse existing rolling walk-forward harness. Honestly budget 1.5-2 weeks.
 
-### F-008 — Promote semantic_density into production (IF F-001 validates)
+### F-008 — Promote semantic_density into production (deferred — F-001 verdict inconclusive)
 - **category**: Field Architecture
-- **priority**: P1 (conditional)
-- **status**: Blocked (by F-001)
+- **priority**: P3
+- **status**: Deferred
 - **effort**: M
 - **owner**: Sue
-- **dependencies**: F-001 result is positive
-- **why_it_matters**: If the validation backtest shows semantic_density beats event-count `narr` on hit rate / state stability / false-spike rate, we should swap. Until then, leave narr in production and L1 V1 as a debug panel.
-- **success_condition**: `narr` replaced by (or augmented with) semantic_density in the state engine; methods page documents the promotion with the validation evidence; old narr column retained for one quarter as a "legacy" fallback.
+- **dependencies**: F-001 re-run with extended corpus (9-12 months), OR a variant-specific threshold sweep finding a clear winner
+- **why_it_matters**: F-001 (2026-05-17) showed field variants do not materially beat narr on the current 6-month corpus. Re-evaluate after more history accumulates and after the data-quality fix (richer embed input for tickers like SNOW/VST whose events have near-empty bodies).
+- **success_condition**: F-001 v2 shows a variant beating narr by ≥3pp hit rate at 20d AND meaningfully better state stability across multiple rolling folds.
 
 ### F-009 — Point-in-time leakage assertions in L1 code
 - **category**: Field Architecture
