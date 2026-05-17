@@ -361,6 +361,42 @@ def main() -> None:
     except Exception as e:
         print(f"  replay history failed: {e}")
 
+    # ── L1 Field Instrumentation (V1) ───────────────────────────────────────
+    # Runs alongside narr — does not replace it. Validation period 2-3 weeks.
+    print("\n=== EMBEDDING NEW EVENTS (incremental) ===")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "embed_events.py")],
+            capture_output=True, text=True, timeout=900,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                s = line.strip()
+                if s and ("cached" in s or "embedded" in s or "to embed" in s or "wrote" in s):
+                    print(f"  {s}")
+        else:
+            print(f"  embedding failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  embedding failed: {e}")
+
+    print("\n=== BUILDING FIELD INSTRUMENTATION (L1 V1) ===")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "build_field_instrumentation.py")],
+            capture_output=True, text=True, timeout=600,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                s = line.strip()
+                if s and ("processed" in s or "wrote" in s or "events loaded" in s):
+                    print(f"  {s}")
+        else:
+            print(f"  field instrumentation failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  field instrumentation failed: {e}")
+
 
 if __name__ == "__main__":
     main()
