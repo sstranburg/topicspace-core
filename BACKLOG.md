@@ -626,6 +626,16 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
   - Reconfirmed event type (e.g. when retired-then-reborn happens within N days)
   - Use entity persistence as an L1 prior weight (high-persistence entities → trust the directional signal more)
 - **gate**: V1 passes the "would I show this to a reader" test on actor pages with persistent claims (SNOW, MU, CEG, MRVL, VRT). Actors without persistent claims show an honest "no persistent claims" note rather than fake-confident timeline noise.
+- **artifact_policy**: The four lifecycle artifacts under `data/derived/` are force-added despite `data/` being gitignored at storm root:
+  ```
+  data/derived/expectation_entities.parquet
+  data/derived/expectation_versions.parquet
+  data/derived/expectation_lifecycle_events.parquet
+  data/derived/thesis_trails.json
+  ```
+  The evening pipeline regenerates all four on every run, so daily diffs will appear under `git status` whether or not the underlying field actually moved. **Manual refresh only.** Do NOT auto-commit on every pipeline run, and do NOT propose a cron / hook for this. Refresh them manually when the lifecycle methodology changes or when the published data state crosses a meaningful checkpoint (new actor onboarded, F-006 V2 matching rules shipped, publication snapshot). Until F-006 V2 stabilizes the (actor, cluster, direction-sign) matching, daily diffs may reflect implementation noise (cluster centroid drift, embedding re-shuffling, LLM expectation reframing) as much as real field movement. Auto-committing this churn would pollute the repo history and erode the signal value of any future `git log` for these files.
+
+  The site-facing copy at `topicspace-site/public/thesis_trails.json` is the **production artifact** — `/architecture` and `/actor/[ticker]` both read from it via the site repo's normal build. The storm-side copies are reproducibility artifacts; no production reader touches them. If manual refreshing becomes painful, add `scripts/commit_lifecycle_artifacts.sh` — but keep it human-triggered, not cron'd. Re-evaluate this policy once F-006 V2 lands.
 
 ### F-007 — L4 region-level walk-forward (replaces per-actor trust)
 - **category**: Field Architecture
