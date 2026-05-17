@@ -16,13 +16,15 @@ When marking `Done`, leave the card in place for ~2 weeks then archive to `BACKL
 
 In priority order, the five items to work on next:
 
-1. **C-002 — Write up R-001 as the case-study Writing.** The bifurcation finding (+4.92pp HW vs SW gap, t=13.5, plus 3 counterintuitive sub-findings) is the strongest research result topicspace has produced. Publishing it is more compelling than another worked example. Research as content.
-2. **I-001 — Real durable log store for intel briefs.** Current JSONL is ephemeral on Vercel. Has to land before intel sees real traffic; also starts building QA history.
-3. **R-011 — Update eligibility matrix to incorporate R-001 magnitudes.** Software CONFIRMED is actually negative (−5pp); hardware NEG_CONFIRMATION is +11.6pp. Better to do this AFTER C-002 ships — reader feedback will inform weighting decisions.
-4. **R-009 — Reclassify CRWV (maybe GOOGL/AMZN) as hardware-cluster.** Cheap config change; can run in parallel with R-011.
-5. **R-010 — Investigate why NVDA / SMCI / VST / CEG underperform their cluster.** The "AI celebrity" names are the laggards. Could become a tradable refinement; not blocking anything.
+1. **F-001 — Build L1 validation backtest.** The gate before any field-architecture work above L1. Semantic density / novelty / drift are now computing on the actor debug panel, but we don't yet know whether they beat event-count `narr`. Fork the state engine, run 5 variants through rolling walk-forward, write up the verdict on /methods §11. Without this, the rest of the field architecture builds on an unmeasured foundation. Single highest-leverage item in the whole backlog.
+2. **C-002 — Write up R-001 as the case-study Writing.** The bifurcation finding (+4.92pp HW vs SW gap, t=13.5, plus 3 counterintuitive sub-findings) is the strongest research result topicspace has produced. Publishing it is more compelling than another worked example. Research as content.
+3. **F-002 — Cluster lineage table.** Prerequisite for L2 (themes) and L3 (lifecycle fingerprints). Cheap to build (~M effort) and unblocks the rest of the field stack. Worth landing before C-002 if you want to keep the architecture momentum moving.
+4. **I-001 — Real durable log store for intel briefs.** Current JSONL is ephemeral on Vercel. Has to land before intel sees real traffic; also starts building QA history.
+5. **R-011 — Update eligibility matrix to incorporate R-001 magnitudes.** Software CONFIRMED is actually negative (−5pp); hardware NEG_CONFIRMATION is +11.6pp. Better to do this AFTER C-002 ships — reader feedback will inform weighting decisions.
 
 > **Principle**: field/product improvements come before content cadence. Publish and explain, but protect the time for the underlying improvements. The backlog ordering is a guardrail, not a suggestion — if content starts crowding out research, drop a content slot, not a research one.
+>
+> **Validation standard (added 2026-05-17)**: rolling walk-forward only for headline performance. In-sample metrics are diagnostic, not claims. See `feedback_rolling_walkforward_standard.md` in `.claude` memory and `/methods §08b`.
 
 ---
 
@@ -290,16 +292,14 @@ In priority order, the five items to work on next:
 - **owner**: Sue
 - **notes**: Shipped May 8: `/writing/introducing-topicspace-intel`.
 
-### C-004 — Write up "stacked fields" as a topicspace Writing
+### C-004 — Write up "stacked fields" as a topicspace Writing (DONE — recent)
 - **category**: Content
 - **priority**: P1
-- **status**: Ready
+- **status**: Done
 - **effort**: M
 - **owner**: Sue
-- **dependencies**: none (concept exists; supporting artifacts live across /lab pages)
-- **why_it_matters**: The stacked-fields framing (information field → expectation field → belief-revision field → performance field) is the cleanest articulation of what topicspace is actually building, and it ties together the disparate-feeling pieces (cohort expectations, expectation replay, spatial field, actor expectations + reliability flag) into a single architectural arc. Publishing it gives the project a unifying thesis statement: "the aim is not only to model the world, but to model how understanding of the world evolves." Concept diagram already exists at `social/stacked-fields.html`.
-- **success_condition**: One published Writing covering (a) the four layers in plain language with concrete topicspace artifacts cited for each, (b) the layered hardware-narrative example (info → expectation → revision → performance), (c) the feedback-loop point (performance layer reaches back to inform how the lower layers operate — already a primitive form in the actor-expectations reliability flag), (d) the one-sentence thesis, and (e) honest acknowledgment that layer 4 (performance) is still aspirational beyond the per-actor reliability seed.
-- **notes**: Three small tweaks vs the source draft: (1) drop "truth" from "performance / truth field" — call it "performance field" or "evaluation field"; (2) add a feedback-loop sentence so the layers feel like a learning system, not a one-way pipe; (3) prefer the sober articulation "a system that maintains, revises, and evaluates understanding in changing domains" over "continuity engine." Diagram: `social/stacked-fields.html`.
+- **completed**: 2026-05-14
+- **notes**: Published at `/writing/stacked-fields`. Includes four-layer essay, matched three-figure set (information field at t=T, stacked architecture with feedback arrow, homepage card composition), L1-L4 unified labeling across diagrams + prose, §05 "How the stack drives the homepage" tying architecture to today's six featured actors, honest "what's not implemented yet" framing in §03 stack status + §10 limitations. Feedback arrow explicit so the stack reads as a learning system, not a pipeline. Subsequent honesty pass on /methods §10 captures the gap between essay rhetoric and implementation reality (now tracked by the F-series).
 
 ---
 
@@ -502,6 +502,117 @@ The question graph PoC is shipped through Phase E: seed graph (A), refreshed bri
 - **dependencies**: Q-004 (need real use); ≥30 days of review-log data
 - **why_it_matters**: Over time, the promote / dismiss decisions become a record of what topicspace's owner actually values in inquiry. Trends in which triggers get promoted, which parents reliably produce useful children, which dismissal reasons recur — these are the most honest description of the system's research taste.
 - **success_condition**: A short internal note (or Writing draft) on what kinds of derived questions get promoted, dismissed, or archived. Quantified where possible: which trigger types have the highest promotion rate, which parents have the most active children, which dismissal reasons cluster.
+
+---
+
+## Field Architecture
+
+Multi-phase plan to transition from stacked-data (today) to stacked-fields. See `/methods §10` (limitations) and the stacked-fields essay for the framing; this section tracks the engineering work to close the gap.
+
+### F-001 — Build L1 validation backtest (the gate before any field promotion)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Ready
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: none (L1 V1 already shipped — embeddings + actor/day features)
+- **why_it_matters**: L1 V1 is computing semantic density / novelty / drift / dispersion but we don't yet know whether semantic density is *better* than the existing event-count `narr`. Until that's measured, L1 is just numbers on a debug panel. Without this backtest we can't promote it; with this backtest we either promote with evidence or refine before building L2.
+- **success_condition**: `scripts/l1_validation_backtest.py` produces a CSV comparing 5+ pressure variants (old `narr`, `semantic_density_7d`, `source_weighted_density`, `novelty_adjusted_density`, `density_momentum`) through the existing rolling walk-forward harness. Output table on `/methods §11`. Verdict is one of: (a) clear winner → promote, (b) inconclusive → keep V1 + investigate, (c) no improvement → keep `narr`, refine field definitions.
+- **notes**: Fork the deterministic state engine in `build_backtest_history.py` to take a configurable pressure input. Run all variants through `walkforward_rolling.py` infrastructure. Report fold-by-fold + aggregate hit rate, avg excess, state stability, false-spike count. Single highest-leverage architecture item until done.
+
+### F-002 — Cluster lineage table for stable theme IDs
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: none (uses existing L1 embeddings); blocks F-005 and F-006
+- **why_it_matters**: Today's cluster_id changes day-to-day because k-means is rerun. Themes need stable identity for L2 (claim cards) and L3 (expectation fingerprints). Without this, theme labels are useless across dates and L3 lifecycle matching gets brittle.
+- **success_condition**: New `data/derived/cluster_lineage.parquet` with one row per (date, current_cluster_id, prior_cluster_id) match. Daily build matches today's cluster centroids against yesterday's via cosine similarity; stable cluster IDs persist; births / deaths / merges / splits are recorded.
+- **notes**: Required prerequisite for L2/L3. Mentioned in the GPT arch doc §15.2 only as a mitigation; promoting it to a first-class artifact early.
+
+### F-003 — LLM-labeled cluster names
+- **category**: Field Architecture
+- **priority**: P2
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: F-002 (need stable cluster IDs first, otherwise we label and re-label daily)
+- **why_it_matters**: Current TFIDF labels ("marvell / micro / asml") are fine for debug but bad for any user-facing claim-space view. LLM labels using top 20-30 titles per cluster give readable theme names like "AI capex tailwind in semis."
+- **success_condition**: One LLM call per *new* cluster per evening (~10-30/day → ~$0.10/day). Stored next to cluster_lineage; surfaced as `cluster_label` field everywhere it's used.
+
+### F-004 — Field watchdog: narr vs semantic_density divergence detection
+- **category**: Field Architecture
+- **priority**: P2
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: none
+- **why_it_matters**: While F-001 validates whether semantic_density is better, the validation period needs an early-warning system: when narr and semantic_density disagree dramatically for an actor on a day, that's interesting. Surfacing those divergences accelerates iteration on the field definitions.
+- **success_condition**: Daily compute of `|z-score(narr) - z-score(semantic_density_7d)|` per actor; rows above threshold (e.g. 1.5σ) flagged in an internal report. Useful both as a validation tool and as a future signal candidate.
+
+### F-005 — L2 expectation clustering + /claims page V1
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: L
+- **owner**: Sue
+- **dependencies**: F-001 (L1 must validate first), F-002 (need stable cluster IDs), F-003 (need readable labels)
+- **why_it_matters**: Today the product organizes by actor. Claim-space pages organize by *thesis* — "Agentic software pressures incumbent SaaS" with member actors, direction alignment, conflict, conviction. This is the biggest product differentiation per unit of work once L1 is grounded.
+- **success_condition**: Expectations embedded into same semantic space; daily theme clusters with stable IDs; `/claims` (or `/themes`) route with one card per active theme showing: member actors, direction distribution, avg conviction, crowding/conflict scores, source quality. State distribution and price confirmation per claim.
+- **notes**: Schema additions per arch doc §7.2 + §7.5. Reuse F-001's backtest harness to also validate claim-level metrics where applicable.
+
+### F-006 — L3 expectation lifecycle IDs + thesis trails
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: L
+- **owner**: Sue
+- **dependencies**: F-005 (need stable theme clusters first)
+- **why_it_matters**: Expectations are regenerated daily without IDs. Original reviewer's "biggest unlock." Makes topicspace a memory system instead of a daily-snapshot generator. Enables per-expectation walk-forward (likely more stable than per-actor).
+- **success_condition**: Three new tables (`expectation_entities`, `expectation_versions`, `expectation_lifecycle_events`); matching algorithm assigns persistent IDs day-over-day; thesis trail surfaced on actor pages and lifecycle markers on `/replay/[ticker]`; events: born / persisted / strengthened / weakened / contradicted / rotated / split / merged / retired / reconfirmed.
+- **notes**: V1 fingerprint = `actor + theme_cluster_id + direction_sign`. Arch doc §8 is the spec. Budget 2-3 weeks not the 1.5-2 the doc suggests — schema + matching + lifecycle events + UI is real work.
+
+### F-007 — L4 region-level walk-forward (replaces per-actor trust)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: L
+- **owner**: Sue
+- **dependencies**: F-005 (need themes for regions)
+- **why_it_matters**: Rolling walk-forward at the per-actor level showed trust filter doesn't generalize (`/methods §08b`). Region-level (theme × state × conviction × horizon) should be more stable — more samples per region than per actor. Closes the remaining credibility gap.
+- **success_condition**: Region definitions; `performance_regions` table with rolling walk-forward results; actor-page badges shift from per-actor reliability to per-region calibration ("This expectation sits in a region with positive 20D walk-forward performance"); methods page §08c documenting region-level results.
+- **notes**: Arch doc §9. Reuse existing rolling walk-forward harness. Honestly budget 1.5-2 weeks.
+
+### F-008 — Promote semantic_density into production (IF F-001 validates)
+- **category**: Field Architecture
+- **priority**: P1 (conditional)
+- **status**: Blocked (by F-001)
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: F-001 result is positive
+- **why_it_matters**: If the validation backtest shows semantic_density beats event-count `narr` on hit rate / state stability / false-spike rate, we should swap. Until then, leave narr in production and L1 V1 as a debug panel.
+- **success_condition**: `narr` replaced by (or augmented with) semantic_density in the state engine; methods page documents the promotion with the validation evidence; old narr column retained for one quarter as a "legacy" fallback.
+
+### F-009 — Point-in-time leakage assertions in L1 code
+- **category**: Field Architecture
+- **priority**: P2
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: none
+- **why_it_matters**: Arch doc §13 specifies leakage rules. Current L1 code respects them but it's by convention, not enforcement. Adding explicit assertions (e.g. `assert all(events_df.date <= t)` in `build_field_instrumentation.py`) catches accidental future-data leaks during refactors.
+- **success_condition**: Code-level checks fail loudly if a feature uses any event with `event.timestamp > t`.
+
+### F-010 — Mark expectation provenance explicitly (live_archived vs retrospectively_reconstructed)
+- **category**: Field Architecture
+- **priority**: P2
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: none
+- **why_it_matters**: Replay UI informally notes that historical expectations are reconstructed, not archived. Arch doc §10.3 + §15.3 are right that this should be data-model-level, not just a UI footnote. As archived expectations accumulate going forward (via the daily archival hook), the distinction will matter more.
+- **success_condition**: Add `provenance: "live_archived" | "retrospectively_reconstructed"` to every entry in `expectations_history/*.json`. UI shows a discreet chip on retrospectively-reconstructed cards. Future archivals stamp as `live_archived`; backfill marked as `retrospectively_reconstructed`.
 
 ---
 
