@@ -16,9 +16,9 @@ When marking `Done`, leave the card in place for ~2 weeks then archive to `BACKL
 
 In priority order, the five items to work on next:
 
-1. **F-002 — Cluster lineage table.** Now the highest-leverage Field Architecture item. F-001 finished with an inconclusive verdict (L1 stays in shadow), but L2/L3/L4 don't depend on L1 being promoted — they depend on stable theme IDs. Building lineage matching gives L2 (claim clustering) and L3 (lifecycle fingerprints) a foundation that survives daily cluster recomputations.
+1. **F-005 — L2 expectation clustering + /claims page V1.** F-002 (cluster lineage) is done, giving us 715 stable theme IDs with LLM labels. Now: embed expectations into the same semantic space, attach them to existing stable_cluster_ids, surface claim-space pages. Biggest product differentiation per unit of work — the "claim-space view" the original reviewer wanted.
 2. **C-002 — Write up R-001 as the case-study Writing.** The bifurcation finding (+4.92pp HW vs SW gap, t=13.5, plus 3 counterintuitive sub-findings) is the strongest research result topicspace has produced. Publishing it is more compelling than another worked example. Research as content.
-3. **F-005 — L2 expectation clustering + /claims page V1.** Biggest product differentiation per unit of work. Embed expectations into the same semantic space, cluster by theme, surface claim-space pages. Depends on F-002 for stable theme IDs. The original reviewer's "claim-space view" finally gets built.
+3. **F-006 — L3 expectation lifecycle IDs.** Now that stable theme IDs exist (F-002), the V1 fingerprint `actor + stable_cluster_id + direction_sign` is feasible. Builds the "memory system" — expectations as persistent objects with born/strengthened/weakened/contradicted/retired events. Original reviewer's "biggest unlock." Honest 2-3 week budget; doesn't depend on L1 promotion.
 4. **I-001 — Real durable log store for intel briefs.** Current JSONL is ephemeral on Vercel. Has to land before intel sees real traffic; also starts building QA history.
 5. **R-011 — Update eligibility matrix to incorporate R-001 magnitudes.** Software CONFIRMED is actually negative (−5pp); hardware NEG_CONFIRMATION is +11.6pp. Better to do this AFTER C-002 ships — reader feedback will inform weighting decisions.
 
@@ -521,16 +521,23 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 - **artifacts**: `scripts/l1_validation_backtest.py` · `/methods §10` · `data/derived/l1_validation_{summary,per_window,stability,disagreements}.{csv,md}`
 - **gate result**: blocks F-008 (production promotion) until materially better variant found. Does NOT block F-002/F-003/F-005/F-006/F-007 — those can proceed since they build on L1 infrastructure (embeddings + field metrics), not on the specific narrative-pressure variant chosen.
 
-### F-002 — Cluster lineage table for stable theme IDs
+### F-002 — Cluster lineage table for stable theme IDs (DONE — 2026-05-17)
 - **category**: Field Architecture
 - **priority**: P1
-- **status**: Inbox
+- **status**: Done
 - **effort**: M
 - **owner**: Sue
-- **dependencies**: none (uses existing L1 embeddings); blocks F-005 and F-006
-- **why_it_matters**: Today's cluster_id changes day-to-day because k-means is rerun. Themes need stable identity for L2 (claim cards) and L3 (expectation fingerprints). Without this, theme labels are useless across dates and L3 lifecycle matching gets brittle.
-- **success_condition**: New `data/derived/cluster_lineage.parquet` with one row per (date, current_cluster_id, prior_cluster_id) match. Daily build matches today's cluster centroids against yesterday's via cosine similarity; stable cluster IDs persist; births / deaths / merges / splits are recorded.
-- **notes**: Required prerequisite for L2/L3. Mentioned in the GPT arch doc §15.2 only as a mitigation; promoting it to a first-class artifact early.
+- **completed**: 2026-05-17
+- **what_landed**: `scripts/build_cluster_lineage.py` produces 5 artifacts in `data/derived/`:
+  - `cluster_lineage.parquet` (2,950 rows · 715 unique stable_cluster_ids · 118 dates · lifecycle: persisted 1634, split_target 690, merge_target 540, drift 61, born 25)
+  - `cluster_members.parquet` (5.9 MB · per (date, day_cluster, event_id))
+  - `cluster_actor_membership.parquet` (120 KB · per (date, ticker, stable_cluster) with `is_primary` flag)
+  - `cluster_events.parquet` (29 KB · 1947 lifecycle events: 690 retired, 690 split_target, 540 merge_target, 25 born, 2 large_drift)
+  - `cluster_labels.json` (1.3 MB · 715 LLM-labeled stable clusters, gpt-4o-mini, cached, ~$2 total)
+- **method**: KMeans on 30-day window per day (k = clip(n/50, 8, 25)) · cosine-similarity centroid matching against prior day · MATCH_PERSIST_SIM=0.85 (clean) · MATCH_DRIFT_SIM=0.50 (drift) · birth if no match · merge if multiple priors claim one today · split if one prior maps to multiple today · retired if prior gets no claim · LLM relabel only when member-set churn ≥40% or first sighting.
+- **also_in_this_commit**: data-quality fix — switched field pipeline + embed_events.py to read from `tech_ecosystem_filtered.jsonl + tech_ecosystem_backfill.jsonl` (matching `build_backtest_history.py`'s corpus). Previously they only read `tech_ecosystem.jsonl` which missed ~37k backfill events, causing SNOW/VST etc to show narr=95 / density=0 in the disagreement report. Now SNOW Dec 2025 shows actual events and density. Added `degenerate_event_share` metric (events with combined title+text < 30 chars excluded from centroid/density).
+- **next_dependencies_unlocked**: F-005 (L2 expectation clustering can now use stable theme IDs), F-006 (L3 fingerprints can use `actor + stable_cluster_id + direction_sign`).
+- **artifacts**: `scripts/build_cluster_lineage.py` · `scripts/embed_events.py` (updated) · `scripts/build_field_instrumentation.py` (updated) · `scripts/build_backtest_history.py` (wired in evening pipeline)
 
 ### F-003 — LLM-labeled cluster names
 - **category**: Field Architecture

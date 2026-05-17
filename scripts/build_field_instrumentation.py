@@ -44,11 +44,19 @@ import pandas as pd
 
 
 ROOT = Path(__file__).parent.parent
-EVENTS_PATH = ROOT / "data" / "normalized" / "tech_ecosystem.jsonl"
+# Match build_backtest_history + embed_events: read from filtered + backfill
+# so the field corpus matches narr's corpus exactly.
+DEFAULT_SOURCES = [
+    ROOT / "data" / "normalized" / "tech_ecosystem_filtered.jsonl",
+    ROOT / "data" / "normalized" / "tech_ecosystem_backfill.jsonl",
+]
+LEGACY_SOURCE   = ROOT / "data" / "normalized" / "tech_ecosystem.jsonl"
 EMB_PATH    = ROOT / "data" / "derived" / "event_embeddings.parquet"
 HIST_PATH   = ROOT / "data" / "derived" / "backtest_history.parquet"
 OUT_PARQ    = ROOT / "data" / "derived" / "field_instrumentation.parquet"
 OUT_JSON    = ROOT.parent / "topicspace-site" / "public" / "field_actor.json"
+
+DEGENERATE_TEXT_LEN = 30   # combined title+text len below this → event excluded from density
 
 WINDOW_7D  = 7
 WINDOW_30D = 30
@@ -95,36 +103,49 @@ def main():
                     help="only compute for the last N trading days (testing)")
     args = ap.parse_args()
 
-    if not EVENTS_PATH.exists():
-        sys.exit(f"Missing {EVENTS_PATH}")
+    sources = [p for p in DEFAULT_SOURCES if p.exists()]
+    if not sources and LEGACY_SOURCE.exists():
+        sources = [LEGACY_SOURCE]
+    if not sources:
+        sys.exit(f"No source files found in {DEFAULT_SOURCES[0].parent}")
     if not EMB_PATH.exists():
         sys.exit(f"Missing {EMB_PATH} — run embed_events.py first")
     if not HIST_PATH.exists():
         sys.exit(f"Missing {HIST_PATH}")
 
     # ── Load events (minimum needed fields) ─────────────────────────────────
-    print("  loading events…")
+    print(f"  loading events from: {', '.join(p.name for p in sources)}")
     rows = []
-    with EVENTS_PATH.open() as f:
-        for line in f:
-            try:
-                r = json.loads(line)
-            except Exception:
-                continue
-            if not r.get("event_id") or not r.get("timestamp"):
-                continue
-            ts = r["timestamp"][:10]  # YYYY-MM-DD
-            rows.append({
-                "event_id":    r["event_id"],
-                "date":        ts,
-                "title":       (r.get("title") or "")[:200],
-                "actors":      r.get("actors") or [],
-                "reliability": float(r.get("reliability", 0.5) or 0.5),
-                "source":      r.get("source", ""),
-            })
+    seen_eids: set[str] = set()
+    for src_path in sources:
+        with src_path.open() as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except Exception:
+                    continue
+                eid = r.get("event_id")
+                if not eid or not r.get("timestamp") or eid in seen_eids:
+                    continue
+                seen_eids.add(eid)
+                ts = r["timestamp"][:10]
+                title = (r.get("title") or "")[:200]
+                text  = (r.get("text") or "")
+                combined_len = len(title) + len(text)
+                rows.append({
+                    "event_id":     eid,
+                    "date":         ts,
+                    "title":        title,
+                    "actors":       r.get("actors") or [],
+                    "reliability":  float(r.get("reliability", 0.5) or 0.5),
+                    "source":       r.get("source", ""),
+                    "combined_len": combined_len,
+                    "degenerate":   combined_len < DEGENERATE_TEXT_LEN,
+                })
     events_df = pd.DataFrame(rows)
     events_df["date"] = pd.to_datetime(events_df["date"])
-    print(f"    {len(events_df):,} events loaded")
+    n_degen = events_df["degenerate"].sum()
+    print(f"    {len(events_df):,} events loaded ({n_degen:,} degenerate, <{DEGENERATE_TEXT_LEN} chars)")
 
     # ── Load embeddings, align to events_df ─────────────────────────────────
     print("  loading embeddings…")
@@ -147,6 +168,9 @@ def main():
     for i, actors in enumerate(events_df["actors"].tolist()):
         for a in actors:
             actor_to_idx[a].append(i)
+
+    # Boolean array of degenerate events (excluded from density / centroid)
+    degenerate_arr = events_df["degenerate"].values
 
     # ── Trading-day grid from backtest_history ──────────────────────────────
     hist = pd.read_parquet(HIST_PATH).copy()
@@ -210,11 +234,19 @@ def main():
         for ticker in tickers:
             act_idx = actor_to_idx.get(ticker, [])
 
-            # Indices in each window
-            in_7d  = [i for i in act_idx if mask_7d[i]]
-            in_30d = [i for i in act_idx if mask_30d[i]]
-            event_count_7d  = len(in_7d)
-            event_count_30d = len(in_30d)
+            # Indices in each window (raw, before degenerate filter)
+            in_7d_raw  = [i for i in act_idx if mask_7d[i]]
+            in_30d_raw = [i for i in act_idx if mask_30d[i]]
+            event_count_7d  = len(in_7d_raw)
+            event_count_30d = len(in_30d_raw)
+
+            # Filter degenerate (low-text) events from centroid/density math
+            in_7d  = [i for i in in_7d_raw  if not degenerate_arr[i]]
+            in_30d = [i for i in in_30d_raw if not degenerate_arr[i]]
+            degenerate_event_share = (
+                (event_count_7d - len(in_7d)) / event_count_7d
+                if event_count_7d > 0 else 0.0
+            )
 
             # Defaults
             density_7d = 0.0
@@ -376,6 +408,7 @@ def main():
                 "ticker":                ticker,
                 "event_count_7d":        event_count_7d,
                 "event_count_30d":       event_count_30d,
+                "degenerate_event_share": round(degenerate_event_share, 3),
                 "semantic_density_7d":   round(density_7d, 4),
                 "semantic_density_30d":  round(density_30d, 4),
                 "density_momentum":      0.0,    # filled below
@@ -422,6 +455,7 @@ def main():
         today_payload["actors"][t] = {
             "event_count_7d":         int(r["event_count_7d"]),
             "event_count_30d":        int(r["event_count_30d"]),
+            "degenerate_event_share": float(r["degenerate_event_share"]),
             "semantic_density_7d":    float(r["semantic_density_7d"]),
             "semantic_density_30d":   float(r["semantic_density_30d"]),
             "density_momentum":       float(r["density_momentum"]),

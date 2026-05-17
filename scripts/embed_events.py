@@ -32,8 +32,15 @@ import pandas as pd
 
 
 ROOT = Path(__file__).parent.parent
-EVENTS_PATH = ROOT / "data" / "normalized" / "tech_ecosystem.jsonl"
-EMB_PATH    = ROOT / "data" / "derived" / "event_embeddings.parquet"
+# Match build_backtest_history.py — use filtered production + backfill so
+# the field corpus aligns with narr's corpus exactly.
+DEFAULT_SOURCES = [
+    ROOT / "data" / "normalized" / "tech_ecosystem_filtered.jsonl",
+    ROOT / "data" / "normalized" / "tech_ecosystem_backfill.jsonl",
+]
+# Fallback if filtered isn't available (e.g. older clones)
+LEGACY_SOURCE   = ROOT / "data" / "normalized" / "tech_ecosystem.jsonl"
+EMB_PATH        = ROOT / "data" / "derived" / "event_embeddings.parquet"
 
 MODEL = "text-embedding-3-small"
 DIM   = 1536
@@ -81,28 +88,38 @@ def main():
                     help="cap how many new events to embed this run (testing)")
     args = ap.parse_args()
 
-    if not EVENTS_PATH.exists():
-        sys.exit(f"Missing {EVENTS_PATH}")
+    # Build list of source files to scan
+    sources = [p for p in DEFAULT_SOURCES if p.exists()]
+    if not sources and LEGACY_SOURCE.exists():
+        sources = [LEGACY_SOURCE]
+    if not sources:
+        sys.exit(f"No source files found in {DEFAULT_SOURCES[0].parent}")
+    print(f"  reading from: {', '.join(p.name for p in sources)}")
 
     cached = load_cached_ids()
     print(f"  cached so far: {len(cached):,}")
 
     to_embed: list[tuple[str, str]] = []
-    with EVENTS_PATH.open() as f:
-        for line in f:
-            try:
-                rec = json.loads(line)
-            except Exception:
-                continue
-            eid = rec.get("event_id")
-            if not eid or eid in cached:
-                continue
-            txt = event_text(rec)
-            if not txt:
-                continue
-            to_embed.append((eid, txt))
-            if args.max and len(to_embed) >= args.max:
-                break
+    seen_ids: set[str] = set()
+    for src_path in sources:
+        with src_path.open() as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                except Exception:
+                    continue
+                eid = rec.get("event_id")
+                if not eid or eid in cached or eid in seen_ids:
+                    continue
+                seen_ids.add(eid)
+                txt = event_text(rec)
+                if not txt:
+                    continue
+                to_embed.append((eid, txt))
+                if args.max and len(to_embed) >= args.max:
+                    break
+        if args.max and len(to_embed) >= args.max:
+            break
 
     print(f"  to embed: {len(to_embed):,}")
     if not to_embed:

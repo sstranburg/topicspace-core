@@ -397,6 +397,28 @@ def main() -> None:
     except Exception as e:
         print(f"  field instrumentation failed: {e}")
 
+    # ── Cluster lineage (F-002) ───────────────────────────────────────────
+    # Stable theme IDs across days via centroid matching. Labels are cached
+    # and only LLM-relabeled when cluster membership churns ≥40%. Daily
+    # incremental: ~5-10 new clusters at most, ~$0.005/day in LLM cost.
+    print("\n=== BUILDING CLUSTER LINEAGE (F-002) ===")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "build_cluster_lineage.py")],
+            capture_output=True, text=True, timeout=1200,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                s = line.strip()
+                if s and ("wrote" in s or "unique stable" in s or "lifecycle events" in s
+                         or s.startswith(("born", "persisted", "drift", "merge", "split", "retired", "large_drift"))):
+                    print(f"  {s}")
+        else:
+            print(f"  cluster lineage failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  cluster lineage failed: {e}")
+
 
 if __name__ == "__main__":
     main()
