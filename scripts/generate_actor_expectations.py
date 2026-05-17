@@ -474,6 +474,42 @@ def main() -> None:
     except Exception as e:
         print(f"  provenance scoring failed: {e}")
 
+    # ── L2 part 1: embed expectations (F-005) ──────────────────────────────
+    print("\n  embedding new expectations…")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(pathlib.Path(__file__).parent / "embed_expectations.py")],
+            capture_output=True, text=True, timeout=600,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                ls = line.strip()
+                if ls and ("to embed" in ls or "embedded" in ls or "wrote" in ls):
+                    print(f"    {ls}")
+        else:
+            print(f"  expectation embedding failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  expectation embedding failed: {e}")
+
+    # ── L2 part 2: build claim-space stats (F-005) ─────────────────────────
+    print("\n  building claim-space stats…")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(pathlib.Path(__file__).parent / "build_claims.py")],
+            capture_output=True, text=True, timeout=600,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                ls = line.strip()
+                if ls and ("themes" in ls or "wrote" in ls or "intersect" in ls):
+                    print(f"    {ls}")
+        else:
+            print(f"  build_claims failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  build_claims failed: {e}")
+
 
 if __name__ == "__main__":
     main()

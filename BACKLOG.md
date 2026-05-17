@@ -16,9 +16,9 @@ When marking `Done`, leave the card in place for ~2 weeks then archive to `BACKL
 
 In priority order, the five items to work on next:
 
-1. **F-005 — L2 expectation clustering + /claims page V1.** F-002 (cluster lineage) is done, giving us 715 stable theme IDs with LLM labels. Now: embed expectations into the same semantic space, attach them to existing stable_cluster_ids, surface claim-space pages. Biggest product differentiation per unit of work — the "claim-space view" the original reviewer wanted.
+1. **F-006 — L3 expectation lifecycle IDs.** Now that stable theme IDs exist (F-002) AND expectations are attached to them with direction/conviction (F-005), the V1 fingerprint `actor + stable_cluster_id + direction_sign` is feasible. Builds the "memory system" — expectations as persistent objects with born/strengthened/weakened/contradicted/retired events. Original reviewer's "biggest unlock." Honest 2-3 week budget; doesn't depend on L1 promotion.
 2. **C-002 — Write up R-001 as the case-study Writing.** The bifurcation finding (+4.92pp HW vs SW gap, t=13.5, plus 3 counterintuitive sub-findings) is the strongest research result topicspace has produced. Publishing it is more compelling than another worked example. Research as content.
-3. **F-006 — L3 expectation lifecycle IDs.** Now that stable theme IDs exist (F-002), the V1 fingerprint `actor + stable_cluster_id + direction_sign` is feasible. Builds the "memory system" — expectations as persistent objects with born/strengthened/weakened/contradicted/retired events. Original reviewer's "biggest unlock." Honest 2-3 week budget; doesn't depend on L1 promotion.
+3. **F-007 — L4 region-level walk-forward.** Themes now exist as a clean region dimension. Region = (theme, state, conviction tier, horizon). Rolling walk-forward by region likely more stable than per-actor (which didn't generalize OOS per /methods §08b). Closes the actor-level trust gap.
 4. **I-001 — Real durable log store for intel briefs.** Current JSONL is ephemeral on Vercel. Has to land before intel sees real traffic; also starts building QA history.
 5. **R-011 — Update eligibility matrix to incorporate R-001 magnitudes.** Software CONFIRMED is actually negative (−5pp); hardware NEG_CONFIRMATION is +11.6pp. Better to do this AFTER C-002 ships — reader feedback will inform weighting decisions.
 
@@ -559,16 +559,36 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 - **why_it_matters**: While F-001 validates whether semantic_density is better, the validation period needs an early-warning system: when narr and semantic_density disagree dramatically for an actor on a day, that's interesting. Surfacing those divergences accelerates iteration on the field definitions.
 - **success_condition**: Daily compute of `|z-score(narr) - z-score(semantic_density_7d)|` per actor; rows above threshold (e.g. 1.5σ) flagged in an internal report. Useful both as a validation tool and as a future signal candidate.
 
-### F-005 — L2 expectation clustering + /claims page V1
+### F-005 — L2 expectation clustering + /claims page V1 (DONE — 2026-05-17)
 - **category**: Field Architecture
 - **priority**: P1
-- **status**: Inbox
+- **status**: Done
 - **effort**: L
 - **owner**: Sue
-- **dependencies**: F-001 (L1 must validate first), F-002 (need stable cluster IDs), F-003 (need readable labels)
-- **why_it_matters**: Today the product organizes by actor. Claim-space pages organize by *thesis* — "Agentic software pressures incumbent SaaS" with member actors, direction alignment, conflict, conviction. This is the biggest product differentiation per unit of work once L1 is grounded.
-- **success_condition**: Expectations embedded into same semantic space; daily theme clusters with stable IDs; `/claims` (or `/themes`) route with one card per active theme showing: member actors, direction distribution, avg conviction, crowding/conflict scores, source quality. State distribution and price confirmation per claim.
-- **notes**: Schema additions per arch doc §7.2 + §7.5. Reuse F-001's backtest harness to also validate claim-level metrics where applicable.
+- **completed**: 2026-05-17
+- **what_landed**:
+  - `scripts/embed_expectations.py` — embeds headline + near_term_view for all live + historical expectations (~2,840 total, ~$0.05 one-time, idempotent by input_hash)
+  - `scripts/build_claims.py` — attaches each expectation to nearest stable_cluster_id (by cosine sim against day-cluster centroids built from event embeddings + F-002 member lists). Outputs per-(date, theme) stats: n_members, member_tickers, direction_distribution, alignment_score (max bucket share), conflict_score (normalized entropy), dominant_direction, avg_conviction, crowding_score (n × avg_conviction × alignment), state_distribution, 3 representative headlines.
+  - `topicspace-site/public/claims.json` — latest snapshot, ~11 themes on 2026-05-14.
+  - `app/claims/page.tsx` — server-rendered theme list, sorted by crowding. Each card: label · dominant direction chip · clickable member tickers · scores row · state distribution chips · representative headlines (with ticker → actor page links). Honesty footer notes V1 assignment (nearest-only) + L1 OOS caveat.
+  - Added to primary nav between Replay and intel.
+  - Wired into evening pipeline at the tail of `generate_actor_expectations.py` (after source provenance scoring).
+- **method**:
+  - V1 attachment = each expectation to its single nearest day-cluster by cosine sim → that cluster's stable_cluster_id
+  - alignment_score = max(direction bucket counts) / total
+  - conflict_score = entropy(direction distribution) / log2(3), normalized to [0, 1]
+  - crowding_score = n_members × avg_conviction × alignment_score
+  - Direction normalization: bullish_continuation → +1, bearish_continuation → -1, mixed/inflection/neutral → 0
+- **sample_today_themes** (2026-05-14, top 4):
+  - "Tech stock volatility and investment strategies" — bearish, 5 members (AMZN, MP, NBIS, NFLX, TTD)
+  - "AI infrastructure and semiconductor partnerships" — bearish, 4 members (AAPL, ANET, MRVL, VST)
+  - "AI partnerships and market valuations" — mixed, 4 members (CEG, DDOG, SNOW, VRT)
+  - "Semiconductor sector resilience amid AI demand" — bearish, 4 members (ARM, ASML, AVGO, SMCI)
+- **next_dependencies_unlocked**: F-006 (L3 lifecycle IDs — the V1 fingerprint `actor + stable_cluster_id + direction_sign` now has all its pieces); F-007 (L4 region-level walk-forward — themes become a viable region dimension).
+- **followups_for_v2**:
+  - Multi-cluster expectation membership (some expectations are semantically split across themes)
+  - Historical theme drill-down (today's UI shows latest snapshot only; per-theme timeline view comes next)
+  - Theme-level walk-forward in F-007
 
 ### F-006 — L3 expectation lifecycle IDs + thesis trails
 - **category**: Field Architecture
