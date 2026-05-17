@@ -510,6 +510,25 @@ def main() -> None:
     except Exception as e:
         print(f"  build_claims failed: {e}")
 
+    # ── L3 V1: expectation lifecycle (F-006) ───────────────────────────────
+    print("\n  building expectation lifecycle…")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(pathlib.Path(__file__).parent / "build_expectation_lifecycle.py")],
+            capture_output=True, text=True, timeout=600,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                ls = line.strip()
+                if ls and ("entities" in ls or "versions" in ls or "events" in ls
+                          or "wrote" in ls or "trails" in ls):
+                    print(f"    {ls}")
+        else:
+            print(f"  build_expectation_lifecycle failed (exit {result.returncode}): {result.stderr[:200]}")
+    except Exception as e:
+        print(f"  build_expectation_lifecycle failed: {e}")
+
 
 if __name__ == "__main__":
     main()

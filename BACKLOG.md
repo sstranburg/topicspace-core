@@ -585,21 +585,47 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
   - "AI partnerships and market valuations" — mixed, 4 members (CEG, DDOG, SNOW, VRT)
   - "Semiconductor sector resilience amid AI demand" — bearish, 4 members (ARM, ASML, AVGO, SMCI)
 - **next_dependencies_unlocked**: F-006 (L3 lifecycle IDs — the V1 fingerprint `actor + stable_cluster_id + direction_sign` now has all its pieces); F-007 (L4 region-level walk-forward — themes become a viable region dimension).
-- **followups_for_v2**:
+- **v2_shipped** (2026-05-17):
+  - `scripts/qa_claims.py` — QA harness reporting on assignment quality (median sim 0.611), label quality (2/11 generic at V1), conflict sanity (3 high-conflict themes, legitimate), member coherence, direction sanity (0 mismatches). Writes `data/derived/qa_claims.md` + `qa_claims_assignments.csv`.
+  - Claim-sentence generation in `build_claims.py` — GPT-4o-mini synthesizes a 12-25-word propositional sentence per theme (cached by `stable_id::member_hash` in `claim_sentences.json`). Surfaces direction + mechanism in active voice, no ticker enumeration.
+  - `/claims` UI hierarchy refactor: topical label demoted to uppercase chip; claim sentence is now the bold proposition lead. Direction/member/score row unchanged.
+- **followups_for_v3**:
   - Multi-cluster expectation membership (some expectations are semantically split across themes)
   - Historical theme drill-down (today's UI shows latest snapshot only; per-theme timeline view comes next)
   - Theme-level walk-forward in F-007
 
-### F-006 — L3 expectation lifecycle IDs + thesis trails
+### F-006 — L3 expectation lifecycle IDs + thesis trails (V1 DONE — 2026-05-17)
 - **category**: Field Architecture
 - **priority**: P1
-- **status**: Inbox
+- **status**: V1 Done; V2 Inbox
 - **effort**: L
 - **owner**: Sue
-- **dependencies**: F-005 (need stable theme clusters first)
-- **why_it_matters**: Expectations are regenerated daily without IDs. Original reviewer's "biggest unlock." Makes topicspace a memory system instead of a daily-snapshot generator. Enables per-expectation walk-forward (likely more stable than per-actor).
-- **success_condition**: Three new tables (`expectation_entities`, `expectation_versions`, `expectation_lifecycle_events`); matching algorithm assigns persistent IDs day-over-day; thesis trail surfaced on actor pages and lifecycle markers on `/replay/[ticker]`; events: born / persisted / strengthened / weakened / contradicted / rotated / split / merged / retired / reconfirmed.
-- **notes**: V1 fingerprint = `actor + theme_cluster_id + direction_sign`. Arch doc §8 is the spec. Budget 2-3 weeks not the 1.5-2 the doc suggests — schema + matching + lifecycle events + UI is real work.
+- **completed_v1**: 2026-05-17
+- **what_landed_v1**:
+  - `scripts/build_expectation_lifecycle.py` — attaches every (date, ticker, embedding) to its nearest stable_cluster_id from F-002 (≥SIM_FLOOR=0.10) → fingerprints by `entity_id = sha1(ticker + stable_cluster_id + direction_sign)`. Emits three Parquets + a thesis trails JSON.
+  - `data/derived/expectation_entities.parquet` (1,544 entities at run) — one row per (ticker, theme, direction) with first_seen, last_seen, n_versions, status (active/contradicted/retired), peak/mean/last conviction, last headline + direction.
+  - `data/derived/expectation_versions.parquet` (2,798 rows) — per-(entity, date) snapshot: direction, conviction, headline, near_term_view, sim to assigned cluster, input_hash.
+  - `data/derived/expectation_lifecycle_events.parquet` (3,262 events) — typed events `born / strengthened / weakened / contradicted / retired` with prior/new/delta conviction and detail. Thresholds: Δconviction > 0.10, retired after 7 days absent.
+  - `data/derived/thesis_trails.json` + `topicspace-site/public/thesis_trails.json` — per-ticker payload of active_claims (≥3 versions) + most recent lifecycle events for the actor page.
+  - `app/actor/[ticker]/page.tsx` — `Thesis Trail` section under the event timeline. Renders persistent active claims (with theme label, claim sentence from F-005, n_versions, conviction range) and a reverse-chrono event list with typed pills (BORN / STRENGTHENED / WEAKENED / CONTRADICTED / RETIRED).
+  - Wired into evening pipeline tail of `generate_actor_expectations.py`, immediately after `build_claims.py` (shared inputs).
+- **method_v1**:
+  - V1 lifecycle fingerprint = `(ticker, stable_cluster_id, direction_sign)` — no LLM matching, just deterministic hash
+  - Trail filter: only surface entities with ≥3 versions in UI, plus all strengthened/weakened/contradicted events regardless of entity persistence. Avoids exposing daily-attachment churn (single-day entities are noisy on this 118-day corpus).
+  - Contradicted = different non-zero direction_sign appears in the same (ticker, cluster) within the active window; the prior-sign entity gets the event and is dropped from the active sign set.
+- **observations_v1**:
+  - 1,544 entities for 32 actors = ~48/actor; ~94% are retired single-day attachments — expected on a 118-day window with daily LLM expectations that drift in framing
+  - 84 active entities + 8 contradicted across the cohort; 35 strengthened, 37 weakened, 194 contradicted events
+  - Tickers with the most persistent claims today: SNOW (4), MU (4), CEG (4), MRVL (4), VRT (4) — all heavily AI-infra exposed and consistently in the bearish/mixed half of the claim space
+  - MRVL has 39 entities but **zero with ≥3 versions** — the thesis trail correctly shows "no persistent claims; expectation drifts day-to-day." That's a real read worth keeping.
+- **followups_for_v2**:
+  - Lifecycle markers on `/replay/[ticker]` (alongside narrative + price)
+  - Lifecycle aggregate page `/lifecycle` — system-wide event timeline
+  - Split / merge classification (when an entity's cluster bifurcates or absorbs another) — needs F-002 cluster-lineage event-type integration
+  - Per-expectation walk-forward (F-007 input — does an active entity with strengthened events outperform one with weakened? more samples than per-actor)
+  - Reconfirmed event type (e.g. when retired-then-reborn happens within N days)
+  - Use entity persistence as an L1 prior weight (high-persistence entities → trust the directional signal more)
+- **gate**: V1 passes the "would I show this to a reader" test on actor pages with persistent claims (SNOW, MU, CEG, MRVL, VRT). Actors without persistent claims show an honest "no persistent claims" note rather than fake-confident timeline noise.
 
 ### F-007 — L4 region-level walk-forward (replaces per-actor trust)
 - **category**: Field Architecture
