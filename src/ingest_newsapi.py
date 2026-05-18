@@ -9,11 +9,22 @@ load_dotenv()
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 
 
-def fetch_newsapi_query(query: str, start_date: str, page_size: int = 100, source_actors: list[str] | None = None) -> list[Event]:
-    """Fetch news articles from Event Registry API by query."""
+def fetch_newsapi_query(
+    query: str,
+    start_date: str,
+    page_size: int = 100,
+    source_actors: list[str] | None = None,
+    end_date: str | None = None,
+) -> list[Event]:
+    """Fetch news articles from Event Registry API by query.
+
+    end_date (optional, YYYY-MM-DD): if provided, restrict results to articles
+    with publication date ≤ end_date. Necessary for calendar-gap backfills
+    where we only want the window, not "from start_date to today."
+    """
     url = "https://eventregistry.org/api/v1/article/getArticles"
-    
-    payload = {
+
+    payload: dict = {
         "action": "getArticles",
         "keyword": query,
         "articlesPage": 1,
@@ -21,8 +32,10 @@ def fetch_newsapi_query(query: str, start_date: str, page_size: int = 100, sourc
         "articlesSortBy": "date",
         "dateStart": start_date,
         "lang": "eng",
-        "apiKey": NEWSAPI_KEY
+        "apiKey": NEWSAPI_KEY,
     }
+    if end_date:
+        payload["dateEnd"] = end_date
     
     try:
         response = requests.post(url, json=payload, timeout=10)
