@@ -429,6 +429,7 @@ def main() -> None:
         "build_field_actor_history.py",
         "build_narrative_clusters.py",
         "build_storm_trace.py",
+        "build_claim_trace.py",
     ):
         try:
             import subprocess
