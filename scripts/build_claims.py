@@ -223,6 +223,13 @@ def main():
     lineage_df = pd.read_parquet(LINEAGE_PATH)
     lineage_df["date"] = pd.to_datetime(lineage_df["date"])
 
+    # Build a (date_iso, stable_cluster_id) → lifecycle lookup so each theme
+    # can be tagged with its F-002 lineage event on the as-of date.
+    lineage_lookup: dict[tuple[str, str], str] = {}
+    for _, lrow in lineage_df.iterrows():
+        d_iso = pd.Timestamp(lrow["date"]).date().isoformat()
+        lineage_lookup[(d_iso, lrow["stable_cluster_id"])] = lrow["lifecycle"]
+
     labels_cache = {}
     if LABELS_PATH.exists():
         labels_cache = json.loads(LABELS_PATH.read_text())
@@ -417,11 +424,17 @@ def main():
                         "first_seen_date":    d_iso,
                     }
 
+            # Lineage event on this date from F-002 (persisted / merge_target /
+            # split_target / born / drift). Tells the reader whether this theme
+            # is a fresh formation or a continuing one.
+            lifecycle_event = lineage_lookup.get((d_iso, stable_id), "")
+
             out_rows.append({
                 "date":                d_iso,
                 "stable_cluster_id":   stable_id,
                 "label":                label,
                 "claim_sentence":       claim_sentence or "",
+                "lifecycle_event":      lifecycle_event,
                 "n_members":            len(members),
                 "member_tickers":       member_tickers_sorted,
                 "avg_conviction":       round(avg_conv, 3),
@@ -443,6 +456,7 @@ def main():
                         "stable_cluster_id":   r["stable_cluster_id"],
                         "label":                r["label"],
                         "claim_sentence":       r["claim_sentence"],
+                        "lifecycle_event":      r["lifecycle_event"],
                         "n_members":            r["n_members"],
                         "member_tickers":       r["member_tickers"],
                         "avg_conviction":       r["avg_conviction"],
