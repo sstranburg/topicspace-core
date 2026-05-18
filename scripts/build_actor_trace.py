@@ -179,8 +179,76 @@ def main():
             print(f"  ! L2 read failed: {ex}")
     print(f"  L2: {len(l2_days)} days of expectations")
 
-    # ── L3: entities for this actor + their full lifecycle events ─────────
+    # ── L1.narratives: distinct themes the actor was attached to over time ─
+    # Derived from expectation_versions (per-(date, ticker, stable_cluster_id))
+    # joined with cluster_labels for human-readable names. This gives a
+    # coherent "which narratives did this actor participate in" view because
+    # stable_cluster_id is F-002-stable across days; the per-day TF-token
+    # labels in field_instrumentation are too noisy for that purpose.
     labels_cache = json.loads(LABELS_PATH.read_text()) if LABELS_PATH.exists() else {}
+
+    narratives_out: list[dict] = []
+    if VER_PATH.exists():
+        ver_df = pd.read_parquet(VER_PATH)
+        ver_df["date"] = ver_df["date"].astype(str)
+        ver_sub = ver_df[ver_df["ticker"] == tk].copy()
+        # Group by stable_cluster_id
+        groups = ver_sub.groupby("stable_cluster_id")
+        for sid, g in groups:
+            lbl = (labels_cache.get(sid) or {}).get("label", "") or ""
+            dates = sorted(g["date"].unique().tolist())
+            # Per-direction breakdown within this narrative
+            dirs = Counter(int(s) for s in g["direction_sign"])
+            narratives_out.append({
+                "stable_cluster_id": sid,
+                "label":             lbl,
+                "first_date":        dates[0],
+                "last_date":         dates[-1],
+                "n_days":            len(dates),
+                "dates":             dates,
+                "direction_mix": {
+                    "bullish": int(dirs.get(1, 0)),
+                    "bearish": int(dirs.get(-1, 0)),
+                    "neutral": int(dirs.get(0, 0)),
+                },
+                "avg_conviction":    round(float(g["conviction"].mean()), 3),
+            })
+        # Sort by n_days desc — most-participated narratives first
+        narratives_out.sort(key=lambda r: -r["n_days"])
+    print(f"  L1 narratives: {len(narratives_out)} distinct themes the actor attached to")
+
+    # ── L2.snapshots: evenly-spaced expectation snapshots ─────────────────
+    # Pick first, last, and ~4 evenly-spaced dates between them so the
+    # reader sees the expectation summary at intervals across the corpus.
+    snapshots_out: list[dict] = []
+    if l2_days:
+        N = len(l2_days)
+        # Choose ~6 indices: 0, 1/5, 2/5, 3/5, 4/5, last
+        idxs = sorted({
+            0,
+            N // 5,
+            (2 * N) // 5,
+            (3 * N) // 5,
+            (4 * N) // 5,
+            N - 1,
+        })
+        for i in idxs:
+            d = l2_days[i]
+            why = ("first"    if i == 0
+                   else "today" if i == N - 1
+                   else "interval")
+            snapshots_out.append({
+                "date":           d["date"],
+                "direction":      d["direction"],
+                "direction_sign": d["direction_sign"],
+                "conviction":     d["conviction"],
+                "headline":       d["headline"],
+                "near_term_view": d["near_term_view"],
+                "why":            why,
+            })
+    print(f"  L2 snapshots: {len(snapshots_out)} interval snapshots")
+
+    # ── L3: entities for this actor + their full lifecycle events ─────────
 
     entities_out: list[dict] = []
     events_out:   list[dict] = []
@@ -237,8 +305,14 @@ def main():
         "last_date":  last_date,
         "n_days":     (pd.Timestamp(last_date) - pd.Timestamp(first_date)).days + 1,
         "l0": { "days": l0_days },
-        "l1": { "days": field_days },
-        "l2": { "days": l2_days },
+        "l1": {
+            "days":       field_days,
+            "narratives": narratives_out,
+        },
+        "l2": {
+            "days":      l2_days,
+            "snapshots": snapshots_out,
+        },
         "l3": {
             "entities": entities_out,
             "events":   events_out,
