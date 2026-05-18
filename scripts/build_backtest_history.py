@@ -401,13 +401,20 @@ def main() -> None:
     # Stable theme IDs across days via centroid matching. Labels are cached
     # and only LLM-relabeled when cluster membership churns ≥40%. Daily
     # incremental: ~5-10 new clusters at most, ~$0.005/day in LLM cost.
+    # Timeout raised to 1800s on 2026-05-18 after a 1200s ceiling hit
+    # during full historical replay (cohort grew + LLM label cache thrash).
+    # If this ceiling keeps getting hit, the right fix is incremental-only
+    # mode for the lineage walk, not another timeout bump.
     print("\n=== BUILDING CLUSTER LINEAGE (F-002) ===")
     try:
-        import subprocess
+        import subprocess, time as _time
+        _t0 = _time.time()
         result = subprocess.run(
             [sys.executable, str(Path(__file__).parent / "build_cluster_lineage.py")],
-            capture_output=True, text=True, timeout=1200,
+            capture_output=True, text=True, timeout=1800,
         )
+        _dt = _time.time() - _t0
+        print(f"  cluster lineage took {_dt:.0f}s (timeout 1800s)")
         if result.returncode == 0:
             for line in result.stdout.splitlines():
                 s = line.strip()
