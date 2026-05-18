@@ -16,45 +16,20 @@ Reads:
   data/derived/cluster_labels.json                            (LLM labels for entities' clusters)
 
 Writes:
-  data/derived/actor_trace.json
-  topicspace-site/public/actor_trace.json
+  Per-ticker:
+    data/derived/actor_trace/{TICKER}.json
+    topicspace-site/public/actor_trace/{TICKER}.json
 
-Schema:
-  {
-    "as_of": "YYYY-MM-DD",
-    "ticker": "AAPL",
-    "first_date": "...",
-    "last_date":  "...",
-    "n_days":     int,
+  Default-ticker compatibility shim (kept until older pages migrate):
+    data/derived/actor_trace.json
+    topicspace-site/public/actor_trace.json
 
-    // L0: events/day naming the actor
-    "l0": { "days": [ { "date", "n_events", "sample_title" }, ... ] },
-
-    // L1: per-day narrative field metrics for the actor
-    "l1": { "days": [ { "date", "cluster_label", "cluster_id_primary",
-                        "event_count_7d", "semantic_density_7d",
-                        "density_momentum", "novelty_score" }, ... ] },
-
-    // L2: per-day forward expectation
-    "l2": { "days": [ { "date", "headline", "direction", "direction_sign",
-                        "conviction", "near_term_view" }, ... ] },
-
-    // L3: entities (one per actor + cluster + direction) + their lifecycle
-    //     event timeline
-    "l3": {
-      "entities": [ { "entity_id", "stable_cluster_id", "direction_sign",
-                      "label", "first_seen", "last_seen", "n_versions",
-                      "status", "peak_conviction", "last_conviction",
-                      "last_headline" }, ... ],
-      "events":   [ { "entity_id", "date", "event_type",
-                      "conviction", "prior_conviction", "delta_conviction",
-                      "detail" }, ... ]
-    }
-  }
+Schema is unchanged from prior versions; see below.
 
 Usage:
   source venv/bin/activate && python scripts/build_actor_trace.py
   python scripts/build_actor_trace.py --ticker AMD
+  python scripts/build_actor_trace.py --all
 """
 
 import argparse
@@ -80,23 +55,23 @@ VER_PATH      = ROOT / "data" / "derived" / "expectation_versions.parquet"
 LABELS_PATH   = ROOT / "data" / "derived" / "cluster_labels.json"
 EXPECT_HIST_DIR = SITE_PUBLIC / "expectations_history"
 
-OUT_DERIVED = ROOT / "data" / "derived" / "actor_trace.json"
-OUT_SITE    = SITE_PUBLIC / "actor_trace.json"
+# Per-ticker output dirs
+OUT_DERIVED_DIR = ROOT / "data" / "derived" / "actor_trace"
+OUT_SITE_DIR    = SITE_PUBLIC / "actor_trace"
+
+# Compatibility shim — keep the top-level file pointing at the default ticker
+# until older pages migrate. Once nothing reads it, drop.
+COMPAT_DERIVED = ROOT / "data" / "derived" / "actor_trace.json"
+COMPAT_SITE    = SITE_PUBLIC / "actor_trace.json"
 
 DEFAULT_TICKER = "NVDA"
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--ticker", default=DEFAULT_TICKER,
-                    help=f"actor to trace (default: {DEFAULT_TICKER})")
-    args = ap.parse_args()
-    tk = args.ticker.upper()
-    print(f"  tracing {tk}")
+# ─── L0 events per actor ────────────────────────────────────────────────────
 
-    # ── L0: events/day naming the actor + best sample title per day ────────
-    daily_counts: Counter[str] = Counter()
-    daily_sample: dict[str, str] = {}
+def load_events_index() -> dict[str, dict[str, dict]]:
+    """Returns { ticker: { date: {n_events, sample_title} } }, dedup by event_id."""
+    by_ticker: dict[str, dict[str, dict]] = {}
     seen_ids: set[str] = set()
     for src in EVENTS_SOURCES:
         if not src.exists():
@@ -114,30 +89,45 @@ def main():
                     continue
                 if eid:
                     seen_ids.add(eid)
-                if tk not in (e.get("actors") or []):
-                    continue
                 d = (e.get("timestamp") or "")[:10]
                 if not d:
                     continue
-                daily_counts[d] += 1
-                # First non-empty title becomes the sample for that day
                 title = (e.get("title") or "").strip()
-                if title and len(title) > 8 and d not in daily_sample:
-                    daily_sample[d] = title[:140]
+                actors = e.get("actors") or []
+                for tk in actors:
+                    day = by_ticker.setdefault(tk, {}).setdefault(
+                        d, {"n_events": 0, "sample_title": None}
+                    )
+                    day["n_events"] += 1
+                    if title and len(title) > 8 and not day["sample_title"]:
+                        day["sample_title"] = title[:140]
+    return by_ticker
 
+
+# ─── Build one actor's trace payload ─────────────────────────────────────────
+
+def build_payload(
+    tk: str,
+    l0_index:     dict[str, dict[str, dict]],
+    field_df:     pd.DataFrame | None,
+    ent_df:       pd.DataFrame | None,
+    evt_df:       pd.DataFrame | None,
+    ver_df:       pd.DataFrame | None,
+    labels_cache: dict,
+) -> dict | None:
+    """Returns the trace payload for one ticker, or None if there's no data."""
+
+    # L0
+    l0_for_tk = l0_index.get(tk, {})
     l0_days = [
-        {"date": d, "n_events": int(daily_counts[d]),
-         "sample_title": daily_sample.get(d)}
-        for d in sorted(daily_counts.keys())
+        {"date": d, "n_events": int(v["n_events"]), "sample_title": v["sample_title"]}
+        for d, v in sorted(l0_for_tk.items())
     ]
-    print(f"  L0: {sum(daily_counts.values()):,} events over {len(l0_days)} days")
 
-    # ── L1: per-day field metrics from field_instrumentation ───────────────
+    # L1
     field_days: list[dict] = []
-    if FIELD_PATH.exists():
-        fdf = pd.read_parquet(FIELD_PATH)
-        fdf["date"] = fdf["date"].astype(str)
-        fsub = fdf[fdf["ticker"] == tk].sort_values("date")
+    if field_df is not None:
+        fsub = field_df[field_df["ticker"] == tk].sort_values("date")
         for _, row in fsub.iterrows():
             field_days.append({
                 "date":                row["date"],
@@ -148,9 +138,8 @@ def main():
                 "density_momentum":    round(float(row["density_momentum"]), 4),
                 "novelty_score":       round(float(row["novelty_score"]), 4),
             })
-    print(f"  L1: {len(field_days)} days of field metrics")
 
-    # ── L2: per-day expectation from expectations_history/{TICKER}.json ───
+    # L2
     l2_days: list[dict] = []
     hist_path = EXPECT_HIST_DIR / f"{tk}.json"
     if hist_path.exists():
@@ -176,28 +165,15 @@ def main():
                 })
             l2_days.sort(key=lambda r: r["date"])
         except Exception as ex:
-            print(f"  ! L2 read failed: {ex}")
-    print(f"  L2: {len(l2_days)} days of expectations")
+            print(f"    ! L2 read failed for {tk}: {ex}")
 
-    # ── L1.narratives: distinct themes the actor was attached to over time ─
-    # Derived from expectation_versions (per-(date, ticker, stable_cluster_id))
-    # joined with cluster_labels for human-readable names. This gives a
-    # coherent "which narratives did this actor participate in" view because
-    # stable_cluster_id is F-002-stable across days; the per-day TF-token
-    # labels in field_instrumentation are too noisy for that purpose.
-    labels_cache = json.loads(LABELS_PATH.read_text()) if LABELS_PATH.exists() else {}
-
+    # L1 narratives — distinct stable_cluster_ids this actor attached to
     narratives_out: list[dict] = []
-    if VER_PATH.exists():
-        ver_df = pd.read_parquet(VER_PATH)
-        ver_df["date"] = ver_df["date"].astype(str)
-        ver_sub = ver_df[ver_df["ticker"] == tk].copy()
-        # Group by stable_cluster_id
-        groups = ver_sub.groupby("stable_cluster_id")
-        for sid, g in groups:
+    if ver_df is not None:
+        ver_sub = ver_df[ver_df["ticker"] == tk]
+        for sid, g in ver_sub.groupby("stable_cluster_id"):
             lbl = (labels_cache.get(sid) or {}).get("label", "") or ""
             dates = sorted(g["date"].unique().tolist())
-            # Per-direction breakdown within this narrative
             dirs = Counter(int(s) for s in g["direction_sign"])
             narratives_out.append({
                 "stable_cluster_id": sid,
@@ -213,30 +189,16 @@ def main():
                 },
                 "avg_conviction":    round(float(g["conviction"].mean()), 3),
             })
-        # Sort by n_days desc — most-participated narratives first
         narratives_out.sort(key=lambda r: -r["n_days"])
-    print(f"  L1 narratives: {len(narratives_out)} distinct themes the actor attached to")
 
-    # ── L2.snapshots: evenly-spaced expectation snapshots ─────────────────
-    # Pick first, last, and ~4 evenly-spaced dates between them so the
-    # reader sees the expectation summary at intervals across the corpus.
+    # L2 snapshots — evenly spaced
     snapshots_out: list[dict] = []
     if l2_days:
         N = len(l2_days)
-        # Choose ~6 indices: 0, 1/5, 2/5, 3/5, 4/5, last
-        idxs = sorted({
-            0,
-            N // 5,
-            (2 * N) // 5,
-            (3 * N) // 5,
-            (4 * N) // 5,
-            N - 1,
-        })
+        idxs = sorted({0, N // 5, (2 * N) // 5, (3 * N) // 5, (4 * N) // 5, N - 1})
         for i in idxs:
             d = l2_days[i]
-            why = ("first"    if i == 0
-                   else "today" if i == N - 1
-                   else "interval")
+            why = "first" if i == 0 else "today" if i == N - 1 else "interval"
             snapshots_out.append({
                 "date":           d["date"],
                 "direction":      d["direction"],
@@ -246,16 +208,12 @@ def main():
                 "near_term_view": d["near_term_view"],
                 "why":            why,
             })
-    print(f"  L2 snapshots: {len(snapshots_out)} interval snapshots")
 
-    # ── L3: entities for this actor + their full lifecycle events ─────────
-
+    # L3 entities + events
     entities_out: list[dict] = []
     events_out:   list[dict] = []
-    if ENT_PATH.exists() and EVT_PATH.exists():
-        ent_df = pd.read_parquet(ENT_PATH)
-        evt_df = pd.read_parquet(EVT_PATH)
-        ent_sub = ent_df[ent_df["ticker"] == tk].copy()
+    if ent_df is not None and evt_df is not None:
+        ent_sub = ent_df[ent_df["ticker"] == tk]
         if len(ent_sub):
             for _, r in ent_sub.iterrows():
                 stable = r["stable_cluster_id"]
@@ -285,20 +243,19 @@ def main():
                     "delta_conviction": (None if pd.isna(r["delta_conviction"]) else round(float(r["delta_conviction"]), 3)),
                     "detail":           (r["detail"] or "")[:200],
                 })
-    print(f"  L3: {len(entities_out)} entities, {len(events_out)} lifecycle events")
 
-    # ── Time bounds for the trace ──────────────────────────────────────────
+    # Time bounds
     all_dates: set[str] = set()
     all_dates.update(d["date"] for d in l0_days)
     all_dates.update(d["date"] for d in field_days)
     all_dates.update(d["date"] for d in l2_days)
     all_dates.update(d["date"] for d in events_out)
     if not all_dates:
-        sys.exit(f"No data for {tk}")
+        return None
     first_date = min(all_dates)
     last_date  = max(all_dates)
 
-    payload = {
+    return {
         "as_of":      last_date,
         "ticker":     tk,
         "first_date": first_date,
@@ -319,24 +276,88 @@ def main():
         },
     }
 
-    OUT_DERIVED.parent.mkdir(parents=True, exist_ok=True)
-    OUT_DERIVED.write_text(json.dumps(payload, indent=2))
-    OUT_SITE.write_text(json.dumps(payload, indent=2))
 
-    print(f"  wrote {OUT_DERIVED}")
-    print(f"  wrote {OUT_SITE}")
-    print()
-    print(f"  ─── {tk} TRACE SUMMARY ({first_date} → {last_date}, {payload['n_days']}d) ───")
-    print(f"  L0: {sum(d['n_events'] for d in l0_days):,} events, peak {max((d['n_events'] for d in l0_days), default=0)}/day")
-    if l2_days:
-        last = l2_days[-1]
-        print(f"  L2 today: {last['direction']} · conviction {last['conviction']} · '{last['headline'][:80]}'")
-    if entities_out:
-        active = [e for e in entities_out if e["status"] == "active"]
-        persistent = [e for e in active if e["n_versions"] >= 3]
-        print(f"  L3: {len(entities_out)} entities ({len(active)} active, {len(persistent)} persistent ≥3v)")
-        evt_counts = Counter(e["event_type"] for e in events_out)
-        print(f"      events: {dict(evt_counts)}")
+def write_payload(tk: str, payload: dict, is_default: bool) -> None:
+    """Write per-ticker file + maintain the top-level compat file for default."""
+    OUT_DERIVED_DIR.mkdir(parents=True, exist_ok=True)
+    OUT_SITE_DIR.mkdir(parents=True, exist_ok=True)
+    blob = json.dumps(payload, indent=2)
+    (OUT_DERIVED_DIR / f"{tk}.json").write_text(blob)
+    (OUT_SITE_DIR    / f"{tk}.json").write_text(blob)
+    if is_default:
+        COMPAT_DERIVED.write_text(blob)
+        COMPAT_SITE.write_text(blob)
+
+
+def print_summary(tk: str, payload: dict) -> None:
+    l0_days = payload["l0"]["days"]
+    l2_days = payload["l2"]["days"]
+    entities = payload["l3"]["entities"]
+    events = payload["l3"]["events"]
+    n_l0 = sum(d["n_events"] for d in l0_days)
+    print(f"  {tk}  L0:{n_l0:>6,}ev/{len(l0_days):>3}d  "
+          f"L1:{len(payload['l1']['days']):>3}d  "
+          f"L2:{len(l2_days):>3}d  "
+          f"L3:{len(entities):>3}ent/{len(events):>3}evt  "
+          f"narr:{len(payload['l1']['narratives']):>2}")
+
+
+def list_tickers(field_df: pd.DataFrame) -> list[str]:
+    """Source of truth for the actor cohort: tickers in field_instrumentation."""
+    return sorted(field_df["ticker"].unique().tolist())
+
+
+# ─── main ───────────────────────────────────────────────────────────────────
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--ticker", default=DEFAULT_TICKER,
+                    help=f"actor to trace (default: {DEFAULT_TICKER})")
+    ap.add_argument("--all", action="store_true",
+                    help="trace every actor in field_instrumentation; emit per-ticker files")
+    args = ap.parse_args()
+
+    print("  loading shared artifacts…")
+    field_df     = pd.read_parquet(FIELD_PATH) if FIELD_PATH.exists() else None
+    if field_df is not None:
+        field_df["date"] = field_df["date"].astype(str)
+    ent_df       = pd.read_parquet(ENT_PATH) if ENT_PATH.exists() else None
+    evt_df       = pd.read_parquet(EVT_PATH) if EVT_PATH.exists() else None
+    ver_df       = pd.read_parquet(VER_PATH) if VER_PATH.exists() else None
+    if ver_df is not None:
+        ver_df["date"] = ver_df["date"].astype(str)
+    labels_cache = json.loads(LABELS_PATH.read_text()) if LABELS_PATH.exists() else {}
+
+    print("  scanning L0 corpus…")
+    l0_index = load_events_index()
+    print(f"    L0 index: {len(l0_index)} tickers")
+
+    if args.all:
+        if field_df is None:
+            sys.exit("--all requires field_instrumentation.parquet (cohort source of truth)")
+        tickers = list_tickers(field_df)
+        print(f"  tracing {len(tickers)} actors…")
+        written = 0
+        for tk in tickers:
+            payload = build_payload(tk, l0_index, field_df, ent_df, evt_df, ver_df, labels_cache)
+            if payload is None:
+                print(f"  ! no data for {tk}, skipping")
+                continue
+            write_payload(tk, payload, is_default=(tk == DEFAULT_TICKER))
+            print_summary(tk, payload)
+            written += 1
+        print(f"\n  wrote {written} per-ticker traces → {OUT_SITE_DIR}")
+        if (OUT_SITE_DIR / f"{DEFAULT_TICKER}.json").exists():
+            print(f"  compat shim: {COMPAT_SITE} mirrors {DEFAULT_TICKER}.json")
+    else:
+        tk = args.ticker.upper()
+        print(f"  tracing {tk}")
+        payload = build_payload(tk, l0_index, field_df, ent_df, evt_df, ver_df, labels_cache)
+        if payload is None:
+            sys.exit(f"No data for {tk}")
+        write_payload(tk, payload, is_default=(tk == DEFAULT_TICKER))
+        print_summary(tk, payload)
+        print(f"\n  wrote {OUT_SITE_DIR / f'{tk}.json'}")
 
 
 if __name__ == "__main__":
