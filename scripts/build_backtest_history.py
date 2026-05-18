@@ -420,10 +420,15 @@ def main() -> None:
         print(f"  cluster lineage failed: {e}")
 
     # ── Daily totals for /architecture L0 + L1 panels ─────────────────────
-    # Both are thin shapers that read existing artifacts (the JSONL corpus and
-    # field_instrumentation.parquet respectively). Fast and idempotent.
-    print("\n=== BUILDING EVENTS-DAILY + FIELD-ACTOR-HISTORY (/architecture L0 + L1) ===")
-    for script_name in ("build_events_daily.py", "build_field_actor_history.py"):
+    # All three are thin shapers that read existing artifacts (the JSONL
+    # corpus + field_instrumentation.parquet + cluster_lineage.parquet
+    # + cluster_members.parquet). Fast and idempotent.
+    print("\n=== BUILDING EVENTS-DAILY + FIELD-ACTOR-HISTORY + NARRATIVE-CLUSTERS (/architecture L0 + L1) ===")
+    for script_name in (
+        "build_events_daily.py",
+        "build_field_actor_history.py",
+        "build_narrative_clusters.py",
+    ):
         try:
             import subprocess
             result = subprocess.run(
