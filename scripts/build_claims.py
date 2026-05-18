@@ -39,6 +39,7 @@ import argparse
 import datetime as dt
 import json
 import math
+import os
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -56,6 +57,7 @@ EXP_EMB_PATH   = ROOT / "data" / "derived" / "expectation_embeddings.parquet"
 MEMBERS_PATH   = ROOT / "data" / "derived" / "cluster_members.parquet"
 LINEAGE_PATH   = ROOT / "data" / "derived" / "cluster_lineage.parquet"
 LABELS_PATH    = ROOT / "data" / "derived" / "cluster_labels.json"
+CLAIM_SENT_CACHE = ROOT / "data" / "derived" / "claim_sentences.json"
 
 EXPS_TODAY  = SITE_PUBLIC / "actor_expectations.json"
 EXPS_HISTORY_DIR = SITE_PUBLIC / "expectations_history"
@@ -63,6 +65,88 @@ ACTORS_JSON = SITE_PUBLIC / "actors.json"
 
 OUT_PARQ = ROOT / "data" / "derived" / "claims_daily.parquet"
 OUT_JSON = SITE_PUBLIC / "claims.json"
+
+
+# ── Claim sentence generation ─────────────────────────────────────────────
+
+CLAIM_SENTENCE_SYSTEM = (
+    "You synthesize a single-sentence FORWARD-LOOKING PREDICTION (12-25 words) "
+    "representing the collective view of a cluster of expectations about "
+    "specific tickers. This is a CLAIM ABOUT WHAT WILL HAPPEN — NOT a "
+    "description of what is currently happening.\n"
+    "\n"
+    "REQUIRED form:\n"
+    "  - Use forward-tense verbs: 'will', 'is likely to', 'should', 'are set to', "
+    "    'expect ... to', 'remain under', 'continue to', 'keep'.\n"
+    "  - Express a directional thrust over the near-to-medium term (next few "
+    "    weeks to a couple of quarters).\n"
+    "  - Include the mechanism / driver behind the prediction.\n"
+    "\n"
+    "FORBIDDEN:\n"
+    "  - Present-continuous observational framings like 'are facing', 'is failing', "
+    "    'are struggling', 'is driving' as the main verb. These describe state, "
+    "    not prediction.\n"
+    "  - Hedging adverbs ('perhaps', 'might', 'could maybe').\n"
+    "  - Listing tickers in the sentence.\n"
+    "  - Generic phrases like 'investment strategies', 'market dynamics', "
+    "    'sector pressures'.\n"
+    "\n"
+    "Target style (note the forward-tense verbs):\n"
+    "  - 'AI-linked growth names will remain under price pressure as the market "
+    "    keeps re-pricing them lower against narrative strength.'\n"
+    "  - 'Custom-silicon vendors should keep absorbing pressure on merchant-GPU "
+    "    pricing without confirmation from buyers.'\n"
+    "  - 'Data-center power demand will continue to anchor nuclear and gas "
+    "    operators while utility multiples lag the build-out cycle.'\n"
+    "  - 'Semiconductor multiples are likely to compress further as AI capex "
+    "    growth fails to broaden beyond the top hyperscalers.'\n"
+    "\n"
+    "Return ONLY the sentence, no quotes, no preamble."
+)
+
+
+def member_hash(member_tickers: list[str], dominant_direction: str) -> str:
+    import hashlib
+    s = "|".join(sorted(member_tickers)) + "::" + dominant_direction
+    return hashlib.sha1(s.encode("utf-8")).hexdigest()[:12]
+
+
+def gen_claim_sentence(
+    members: list[dict],
+    dominant_direction: str,
+    label: str,
+    client,
+) -> Optional[str]:
+    """One-shot LLM call. members is a list of {ticker, direction, conviction, headline}."""
+    if client is None or not members:
+        return None
+    top = sorted(members, key=lambda m: -m["conviction"])[:5]
+    bullet_lines = []
+    for m in top:
+        h = (m.get("headline") or "")[:120]
+        d = m.get("direction", "").replace("_", " ")
+        c = m.get("conviction", 0.5)
+        bullet_lines.append(f"- {m['ticker']} ({d}, {c:.2f}): \"{h}\"")
+    user = (
+        f"Topical label: {label}\n"
+        f"Dominant direction: {dominant_direction}\n"
+        f"Top member expectations:\n" + "\n".join(bullet_lines)
+    )
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": CLAIM_SENTENCE_SYSTEM},
+                {"role": "user",   "content": user},
+            ],
+            temperature=0.4,
+            max_tokens=80,
+        )
+        text = resp.choices[0].message.content.strip().strip('"').strip("'")
+        return text[:280] if text else None
+    except Exception as e:
+        print(f"  ! claim sentence failed: {e}")
+        return None
 
 # Direction normalization
 def direction_sign(d: str) -> int:
@@ -142,6 +226,25 @@ def main():
     labels_cache = {}
     if LABELS_PATH.exists():
         labels_cache = json.loads(LABELS_PATH.read_text())
+
+    # Claim sentence cache — keyed by (stable_cluster_id, member_hash)
+    claim_sentence_cache: dict[str, dict] = {}
+    if CLAIM_SENT_CACHE.exists():
+        try:
+            claim_sentence_cache = json.loads(CLAIM_SENT_CACHE.read_text())
+        except Exception:
+            pass
+
+    # Lazy OpenAI client for claim sentences
+    llm_client = None
+    try:
+        from openai import OpenAI
+        from dotenv import load_dotenv
+        load_dotenv()
+        if os.environ.get("OPENAI_API_KEY"):
+            llm_client = OpenAI()
+    except ImportError:
+        pass
 
     # Load expectation metadata for direction + conviction + state lookup
     exp_meta: dict[tuple[str, str], dict] = {}  # (date_iso, ticker) -> meta
@@ -293,12 +396,34 @@ def main():
 
             label = labels_cache.get(stable_id, {}).get("label", "")
 
+            # Claim sentence — generated/cached by (stable_id, member_hash)
+            member_tickers_sorted = sorted({m["ticker"] for m in members})
+            mh = member_hash(member_tickers_sorted, dominant)
+            cache_key = f"{stable_id}::{mh}"
+            existing = claim_sentence_cache.get(cache_key)
+            if existing and existing.get("sentence"):
+                claim_sentence = existing["sentence"]
+            else:
+                claim_sentence = gen_claim_sentence(
+                    members, dominant, label, llm_client
+                )
+                if claim_sentence:
+                    claim_sentence_cache[cache_key] = {
+                        "sentence":           claim_sentence,
+                        "stable_cluster_id":  stable_id,
+                        "member_hash":        mh,
+                        "members":            member_tickers_sorted,
+                        "dominant_direction": dominant,
+                        "first_seen_date":    d_iso,
+                    }
+
             out_rows.append({
                 "date":                d_iso,
                 "stable_cluster_id":   stable_id,
                 "label":                label,
+                "claim_sentence":       claim_sentence or "",
                 "n_members":            len(members),
-                "member_tickers":       sorted({m["ticker"] for m in members}),
+                "member_tickers":       member_tickers_sorted,
                 "avg_conviction":       round(avg_conv, 3),
                 "alignment_score":      round(alignment, 3),
                 "conflict_score":       round(conflict, 3),
@@ -317,6 +442,7 @@ def main():
                     [{
                         "stable_cluster_id":   r["stable_cluster_id"],
                         "label":                r["label"],
+                        "claim_sentence":       r["claim_sentence"],
                         "n_members":            r["n_members"],
                         "member_tickers":       r["member_tickers"],
                         "avg_conviction":       r["avg_conviction"],
@@ -352,13 +478,20 @@ def main():
         OUT_JSON.write_text(json.dumps(latest_payload, indent=2))
         print(f"  wrote {OUT_JSON} ({len(latest_payload['themes'])} themes @ {latest_payload['as_of']})")
 
-        # Print top 10 themes
+    # Persist claim sentence cache
+    CLAIM_SENT_CACHE.write_text(json.dumps(claim_sentence_cache, indent=2))
+    print(f"  wrote {CLAIM_SENT_CACHE} ({len(claim_sentence_cache)} cached sentences)")
+
+    if latest_payload:
         print()
         print(f"  ─── TOP THEMES BY CROWDING @ {latest_payload['as_of']} ─────────────")
         for t in latest_payload["themes"][:10]:
             tickers = ", ".join(t["member_tickers"][:5])
             extra = f" (+{len(t['member_tickers'])-5})" if len(t["member_tickers"]) > 5 else ""
             print(f"  [{t['n_members']:>2}m] {t['label'][:60]:<60} {t['dominant_direction']:<8} {tickers}{extra}")
+            cs = t.get("claim_sentence", "")
+            if cs:
+                print(f"        ↳ {cs[:120]}")
 
 
 if __name__ == "__main__":
