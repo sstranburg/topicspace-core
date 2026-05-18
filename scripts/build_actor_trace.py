@@ -83,7 +83,7 @@ EXPECT_HIST_DIR = SITE_PUBLIC / "expectations_history"
 OUT_DERIVED = ROOT / "data" / "derived" / "actor_trace.json"
 OUT_SITE    = SITE_PUBLIC / "actor_trace.json"
 
-DEFAULT_TICKER = "AAPL"
+DEFAULT_TICKER = "NVDA"
 
 
 def main():
