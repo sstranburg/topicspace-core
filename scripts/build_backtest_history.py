@@ -419,6 +419,27 @@ def main() -> None:
     except Exception as e:
         print(f"  cluster lineage failed: {e}")
 
+    # ── Daily totals for /architecture L0 + L1 panels ─────────────────────
+    # Both are thin shapers that read existing artifacts (the JSONL corpus and
+    # field_instrumentation.parquet respectively). Fast and idempotent.
+    print("\n=== BUILDING EVENTS-DAILY + FIELD-ACTOR-HISTORY (/architecture L0 + L1) ===")
+    for script_name in ("build_events_daily.py", "build_field_actor_history.py"):
+        try:
+            import subprocess
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).parent / script_name)],
+                capture_output=True, text=True, timeout=120,
+            )
+            if result.returncode == 0:
+                for line in result.stdout.splitlines():
+                    s = line.strip()
+                    if s and ("wrote" in s or "actors:" in s or "events" in s):
+                        print(f"  [{script_name}] {s}")
+            else:
+                print(f"  {script_name} failed (exit {result.returncode}): {result.stderr[:200]}")
+        except Exception as e:
+            print(f"  {script_name} failed: {e}")
+
 
 if __name__ == "__main__":
     main()
