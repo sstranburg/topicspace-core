@@ -18,7 +18,7 @@ In priority order, the five items to work on next:
 
 1. **F-006 — L3 expectation lifecycle IDs.** Now that stable theme IDs exist (F-002) AND expectations are attached to them with direction/conviction (F-005), the V1 fingerprint `actor + stable_cluster_id + direction_sign` is feasible. Builds the "memory system" — expectations as persistent objects with born/strengthened/weakened/contradicted/retired events. Original reviewer's "biggest unlock." Honest 2-3 week budget; doesn't depend on L1 promotion.
 2. **C-002 — Write up R-001 as the case-study Writing.** The bifurcation finding (+4.92pp HW vs SW gap, t=13.5, plus 3 counterintuitive sub-findings) is the strongest research result topicspace has produced. Publishing it is more compelling than another worked example. Research as content.
-3. **F-007 — L4 region-level walk-forward.** Themes now exist as a clean region dimension. Region = (theme, state, conviction tier, horizon). Rolling walk-forward by region likely more stable than per-actor (which didn't generalize OOS per /methods §08b). Closes the actor-level trust gap.
+3. **F-007 V2 — region-level walk-forward (rolling) + inverted-region detection.** V1 (2026-05-18) confirmed regional heterogeneity is real but is in-sample only. V2 adds rolling walk-forward per region (once corpus supports stable folds), an escalation rule for chronically inverted regions (hit ≤ 30% on n≥10 → upstream review), and re-weighting of L2 conviction by region calibration.
 4. **I-001 — Real durable log store for intel briefs.** Current JSONL is ephemeral on Vercel. Has to land before intel sees real traffic; also starts building QA history.
 5. **R-011 — Update eligibility matrix to incorporate R-001 magnitudes.** Software CONFIRMED is actually negative (−5pp); hardware NEG_CONFIRMATION is +11.6pp. Better to do this AFTER C-002 ships — reader feedback will inform weighting decisions.
 
@@ -637,16 +637,38 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 
   The site-facing copy at `topicspace-site/public/thesis_trails.json` is the **production artifact** — `/architecture` and `/actor/[ticker]` both read from it via the site repo's normal build. The storm-side copies are reproducibility artifacts; no production reader touches them. If manual refreshing becomes painful, add `scripts/commit_lifecycle_artifacts.sh` — but keep it human-triggered, not cron'd. Re-evaluate this policy once F-006 V2 lands.
 
-### F-007 — L4 region-level walk-forward (replaces per-actor trust)
+### F-007 — L4 region-level walk-forward (V1 DONE — 2026-05-18)
 - **category**: Field Architecture
 - **priority**: P1
-- **status**: Inbox
+- **status**: V1 Done; V2 Inbox
 - **effort**: L
 - **owner**: Sue
-- **dependencies**: F-005 (need themes for regions)
-- **why_it_matters**: Rolling walk-forward at the per-actor level showed trust filter doesn't generalize (`/methods §08b`). Region-level (theme × state × conviction × horizon) should be more stable — more samples per region than per actor. Closes the remaining credibility gap.
-- **success_condition**: Region definitions; `performance_regions` table with rolling walk-forward results; actor-page badges shift from per-actor reliability to per-region calibration ("This expectation sits in a region with positive 20D walk-forward performance"); methods page §08c documenting region-level results.
-- **notes**: Arch doc §9. Reuse existing rolling walk-forward harness. Honestly budget 1.5-2 weeks.
+- **dependencies**: F-005 (themes), F-006 (signed expectation versions)
+- **completed_v1**: 2026-05-18
+- **what_landed_v1**:
+  - `scripts/build_performance_regions.py` — joins `expectation_versions.parquet` (F-006) with per-ticker + QQQ prices; emits one observation row per (date, ticker, theme_id, direction_sign) with `rel_5d / 10d / 20d` (actor minus QQQ), direction-aligned `hit_5d / 10d / 20d` flags, and `region_id = "reg-" + sha1(theme_id::direction_sign)[:10]`. Output: `data/derived/performance_regions.parquet` (2,775 rows from 1,544 F-006 entities).
+  - `scripts/build_region_calibration.py` — aggregates per region across all three horizons; emits `n_obs`, `hit_rate`, `avg_excess_return`, `std_excess`, and a tier label (`public` n≥10 / `limited` 5–9 / `insufficient` <5) per horizon. Also emits first-half / second-half splits (stability check). Output: `data/derived/region_calibration.json` + `topicspace-site/public/region_calibration.json` (417 regions; tier counts: 44 public / 59 limited / 314 insufficient).
+  - Three baselines computed at every horizon and embedded in the artifact: `all_expectations` (pool across signed observations), `random` (50% by definition), `price_momentum` (predicts direction from sign of trailing N-day return). Aggregate run: all_expectations 49% / 50% / 51% at 5d / 10d / 20d; price_momentum 49% / 48% / 52% — i.e. the L2 layer is, on average, no better than trailing-return sign.
+  - `/architecture` L4 card transitioned from `SCOPED / F-007` to `BUILT V1`. Shows system-wide stats (44 public regions, baseline hit rates, count of regions beating baseline by ≥10pp) plus an actor-specific table of every signed region the worked-example actor participates in, with 5d / 20d hit rates, deltas vs baseline (green ≥ +10pp / red ≤ −10pp), and tier badges.
+  - `/actor/[ticker]` Thesis Trail — each persistent active claim now renders a region-calibration chip next to its conviction tag (e.g. `hit 5d 70% · 20d 80% · n=10`), color-coded vs baseline. Insufficient-history regions render as `history n/a · n=N`; sign=0 claims render no chip. 11 of 15 current active claims across the cohort attach to a region.
+  - `/methods §08c` writeup documenting region schema, sample-size tiers, baselines, current state of the field, and the V1-vs-V2 split.
+  - Wired into `scripts/build_backtest_history.py` shaper loop after `build_actor_trace.py --all`, so evening pipeline regenerates the F-007 artifacts on every run.
+- **method_v1**:
+  - Walk-forward discipline: every observation uses only information available on its observation date. Future returns are joined in but do NOT revise the L2 prediction — the prediction was the prediction.
+  - Direction-aligned hit: `direction_sign = +1` hit when `rel_forward > 0`; `−1` hit when `rel_forward < 0`; `0` excluded from hit-rate (kept in observation table).
+  - Region = `(theme_id, direction_sign)` only. State / conviction tier dimensions deferred to V2 — V1 would have shattered sample sizes below usefulness.
+  - V1 hit rates are **in-sample at the region level** (no train/test split per region). Stability is checked via first-half / second-half splits embedded in the artifact, but not enforced as a publish gate.
+- **observations_v1**:
+  - The field is not uniform. 9 of 43 public regions beat the 5d baseline by ≥10pp; 12 of 43 are ≥10pp **worse**. Pays-as-predicted concentrations include `Salesforce AI dynamics +` (5d 90%, 20d 100%, n=10), `Critical minerals volatility +` (70/80%, n=10), `Oracle AI/multicloud +` (71/42%, n=14). Persistently inverted regions include `Intel AI strategy −` (9/9%, n=11), `MRVL sentiment −` (17/25%, n=12), `Micron AI expansion −` (23/31%, n=13) — the L2 direction extractor reads bearish on these themes and the market consistently does the opposite. Recoverable in V2 via a region sign-flip rule.
+  - Aggregate baseline matching `random` and `price_momentum` is the honest version of "L2 is not a free predictor on average." The signal lives in regional heterogeneity, not the mean.
+- **followups_for_v2**:
+  - Per-region walk-forward (rolling, not just first-half / second-half) once corpus extends past ~12 months — current windows are too small for stable folds.
+  - Re-weight L2 conviction by region calibration (conviction → region-conditioned probability).
+  - Inverted-region detection + escalation rule (flag any public region with hit ≤ 30% for upstream review — mislabeled theme, sign-extractor bug, or genuine fade dynamic).
+  - Add `state` and `conviction_tier` as region sub-dimensions once sample sizes support it.
+  - Lifecycle-conditioned calibration (does a region show higher hit rate when its L3 entity has a `strengthened` event in the prior N days?).
+- **gate**: V1 passes the "would I show this to a reader" test on actor pages — claims that attach to a populated region get an honest chip with caveats; claims that don't get an honest `history n/a`. The /architecture L4 card is no longer a placeholder; it shows real per-actor calibration with delta indicators. Aggregate hit rates are honestly reported as essentially baseline, with the heterogeneity-within-regions story carrying the V1 weight.
+- **artifact_policy**: Same as F-006 — `region_calibration.json` is regenerated daily by the pipeline; the site-facing copy at `topicspace-site/public/region_calibration.json` is the production artifact, and `data/derived/region_calibration.json` is a reproducibility shadow. The parquet (`performance_regions.parquet`) is repo-resident but force-added (data/ is gitignored at storm root). Manual refresh only — auto-commits would pollute git history with daily centroid + LLM reframing noise. Re-evaluate after V2 stabilizes the (theme, direction) matching.
 
 ### F-008 — Promote semantic_density into production (deferred — F-001 verdict inconclusive)
 - **category**: Field Architecture

@@ -445,6 +445,12 @@ def main() -> None:
         ("build_storm_trace.py",),
         ("build_claim_trace.py",),
         ("build_actor_trace.py", "--all"),
+        # F-007 V1 — L4 region calibration. Reads expectation_versions
+        # × price data; computes per-region hit rate + avg excess return
+        # at 5d/10d/20d, with all-expectations / random / momentum
+        # baselines.
+        ("build_performance_regions.py",),
+        ("build_region_calibration.py",),
     ):
         script_name = entry[0]
         extra_args  = list(entry[1:])
