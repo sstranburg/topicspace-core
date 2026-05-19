@@ -9,11 +9,12 @@ from pathlib import Path
 
 PYTHON = sys.executable
 
-def run(script, label):
+def run(script, label, args=None):
     print(f"\n{'='*60}")
     print(f"▶ {label}")
     print('='*60)
-    result = subprocess.run([PYTHON, f"scripts/{script}"], check=True)
+    cmd = [PYTHON, f"scripts/{script}"] + list(args or [])
+    result = subprocess.run(cmd, check=True)
     return result
 
 steps = [
@@ -31,6 +32,15 @@ steps = [
     ("compute_narrative_evolution.py",  "Compute narrative evolution"),
     ("detect_narrative_pressure.py",    "Detect narrative pressure"),
     ("generate_strategic_watchlist.py", "Generate strategic watchlist"),
+    # generate_actor_expectations.py produces today's per-actor LLM
+    # expectations (consumed by /actor pages + archived into
+    # expectations_history/ for /replay) and at its tail kicks off the
+    # F-006 lifecycle build (build_expectation_lifecycle.py →
+    # thesis_trails.json). Placed after narrative pressure / watchlist
+    # since the prompt references those numbers; before leaderboard
+    # which reads the freshly written actor_expectations.json.
+    ("generate_actor_expectations.py", "Generate actor expectations (LLM)",
+     ["--all"]),
     ("build_community_overlay.py",      "Build community overlay"),
     ("clean_narrative_lineages.py",     "Clean narrative lineages (Claude)"),
     ("plot_storm_field_with_state.py",  "Plot ecosystem field"),
@@ -52,9 +62,11 @@ steps = [
 print("Storm Pipeline")
 print(f"Running {len(steps)} steps...\n")
 
-for script, label in steps:
+for step in steps:
+    script, label = step[0], step[1]
+    args = step[2] if len(step) > 2 else None
     try:
-        run(script, label)
+        run(script, label, args)
     except subprocess.CalledProcessError as e:
         print(f"\n❌ Failed at: {label}")
         sys.exit(1)

@@ -451,6 +451,14 @@ def main() -> None:
         # baselines.
         ("build_performance_regions.py",),
         ("build_region_calibration.py",),
+        # /replay snapshot tile. Joins backtest_history.parquet (just
+        # built above) with expectations_history/{TICKER}.json (written
+        # daily by generate_actor_expectations.py in run_pipeline.py).
+        # Must run AFTER both. See replay/[ticker]/page.tsx for the
+        # downstream consumer. Restores the per-day expectation summaries
+        # that previously fell off /replay when the archival chain
+        # wasn't wired into the pipeline.
+        ("build_replay_history.py",),
     ):
         script_name = entry[0]
         extra_args  = list(entry[1:])
