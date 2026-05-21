@@ -3,7 +3,7 @@
 F-007 V2 phase 1 - region rolling walk-forward summary
 ==============================================================================
 as-of: 2026-05-21
-public regions: 57   n_folds: 3   min_train_frac: 0.5
+public regions: 63   n_folds: 3   min_train_frac: 0.5
 public-tier definition: corpus n_obs >= 10
 outcomes: ['hit_5d', 'hit_10d', 'hit_20d']
 inverted-region threshold: hit_5d <= 0.3
@@ -11,32 +11,32 @@ stability threshold: range(hit_rate across folds) <= 0.2
 
 -- public-region AGGREGATE hit rate per fold --
 fold    test_range                            hit_5d         hit_10d         hit_20d
-1       2026-02-23 -> 2026-03-20          49.6% (n=121)      47.9% (n=121)      56.2% (n=121)
-2       2026-03-23 -> 2026-04-17          44.1% (n=229)      46.7% (n=229)      49.8% (n=229)
-3       2026-04-20 -> 2026-05-18          53.8% (n=223)      56.7% (n=150)      44.4% (n= 18)
+1       2026-02-26 -> 2026-03-24          49.7% (n=161)      46.6% (n=161)      57.8% (n=161)
+2       2026-03-25 -> 2026-04-21          41.5% (n=217)      49.3% (n=217)      49.8% (n=217)
+3       2026-04-22 -> 2026-05-20          50.5% (n=216)      53.4% (n=146)      50.0% (n= 12)
 
 -- per-region stability (hit_5d only) -----------------------------------
-regions appearing in >= 2 folds with hit_5d range <= 20pp: 6 of 32
+regions appearing in >= 2 folds with hit_5d range <= 20pp: 6 of 35
   median range across all regions: 0.00
   median std across all regions:   0.00
 
 -- inverted regions (public, hit_5d <= 30%) -----------------------
-  reg-0d5bbf43f3  hit_5d=30.0%  n= 10  sign=-1  Semiconductor industry dynamics and growth
-  reg-1d80c17ec9  hit_5d=25.0%  n= 12  sign=+1  Emerging tech innovations and strategies
-  reg-3a924ff611  hit_5d=25.0%  n= 28  sign=-1  Vertiv's AI Infrastructure Growth Strategy
-  reg-49aa9cf051  hit_5d=15.4%  n= 13  sign=-1  Nvidia stock outlook and analysis
-  reg-4b9f91fb5e  hit_5d=10.0%  n= 10  sign=-1  Taiwan semiconductor demand surge
-  reg-8eb773bd36  hit_5d=7.1%  n= 14  sign=-1  Intel's AI Strategy and Challenges
-  reg-a5e8e02443  hit_5d=30.0%  n= 10  sign=-1  Valuation shifts in tech stocks
-  reg-b0c7895891  hit_5d=20.0%  n= 15  sign=-1  AI growth driving tech valuations
-  reg-d526afe29f  hit_5d=26.7%  n= 15  sign=+1  Nvidia leads AI hardware expansion
-  reg-f533f6cca8  hit_5d=20.0%  n= 37  sign=-1  Oracle's AI and market momentum
+  reg-08c0a6a5ba  hit_5d=29.6%  n= 27  sign=+1  AI-driven growth in tech stocks
+  reg-4ab091e6dc  hit_5d=30.0%  n= 10  sign=+1  Oracle's AI and cloud growth prospects
+  reg-74c386f0c2  hit_5d=24.1%  n= 29  sign=-1  Micron stock volatility and market sentiment
+  reg-74e4c4238a  hit_5d=30.0%  n= 10  sign=-1  AI investment strategies and outlook
+  reg-83de2ee3ed  hit_5d=7.1%  n= 14  sign=-1  Intel's AI Strategy and Challenges
+  reg-98f1e5d930  hit_5d=23.1%  n= 13  sign=+1  AI-driven growth and investment strategies
+  reg-b548702a9e  hit_5d=26.7%  n= 30  sign=-1  AI chip market dynamics and trends
+  reg-bdf4e73cd0  hit_5d=16.7%  n= 12  sign=-1  AI infrastructure investment dynamics
+  reg-fa3c18b522  hit_5d=29.4%  n= 17  sign=-1  AI stock investment opportunities
+  reg-fa97d6d4fe  hit_5d=20.0%  n= 10  sign=-1  Datadog's strong Q4 earnings performance
   total: 10
 
 -- verdict --------------------------------------------------------------
-  hit_5d    folds=49.6% 44.1% 53.8%  (n=121/229/223)  range=+9.7pp  -> STABLE across folds
-  hit_10d   folds=47.9% 46.7% 56.7%  (n=121/229/150)  range=+9.9pp  -> STABLE across folds
-  hit_20d   folds=56.2% 49.8% 44.4%  (n=121/229/18)  range=+11.8pp  -> STABLE across folds
+  hit_5d    folds=49.7% 41.5% 50.5%  (n=161/217/216)  range=+9.0pp  -> STABLE across folds
+  hit_10d   folds=46.6% 49.3% 53.4%  (n=161/217/146)  range=+6.8pp  -> STABLE across folds
+  hit_20d   folds=57.8% 49.8% 50.0%  (n=161/217/12)  range=+8.0pp  -> STABLE across folds
 
 Honest reading guide:
   - Per-fold per-region cells are sparse (n=1-2 typical); read the AGGREGATE
