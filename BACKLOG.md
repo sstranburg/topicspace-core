@@ -25,6 +25,8 @@ In priority order, the five items to work on next:
 > **Principle**: field/product improvements come before content cadence. Publish and explain, but protect the time for the underlying improvements. The backlog ordering is a guardrail, not a suggestion — if content starts crowding out research, drop a content slot, not a research one.
 >
 > **Validation standard (added 2026-05-17)**: rolling walk-forward only for headline performance. In-sample metrics are diagnostic, not claims. See `feedback_rolling_walkforward_standard.md` in `.claude` memory and `/methods §08b`.
+>
+> **V1/V2 discipline (added 2026-05-20)**: every new calibration / measurement layer ships in two phases. **V1 measures honestly without acting** — surface aggregate, surface heterogeneity, surface failure modes, do not act on findings. **V2 acts** only after V1's findings are validated. The architecture goes from analysis to operating system at V2, not V1. See `feedback_calibration_v1_success_criteria.md`.
 
 ---
 
@@ -699,6 +701,170 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 - **dependencies**: none
 - **why_it_matters**: Replay UI informally notes that historical expectations are reconstructed, not archived. Arch doc §10.3 + §15.3 are right that this should be data-model-level, not just a UI footnote. As archived expectations accumulate going forward (via the daily archival hook), the distinction will matter more.
 - **success_condition**: Add `provenance: "live_archived" | "retrospectively_reconstructed"` to every entry in `expectations_history/*.json`. UI shows a discreet chip on retrospectively-reconstructed cards. Future archivals stamp as `live_archived`; backfill marked as `retrospectively_reconstructed`.
+
+### F-011 — Lock canonical L0–L4 semantics + portability doc
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: none
+- **why_it_matters**: The L0–L4 abstraction has started drifting. On `/governance/example`, L2 means at different points "expectation," "next-action prediction," and "risk prior." That's defensible internally but it makes the architecture less portable across domains. A canonical lock would prevent that drift and make domain ports cleaner.
+- **success_condition**: One doc that defines the canonical abstraction:
+  - L0 — Evidence: what happened?
+  - L1 — Regions: what kind of situation is this?
+  - L2 — Hypotheses: what do we expect in this region?
+  - L3 — Lifecycle: how is this hypothesis/region evolving?
+  - L4 — Calibration: was the hypothesis right, and what should change?
+
+  Plus explicit domain mappings: markets (events → narratives → forward expectations → thesis lifecycle → return calibration); governance (eval logs → risk regions → risk/control hypotheses → risk lifecycle → control calibration); future research-radar (signals → topic regions → impact hypotheses → thesis lifecycle → business-impact calibration). Lives at `/methods` or a new `/architecture/canonical` doc.
+- **notes**: Don't add new layers — tighten the existing ones. Drift is the risk; portability is the payoff.
+
+### F-012 — L1 region-quality metrics (first-class)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: F-002 (stable cluster lineage)
+- **why_it_matters**: L1 is the quiet dependency everything else rests on. If regions are bad, L2 and L4 become noisy. Today we have implicit measures (n_obs, tier); the architecture would benefit from explicit region-quality metrics that surface bad regions before downstream calibration starts misbehaving.
+- **success_condition**: Every L1 region (markets and governance) carries six metrics:
+  - **cohesion** — mean intra-region embedding similarity (are events semantically close?)
+  - **purity** — concentration of risk / action labels (does one label dominate?)
+  - **stability** — region persists across time without major centroid drift
+  - **coverage** — fraction of traffic / data the region explains
+  - **bimodality** — does L4 calibration suggest the region should split?
+  - **drift** — centroid movement velocity across rolling windows
+
+  Surface on `/architecture` L1 card (per region) and as an aggregate health line. **L4 → L1 re-cluster signal becomes data-driven** (auto-flag low-cohesion + high-bimodality regions as re-cluster candidates) instead of intuition-driven.
+- **notes**: Biggest architectural unlock since F-007. Promotes L1 from "the clustering step" to "a measured layer in its own right."
+
+### F-013 — L4 produces decision classes (PROMOTE / MONITOR / INTERVENE / RECLUSTER / INVERT / RETIRE / ESCALATE)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: F-007 V1 (region calibration shipping)
+- **why_it_matters**: L4 currently emits metrics. To go from analysis to operating system, every calibration result should end with a **recommendation class** — what to do about the finding. This is the missing actionability layer.
+- **success_condition**: Every per-region L4 row carries one of seven decision classes:
+  - **PROMOTE** — enough evidence + positive calibration; raise conviction / use in production
+  - **MONITOR** — early signal, insufficient sample; keep watching
+  - **INTERVENE** — active risk or poor performance; ship a fix
+  - **RECLUSTER** — bimodal or unstable; flag for L1 re-clustering (the L4 → L1 edge made operational)
+  - **INVERT** — prediction / control is consistently wrong; sign-flip candidate
+  - **RETIRE** — stale or unsupported; remove from active surface
+  - **ESCALATE** — high-severity or human review needed
+
+  Rules: thresholds documented in `/methods`; surface as a column on `/architecture` L4 table and on the `/governance/example` per-region table. Decisions ship with provenance (which metrics triggered which decision).
+- **notes**: This is what turns the architecture from "calibrated regions" into "this region is strengthening, this control is inverted, this risk reopened — and here's what to do." Marketing-wise: the difference between a dashboard and an operating system.
+
+### F-014 — L3 lifecycle states action-mapped (workflow-driving)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: F-006 V1 (lifecycle events shipped)
+- **why_it_matters**: Lifecycle states are currently descriptive — BORN, STRENGTHENED, WEAKENED, CONTRADICTED, RETIRED, REOPENED, INVERTED. They identify what's happening but don't say what to do. Adding the action layer turns lifecycle from decorative to operational.
+- **success_condition**: Each state maps to a default operational action (and which surface it should appear on):
+  - BORN → monitor; surface on watchlist
+  - STRENGTHENED → promote / prioritize; surface as high-conviction
+  - WEAKENED → reduce confidence; demote on UI
+  - CONTRADICTED → review assumptions; flag for re-evaluation
+  - RETIRED → remove from active surface
+  - REOPENED → regression alert; escalate
+  - INVERTED → flip / rewrite / redesign control; escalate to L1 re-cluster
+  - SPLIT (new, from F-002 lineage) → re-cluster separate hypotheses
+  - MERGED (new, from F-002 lineage) → consolidate
+
+  Encode the mapping as data, not just doc — every lifecycle event in the artifacts ships with its recommended action and the workflow surface it routes to.
+- **notes**: Connects to F-013 (L4 decisions). Lifecycle + calibration both produce actionable recommendations; the architecture stays consistent across both.
+
+### F-015 — Formalize L2a / L2b split as canonical (not example-page hack)
+- **category**: Field Architecture
+- **priority**: P2
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: F-011 (canonical semantics)
+- **why_it_matters**: `/governance/example` introduced L2a (behavior prediction) and L2b (risk/control prediction) as a one-page convention. The split is genuinely useful and should be canonical — L2 is the expectation layer; it can carry multiple prediction targets simultaneously without forcing a single-target schema.
+- **success_condition**: Canonical schema documents two L2 tracks per domain:
+  - **L2a — forward expectation** about what will happen (markets: actor expectation; governance: behavior prediction; research: topic trajectory)
+  - **L2b — domain-specific expectation layered on top** (markets: theme/region expectation; governance: risk/control prediction; research: impact hypothesis)
+
+  Lock as part of the F-011 canonical doc. Update `/governance/example` and `/architecture` to use the L2a/L2b labels consistently.
+- **notes**: Removes the ambiguity that "L2 is the one prediction." L2 is the expectation layer; track multiplicity is a feature.
+
+### F-016 — Human-feedback joins into L4 (the strongest truth signal)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: F-007 V1 (calibration framework)
+- **why_it_matters**: Automated judges (LLM, regex, programmatic graders) are useful but biased and brittle. The strongest L4 truth label for governance + assistant-memory use cases is **human response** — accepted / corrected / rejected / asked-for-simpler / asked-for-more-depth / escalated / complained / approved / deployed / reused.
+- **success_condition**: L4 calibration framework joins in:
+  - User pushback events (already detected in `governance_poc_judge.py`)
+  - Explicit corrections (user saved a new `feedback_*.md` rule referencing the prior turn)
+  - Escalations / SME overrides (in enterprise eval contexts)
+  - Production incident reports / customer complaints
+
+  Each L4 region row reports both automated calibration (catch rate, Brier) and human-feedback calibration (acceptance rate, override rate). Where they diverge is itself a finding — the automated judge may be miscalibrated against human ground truth.
+- **notes**: Caught the over-engineering pattern in the Claude-logs POC implicitly (user push-backs cluster in those regions). Making it explicit closes the most important gap in V1.
+
+### F-017 — Universal Region Card UI component
+- **category**: Field Architecture
+- **priority**: P2
+- **status**: Inbox
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: F-013 (decision classes), F-014 (action-mapped lifecycle)
+- **why_it_matters**: Every domain ends up wanting the same per-region object surface. Markets has `/actor/[ticker]`; governance has the region rows on `/governance/example`. Building a canonical Region Card component would unify the UI across domains and make new domains cheap to ship.
+- **success_condition**: A reusable `RegionCard` component with fixed fields:
+  - Region name
+  - What it contains (description + representative evidence)
+  - Current L2a hypothesis (with conviction)
+  - Current L2b hypothesis / risk prior (where applicable)
+  - L3 lifecycle status (with action mapping from F-014)
+  - L4 calibration result + decision class (from F-013)
+  - Sample-size tier (extended per F-018)
+  - Recommended action (one line, derived from decision class)
+
+  Used identically across:
+  - Markets: actor pages and architecture L3 swimlanes
+  - Governance: region rows on `/governance/example`
+  - Future research-radar: topic cards
+- **notes**: Less novel architecturally but unifies the product surface. Worth doing once F-013 + F-014 are in.
+
+### F-018 — Extended sample-size discipline (temporal coverage)
+- **category**: Field Architecture
+- **priority**: P2
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: F-007 V1 (tier system)
+- **why_it_matters**: Current tier system (n ≥ 10 public, 5–9 limited, < 5 insufficient) is good but one-dimensional. A region with n=100 all from one day is not the same as n=100 across six weeks. Adding temporal coverage prevents over-trusting region calibration that's actually built on a single time slice.
+- **success_condition**: Every region's tier becomes a compound: `{ n_obs, fold_count, time_span_days, recentness_days, human_label_count, automated_label_only_flag }`. A region only earns "public" tier if it satisfies all dimensions (e.g., n≥10 AND time_span ≥ 14 days AND not_automated_label_only). UI surfaces the constraint that gates a region's tier so the reader knows why a region is "limited" (small n? short time span? automated-only labels?).
+- **notes**: Small, high-leverage refinement. Catches a real failure mode (concentrated sampling) that the current tier system misses.
+
+### F-019 — Enterprise RAG governance POC (synthetic eval workflow end-to-end)
+- **category**: Field Architecture
+- **priority**: P2
+- **status**: Inbox
+- **effort**: L
+- **owner**: Sue
+- **dependencies**: F-013 (decision classes), F-016 (human-feedback joins)
+- **why_it_matters**: `/governance/example` proves the architecture on real Claude logs. A complementary synthetic POC structured like a deployed enterprise RAG eval would land harder with non-technical buyers — clear risk classes (financial advice leakage, unprofessional tone, unsupported claim, over-refusal, confidentiality risk), 300 eval prompts/responses, learned regions, L2a/L2b predictions, lifecycle across model + prompt versions, human + LLM labels, guardrail misfire analysis.
+- **success_condition**: End-to-end enterprise-style RAG eval workflow producing:
+  - Which risk regions exist
+  - Which controls over-fire
+  - Which controls under-fire
+  - Which regions need human review
+  - Which risks reopened after a model / prompt change
+
+  Honest framing: synthetic data, illustrative. The current Claude-logs POC is the real-data proof; this is the audience-translation artifact.
+- **notes**: Lower priority than F-011–F-016. Build only after the canonical semantics + action layer are locked, so the POC inherits a stable architecture.
 
 ---
 

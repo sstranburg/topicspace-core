@@ -8,3 +8,5 @@ venv/
 master_report.html
 *.pdf
 .vercel
+governance_poc/
+governance_field/
