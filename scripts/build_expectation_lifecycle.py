@@ -60,7 +60,7 @@ DELTA_THRESHOLD     = 0.10   # conviction shift to qualify as strengthened/weake
 RETIRED_GAP_DAYS    = 7      # days absent from coverage to mark retired
 SIM_FLOOR           = 0.10   # below this, treat attachment as unreliable (skip)
 TRAIL_MIN_VERSIONS  = 3      # filter thesis_trail: only entities seen ≥3 days
-TRAIL_KEEP_TYPES    = {"strengthened", "weakened", "contradicted"}  # always keep these
+TRAIL_KEEP_TYPES    = {"strengthened", "weakened", "contradicted", "reconfirmed"}  # always keep these
 
 
 # ─── helpers ───────────────────────────────────────────────────────────────
@@ -201,10 +201,13 @@ def classify_lifecycle(
     # Events
     events: list[dict] = []
 
-    # Per-entity timeline → born, strengthened, weakened
+    # Per-entity timeline → born, strengthened, weakened, plus
+    # within-history retired/reconfirmed pairs whenever attachments lapse
+    # for >= RETIRED_GAP_DAYS and then resume.
     for entity_id, grp in attachments.groupby("entity_id"):
         grp = grp.sort_values("date").reset_index(drop=True)
         prev_conv = None
+        prev_date_str: str | None = None
         for i, row in grp.iterrows():
             if i == 0:
                 events.append({
@@ -217,28 +220,67 @@ def classify_lifecycle(
                     "detail":          (row["headline"] or "")[:200],
                 })
             else:
-                delta = row["conviction"] - prev_conv
-                if delta > DELTA_THRESHOLD:
+                # Detect within-history gap: if the entity went silent for >=
+                # RETIRED_GAP_DAYS and then resurfaces, emit retired + reconfirmed.
+                gap_days = (
+                    dt.date.fromisoformat(row["date"])
+                    - dt.date.fromisoformat(prev_date_str)
+                ).days
+                if gap_days > RETIRED_GAP_DAYS:
+                    retired_at = (
+                        dt.date.fromisoformat(prev_date_str)
+                        + dt.timedelta(days=RETIRED_GAP_DAYS + 1)
+                    ).isoformat()
+                    events.append({
+                        "entity_id":        entity_id,
+                        "date":             retired_at,
+                        "event_type":       "retired",
+                        "prior_conviction": None,
+                        "conviction":       None,
+                        "delta_conviction": None,
+                        "detail":           (
+                            f"absent for {gap_days} days since {prev_date_str}"
+                        ),
+                    })
                     events.append({
                         "entity_id":        entity_id,
                         "date":             row["date"],
-                        "event_type":       "strengthened",
+                        "event_type":       "reconfirmed",
                         "prior_conviction": prev_conv,
                         "conviction":       row["conviction"],
-                        "delta_conviction": round(delta, 3),
-                        "detail":           (row["headline"] or "")[:200],
+                        "delta_conviction": (
+                            round(row["conviction"] - prev_conv, 3)
+                            if prev_conv is not None else None
+                        ),
+                        "detail":           (
+                            f"resurfaced after {gap_days}d gap: "
+                            + (row["headline"] or "")
+                        )[:200],
                     })
-                elif delta < -DELTA_THRESHOLD:
-                    events.append({
-                        "entity_id":        entity_id,
-                        "date":             row["date"],
-                        "event_type":       "weakened",
-                        "prior_conviction": prev_conv,
-                        "conviction":       row["conviction"],
-                        "delta_conviction": round(delta, 3),
-                        "detail":           (row["headline"] or "")[:200],
-                    })
-            prev_conv = row["conviction"]
+                else:
+                    delta = row["conviction"] - prev_conv
+                    if delta > DELTA_THRESHOLD:
+                        events.append({
+                            "entity_id":        entity_id,
+                            "date":             row["date"],
+                            "event_type":       "strengthened",
+                            "prior_conviction": prev_conv,
+                            "conviction":       row["conviction"],
+                            "delta_conviction": round(delta, 3),
+                            "detail":           (row["headline"] or "")[:200],
+                        })
+                    elif delta < -DELTA_THRESHOLD:
+                        events.append({
+                            "entity_id":        entity_id,
+                            "date":             row["date"],
+                            "event_type":       "weakened",
+                            "prior_conviction": prev_conv,
+                            "conviction":       row["conviction"],
+                            "delta_conviction": round(delta, 3),
+                            "detail":           (row["headline"] or "")[:200],
+                        })
+            prev_conv     = row["conviction"]
+            prev_date_str = row["date"]
 
     # Contradicted: on a date when actor produces opposite-direction expectation
     # mapping to the same (cluster) — emit on the original entity.
@@ -306,13 +348,16 @@ def classify_lifecycle(
         last_row = grp_sorted.iloc[-1]
         first_seen = grp_sorted["date"].min()
         last_seen = grp_sorted["date"].max()
-        # Status: retired if absent past threshold; contradicted if any
-        # contradicted event exists; active otherwise
-        ent_events = events_df[events_df["entity_id"] == entity_id]
-        if (ent_events["event_type"] == "retired").any():
-            status = "retired"
-        elif (ent_events["event_type"] == "contradicted").any():
+        # Status reflects the latest lifecycle event by date, not "any retired
+        # event in history" - that would mis-flag entities that retired-then-
+        # reconfirmed as still retired. Contradicted is sticky (a once-contradicted
+        # entity remains contradicted in status even after later reactivity).
+        ent_events = events_df[events_df["entity_id"] == entity_id].sort_values("date")
+        if (ent_events["event_type"] == "contradicted").any():
             status = "contradicted"
+        elif not ent_events.empty:
+            last_event = ent_events.iloc[-1]["event_type"]
+            status = "retired" if last_event == "retired" else "active"
         else:
             status = "active"
         entity_rows.append({
