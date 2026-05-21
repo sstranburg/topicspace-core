@@ -259,6 +259,74 @@ def main():
     # ── Sort regions by sample size for the site payload ────────────────────
     regions_out.sort(key=lambda r: -r["n_obs_total"])
 
+    # ── F-007 V2 phase 1: inverted-region flag + rolling stability join ─────
+    # Inverted flag is corpus-wide (hit_5d <= INVERTED_HIT_FLOOR for public regions
+    # only). Rolling-stable flag joins from region_rolling_walkforward.parquet if
+    # that artifact has been built by scripts/run_region_rolling_walkforward.py.
+    INVERTED_HIT_FLOOR    = 0.30
+    STABILITY_RANGE_MAX   = 0.20
+    ROLLING_PARQ          = ROOT / "data" / "derived" / "region_rolling_walkforward.parquet"
+
+    rolling_lookup: dict[str, dict] = {}      # region_id -> per-horizon fold metrics
+    rolling_agg: dict[str, list[dict]] = {}   # horizon -> [{fold, n_obs, hit_rate}]
+    if ROLLING_PARQ.exists():
+        rolling_df = pd.read_parquet(ROLLING_PARQ)
+        # Per-region per-outcome stability summary
+        for (region_id, outcome), grp in rolling_df.groupby(["group", "outcome"]):
+            grp = grp.dropna(subset=["hit_rate"])
+            if grp.empty:
+                continue
+            horizon = outcome.replace("hit_", "")  # "5d", "10d", "20d"
+            mn, mx = float(grp["hit_rate"].min()), float(grp["hit_rate"].max())
+            rolling_lookup.setdefault(region_id, {})[horizon] = {
+                "n_folds_with_data": int(len(grp)),
+                "total_n_obs":       int(grp["n_obs"].sum()),
+                "mean_hit":          round(float(grp["hit_rate"].mean()), 4),
+                "range_hit":         round(mx - mn, 4),
+                "min_hit":           round(mn, 4),
+                "max_hit":           round(mx, 4),
+                "rolling_stable":    bool(len(grp) >= 2 and (mx - mn) <= STABILITY_RANGE_MAX),
+            }
+        # Public-region aggregate per fold
+        rolling_df = rolling_df.assign(
+            n_hits = (rolling_df["hit_rate"] * rolling_df["n_obs"]).round().fillna(0).astype(int),
+        )
+        for (fold_id, outcome), grp in rolling_df.dropna(subset=["hit_rate"]).groupby(
+            ["fold", "outcome"]
+        ):
+            horizon = outcome.replace("hit_", "")
+            n_obs = int(grp["n_obs"].sum())
+            n_hits = int(grp["n_hits"].sum())
+            rolling_agg.setdefault(horizon, []).append({
+                "fold":       int(fold_id),
+                "test_start": str(grp["test_start"].min().date()),
+                "test_end":   str(grp["test_end"].max().date()),
+                "n_obs":      n_obs,
+                "hit_rate":   round(n_hits / n_obs, 4) if n_obs else None,
+            })
+        for h in rolling_agg:
+            rolling_agg[h].sort(key=lambda c: c["fold"])
+
+    n_inverted = 0
+    n_rolling_stable = 0
+    for r in regions_out:
+        full_h5 = r["horizons"]["5d"]["full"]
+        is_public = full_h5["tier"] == "public"
+        hr5 = full_h5["hit_rate"]
+        flagged = (
+            is_public
+            and hr5 is not None
+            and hr5 <= INVERTED_HIT_FLOOR
+        )
+        r["flagged_inverted"] = bool(flagged)
+        if flagged:
+            n_inverted += 1
+        rolling_for_region = rolling_lookup.get(r["region_id"], {})
+        if rolling_for_region:
+            r["rolling"] = rolling_for_region
+            if any(v.get("rolling_stable") for v in rolling_for_region.values()):
+                n_rolling_stable += 1
+
     # ── Compact site summary (deltas vs. baselines, sample-size tiering) ────
     def get_baseline(name: str, n: int):
         return baselines[name]["horizons"][f"{n}d"]["hit_rate"]
@@ -279,6 +347,15 @@ def main():
         },
         "horizons":  [f"{n}d" for n in HORIZONS],
         "baselines": baselines,
+        # F-007 V2 phase 1 augmentations. `rolling_aggregate` is the public-region
+        # cross-fold aggregate (the headline); per-region `rolling` cells are
+        # diagnostic. `flagged_inverted` is a corpus-wide derivative — public
+        # regions whose hit_5d <= 30%, the upstream-review candidate list.
+        "v2_phase1": {
+            "n_inverted_public":         n_inverted,
+            "n_rolling_stable_regions":  n_rolling_stable,
+            "rolling_aggregate":         rolling_agg,
+        },
         "regions":   regions_out,
     }
 
