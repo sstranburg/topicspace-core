@@ -27,6 +27,8 @@ In priority order, the five items to work on next:
 > **Validation standard (added 2026-05-17)**: rolling walk-forward only for headline performance. In-sample metrics are diagnostic, not claims. See `feedback_rolling_walkforward_standard.md` in `.claude` memory and `/methods §08b`.
 >
 > **V1/V2 discipline (added 2026-05-20)**: every new calibration / measurement layer ships in two phases. **V1 measures honestly without acting** — surface aggregate, surface heterogeneity, surface failure modes, do not act on findings. **V2 acts** only after V1's findings are validated. The architecture goes from analysis to operating system at V2, not V1. See `feedback_calibration_v1_success_criteria.md`.
+>
+> **Cross-layer disagreement is itself a signal (added 2026-05-21)**: when **region labels** (L1 naming), **attached expectations** (L2 directional reads), and **realized calibration** (L4 outcomes) disagree, the system should diagnose *which layer* the problem lives in — representation (L1), implication (L2), or outcome behavior (L4) — before retuning anything. Example earned today: the inverted-region investigation found 9 of 10 flagged regions fit a fade dynamic rather than an L2 extractor bug. The naive move ("re-tune the extractor") would have muted *correct* bearish reads. The right move was a downstream sign-flip rule at the operating layer. The label-staleness detector caught the same phenomenon from the L1 side: positive-sentiment cluster names paired with bearish-skewed attached expectations. Two detectors, one underlying behavior — and *both* are honest signals that should be preserved, not collapsed into a single number. See `feedback_cross_layer_disagreement_is_signal.md`.
 
 ---
 
