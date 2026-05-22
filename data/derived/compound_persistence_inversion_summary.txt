@@ -1,0 +1,48 @@
+
+==============================================================================
+F-007 V2 phase 2 - compound persistence x inversion at 5d
+==============================================================================
+as-of: 2026-05-21
+scoreable observations: 999   on inverted regions: 115   on public-tier regions: 711
+horizon: 5d (only horizon where both F-006 #6 and the inversion finding showed signal)
+
+-- 2x2: hit_raw (price confirmed L2's stated direction) ----------------
+persistence_side          inverted=False       inverted=True
+emerging                  44.5% (n= 416)      19.4% (n=  31)
+middle                    46.6% (n= 311)      22.9% (n=  35)
+persistent_bundle         57.3% (n= 157)      26.5% (n=  49)
+
+-- 2x2: hit_flipped (price confirmed the OPPOSITE of L2's direction) ---
+persistence_side          inverted=False       inverted=True
+emerging                  55.5% (n= 416)      80.6% (n=  31)
+middle                    53.4% (n= 311)      77.1% (n=  35)
+persistent_bundle         42.7% (n= 157)      73.5% (n=  49)
+
+-- effective hit (apply sign-flip to inverted cells only) --------------
+persistence_side          inverted=False      inverted=True_flip     overall
+emerging                  44.5% (n= 416)          80.6% (n=  31)   47.0% (n= 447)
+middle                    46.6% (n= 311)          77.1% (n=  35)   49.7% (n= 346)
+persistent_bundle         57.3% (n= 157)          73.5% (n=  49)   61.2% (n= 206)
+
+-- compound spread analysis -------------------------------------------
+  inverted=False  metric=hit_raw      persistent_bundle= 57.3% (n=157)  emerging= 44.5% (n=416)  spread=+12.9pp
+  inverted=True   metric=hit_flipped  persistent_bundle= 73.5% (n=49)  emerging= 80.6% (n=31)  spread= -7.2pp
+
+-- verdict -------------------------------------------------------------
+  non-inverted, emerging         (raw  ):  44.5%  (n=416)
+  non-inverted, persistent_bundle (raw  ):  57.3%  (n=157)
+  inverted,     emerging         (flip ):  80.6%  (n=31)
+  inverted,     persistent_bundle (flip ):  73.5%  (n=49)
+
+  -> sign-flip on inverted regions earns its keep on its own (81% on n=31)
+  -> persistence does NOT compound on inverted cells (73% vs 81%) -- ship the two rules independently
+  -> persistence still has its own non-inverted edge (57% vs 44%)
+
+Honest reading guide:
+  - hit_raw and hit_flipped are complementary on non-NaN rows: their
+    sum is 1 because dir_fwd_5d is either positive or negative.
+  - 'inverted=True' cell sizes are small (the whole point of public-tier:
+    only ~10 such regions in the corpus). Read those numbers as directional,
+    not authoritative.
+  - Sample-size honesty: cells with n < 20 deserve a 'wait for data' caveat.
+

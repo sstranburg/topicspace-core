@@ -327,6 +327,27 @@ def main():
             if any(v.get("rolling_stable") for v in rolling_for_region.values()):
                 n_rolling_stable += 1
 
+        # F-007 V2 phase 2: effective_direction_sign + sign_flip provenance.
+        # Compound test (scripts/test_compound_persistence_inversion.py) showed
+        # that sign-flipping inverted regions yields 73-81% hit_5d on the
+        # contrarian direction (n=115 obs, all persistence levels). The
+        # persistence and inversion signals do NOT compound; ship them
+        # independently. Operating-layer consumers should read
+        # `effective_direction_sign` for trade decisions and treat the original
+        # `direction_sign` as the L2-extractor read.
+        if flagged:
+            r["effective_direction_sign"] = -int(r["direction_sign"])
+            r["sign_flip"] = {
+                "applied":            True,
+                "reason":             "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+                "corpus_hit_5d_raw":  round(float(hr5), 4) if hr5 is not None else None,
+                "contrarian_hit_5d":  round(1.0 - float(hr5), 4) if hr5 is not None else None,
+                "evidence":           "scripts/test_compound_persistence_inversion.py",
+            }
+        else:
+            r["effective_direction_sign"] = int(r["direction_sign"])
+            r["sign_flip"] = {"applied": False}
+
     # ── Compact site summary (deltas vs. baselines, sample-size tiering) ────
     def get_baseline(name: str, n: int):
         return baselines[name]["horizons"][f"{n}d"]["hit_rate"]
@@ -355,6 +376,24 @@ def main():
             "n_inverted_public":         n_inverted,
             "n_rolling_stable_regions":  n_rolling_stable,
             "rolling_aggregate":         rolling_agg,
+        },
+        # F-007 V2 phase 2: sign-flip rule applied to inverted regions.
+        # See scripts/test_compound_persistence_inversion.py for the gating
+        # evidence (73-81% hit on contrarian direction, n=115 across all
+        # persistence levels). Operating-layer consumers should prefer
+        # `effective_direction_sign` over `direction_sign` for trade decisions.
+        "v2_phase2": {
+            "sign_flip_rule": {
+                "applied_to":            "regions where flagged_inverted == true",
+                "n_regions_flipped":     n_inverted,
+                "rule":                  "effective_direction_sign = -direction_sign",
+                "evidence_summary": (
+                    "Compound test 2026-05-21: contrarian (sign-flipped) hit_5d "
+                    "73-81% on inverted public regions across all persistence "
+                    "levels (n=115). Persistence does NOT compound with "
+                    "sign-flip; ship the two rules independently."
+                ),
+            }
         },
         "regions":   regions_out,
     }

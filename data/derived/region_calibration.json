@@ -168,6 +168,14 @@
       ]
     }
   },
+  "v2_phase2": {
+    "sign_flip_rule": {
+      "applied_to": "regions where flagged_inverted == true",
+      "n_regions_flipped": 10,
+      "rule": "effective_direction_sign = -direction_sign",
+      "evidence_summary": "Compound test 2026-05-21: contrarian (sign-flipped) hit_5d 73-81% on inverted public regions across all persistence levels (n=115). Persistence does NOT compound with sign-flip; ship the two rules independently."
+    }
+  },
   "regions": [
     {
       "region_id": "reg-5e009b09b9",
@@ -270,7 +278,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-90af9343a2",
@@ -371,7 +383,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a0b10868db",
@@ -505,6 +521,10 @@
           "max_hit": 0.44,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -609,7 +629,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-aeb52680ee",
@@ -730,6 +754,10 @@
           "max_hit": 0.6087,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -861,6 +889,10 @@
           "max_hit": 0.3333,
           "rolling_stable": true
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -981,6 +1013,10 @@
           "max_hit": 0.561,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -1107,6 +1143,10 @@
           "max_hit": 0.6,
           "rolling_stable": true
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -1207,7 +1247,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d686a8bf77",
@@ -1333,6 +1377,10 @@
           "max_hit": 0.5,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -1423,7 +1471,15 @@
           }
         }
       },
-      "flagged_inverted": true
+      "flagged_inverted": true,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.2667,
+        "contrarian_hit_5d": 0.7333,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
+      }
     },
     {
       "region_id": "reg-33aa6f318e",
@@ -1536,6 +1592,10 @@
           "max_hit": 0.5,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -1652,6 +1712,14 @@
           "max_hit": 0.5,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.2414,
+        "contrarian_hit_5d": 0.7586,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
       }
     },
     {
@@ -1746,7 +1814,15 @@
           }
         }
       },
-      "flagged_inverted": true
+      "flagged_inverted": true,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.2963,
+        "contrarian_hit_5d": 0.7037,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
+      }
     },
     {
       "region_id": "reg-e29c15edb8",
@@ -1842,7 +1918,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a50592c681",
@@ -1968,6 +2048,10 @@
           "max_hit": 0.3529,
           "rolling_stable": true
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -2082,6 +2166,10 @@
           "max_hit": 0.3478,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -2206,6 +2294,10 @@
           "max_hit": 0.5455,
           "rolling_stable": true
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -2298,7 +2390,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-71e9156083",
@@ -2392,7 +2488,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-94c093010f",
@@ -2488,7 +2588,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0fbfe8a98f",
@@ -2607,6 +2711,10 @@
           "max_hit": 0.5625,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -2730,6 +2838,10 @@
           "max_hit": 0.55,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -2853,6 +2965,10 @@
           "max_hit": 0.7,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -2949,7 +3065,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3186667548",
@@ -3071,6 +3191,10 @@
           "max_hit": 0.0,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -3193,6 +3317,14 @@
           "max_hit": 0.2941,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.2941,
+        "contrarian_hit_5d": 0.7059,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
       }
     },
     {
@@ -3316,6 +3448,10 @@
           "max_hit": 0.5,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -3433,6 +3569,10 @@
           "max_hit": 0.7273,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -3519,7 +3659,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1600c1b6ee",
@@ -3638,6 +3782,10 @@
           "max_hit": 0.6667,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -3730,7 +3878,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-599e84570e",
@@ -3823,7 +3975,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7d09f8468c",
@@ -3946,6 +4102,10 @@
           "max_hit": 0.2,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -4034,7 +4194,15 @@
           }
         }
       },
-      "flagged_inverted": true
+      "flagged_inverted": true,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.0714,
+        "contrarian_hit_5d": 0.9286,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
+      }
     },
     {
       "region_id": "reg-b4092e65b4",
@@ -4148,6 +4316,10 @@
           "max_hit": 1.0,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -4241,7 +4413,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-67e7140d23",
@@ -4362,6 +4538,10 @@
           "max_hit": 0.4615,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -4483,6 +4663,10 @@
           "max_hit": 0.5,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -4570,7 +4754,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8e9d49e49e",
@@ -4664,7 +4852,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-94fd0186ad",
@@ -4785,6 +4977,10 @@
           "max_hit": 0.8,
           "rolling_stable": true
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -4875,7 +5071,15 @@
           }
         }
       },
-      "flagged_inverted": true
+      "flagged_inverted": true,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.2308,
+        "contrarian_hit_5d": 0.7692,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
+      }
     },
     {
       "region_id": "reg-a800250336",
@@ -4998,6 +5202,10 @@
           "max_hit": 0.5,
           "rolling_stable": true
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -5089,7 +5297,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3c108efec3",
@@ -5209,6 +5421,10 @@
           "max_hit": 0.4167,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -5323,6 +5539,10 @@
           "max_hit": 0.5714,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -5442,6 +5662,14 @@
           "max_hit": 0.1667,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.1667,
+        "contrarian_hit_5d": 0.8333,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
       }
     },
     {
@@ -5538,7 +5766,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c70511641b",
@@ -5655,6 +5887,10 @@
           "max_hit": 0.6667,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -5744,7 +5980,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6c5ccb2b53",
@@ -5863,6 +6103,10 @@
           "max_hit": 0.5,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -5953,7 +6197,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-dbd2f439cd",
@@ -6066,6 +6314,10 @@
           "max_hit": 0.5455,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -6155,7 +6407,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3a299f8461",
@@ -6244,7 +6500,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4ab091e6dc",
@@ -6358,6 +6618,14 @@
           "max_hit": 0.5,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.3,
+        "contrarian_hit_5d": 0.7,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
       }
     },
     {
@@ -6451,7 +6719,15 @@
           }
         }
       },
-      "flagged_inverted": true
+      "flagged_inverted": true,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.3,
+        "contrarian_hit_5d": 0.7,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
+      }
     },
     {
       "region_id": "reg-769eaeee65",
@@ -6568,6 +6844,10 @@
           "max_hit": 1.0,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -6689,6 +6969,10 @@
           "max_hit": 0.5,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
       }
     },
     {
@@ -6780,7 +7064,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ee62139076",
@@ -6870,7 +7158,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-fa97d6d4fe",
@@ -6986,6 +7278,14 @@
           "max_hit": 0.0,
           "rolling_stable": false
         }
+      },
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": true,
+        "reason": "flagged_inverted: corpus hit_5d <= 0.30 on public-tier",
+        "corpus_hit_5d_raw": 0.2,
+        "contrarian_hit_5d": 0.8,
+        "evidence": "scripts/test_compound_persistence_inversion.py"
       }
     },
     {
@@ -7073,7 +7373,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1cb4c696e6",
@@ -7165,7 +7469,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2f2e67735d",
@@ -7256,7 +7564,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3c435e0489",
@@ -7346,7 +7658,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-71d7e5f21e",
@@ -7433,7 +7749,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9c5416ee01",
@@ -7522,7 +7842,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c4ae46ff4b",
@@ -7609,7 +7933,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c98f74a047",
@@ -7701,7 +8029,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-289923bfca",
@@ -7792,7 +8124,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3a911d4b0f",
@@ -7884,7 +8220,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-774d41ad8c",
@@ -7970,7 +8310,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8d1224204f",
@@ -8056,7 +8400,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9d64399f91",
@@ -8144,7 +8492,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cd0f82e4a8",
@@ -8229,7 +8581,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d434886ffa",
@@ -8316,7 +8672,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0db51865cf",
@@ -8403,7 +8763,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1c98a13273",
@@ -8489,7 +8853,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2e33dd6c34",
@@ -8574,7 +8942,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3ef40f2a12",
@@ -8663,7 +9035,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-44641b1d40",
@@ -8752,7 +9128,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4c1e144159",
@@ -8840,7 +9220,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4cc892b62a",
@@ -8930,7 +9314,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5d10af5255",
@@ -9021,7 +9409,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8f0e2bb340",
@@ -9109,7 +9501,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9fba157441",
@@ -9194,7 +9590,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-aa70a7b3c9",
@@ -9283,7 +9683,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b4e9989cfe",
@@ -9372,7 +9776,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cdb1f361a7",
@@ -9461,7 +9869,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cdc55e035d",
@@ -9548,7 +9960,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f32c891011",
@@ -9636,7 +10052,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0312238011",
@@ -9725,7 +10145,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0a53f2dccc",
@@ -9811,7 +10235,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-114ac5a78a",
@@ -9899,7 +10327,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-22ed7c6546",
@@ -9984,7 +10416,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-43b8162280",
@@ -10073,7 +10509,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-54f519d540",
@@ -10159,7 +10599,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-55c3a54e94",
@@ -10247,7 +10691,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5bb4e4bf8f",
@@ -10334,7 +10782,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-86da4fd78d",
@@ -10423,7 +10875,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-95787e008b",
@@ -10512,7 +10968,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-99640e8511",
@@ -10602,7 +11062,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a57b0bb416",
@@ -10687,7 +11151,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bf02698bf4",
@@ -10773,7 +11241,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f68b42cb2b",
@@ -10858,7 +11330,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-fb56e0f44a",
@@ -10947,7 +11423,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0707c0e220",
@@ -11033,7 +11513,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-298058d219",
@@ -11121,7 +11605,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2ca400df06",
@@ -11208,7 +11696,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-46642425e8",
@@ -11297,7 +11789,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-487d982cfc",
@@ -11384,7 +11880,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5101a1764a",
@@ -11472,7 +11972,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-70be3e5164",
@@ -11560,7 +12064,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-809263d01c",
@@ -11647,7 +12155,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9302bd607d",
@@ -11735,7 +12247,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-97d9c5ae54",
@@ -11821,7 +12337,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9dc16db180",
@@ -11910,7 +12430,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a068ee9d53",
@@ -11999,7 +12523,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a3247ee0a2",
@@ -12084,7 +12612,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a90f171223",
@@ -12173,7 +12705,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b0f43b9850",
@@ -12259,7 +12795,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b3740e8a98",
@@ -12345,7 +12885,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b5dde8f83c",
@@ -12430,7 +12974,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b64d16fbea",
@@ -12519,7 +13067,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b65682b0b4",
@@ -12606,7 +13158,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c104b311ea",
@@ -12693,7 +13249,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cb23c06a16",
@@ -12781,7 +13341,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cda285263c",
@@ -12866,7 +13430,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-fa1f90843b",
@@ -12955,7 +13523,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0dca55a428",
@@ -13043,7 +13615,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-16ae742cdf",
@@ -13131,7 +13707,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1b36347bc3",
@@ -13217,7 +13797,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2037d14c14",
@@ -13305,7 +13889,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-20599e7fe2",
@@ -13392,7 +13980,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2489f4ae1a",
@@ -13478,7 +14070,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2adf332f5b",
@@ -13566,7 +14162,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-31a5c2e7fc",
@@ -13653,7 +14253,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-36a4c455d5",
@@ -13741,7 +14345,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3bd61b5a6a",
@@ -13826,7 +14434,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4b9bbf914d",
@@ -13913,7 +14525,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-575aeebf9b",
@@ -14000,7 +14616,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5c8cd764be",
@@ -14088,7 +14708,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-61a25f151f",
@@ -14175,7 +14799,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-65a92785fc",
@@ -14262,7 +14890,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-738e647850",
@@ -14350,7 +14982,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7f729775db",
@@ -14435,7 +15071,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-84f7356e4d",
@@ -14520,7 +15160,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8a284f7540",
@@ -14606,7 +15250,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8ac0cb10ad",
@@ -14694,7 +15342,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8adf0c1382",
@@ -14779,7 +15431,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-960a9bf205",
@@ -14865,7 +15521,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a03a40c34e",
@@ -14953,7 +15613,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a0626c7c5d",
@@ -15038,7 +15702,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b240d10083",
@@ -15125,7 +15793,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c1d9e68cc8",
@@ -15212,7 +15884,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cf40097f06",
@@ -15300,7 +15976,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-df3b4d9246",
@@ -15386,7 +16066,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-df3f00de2d",
@@ -15473,7 +16157,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-eae4c99c76",
@@ -15559,7 +16247,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ee0c4e44bc",
@@ -15647,7 +16339,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-00a2efc033",
@@ -15733,7 +16429,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0363a20249",
@@ -15819,7 +16519,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0f47a4c037",
@@ -15904,7 +16608,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0f906c155a",
@@ -15991,7 +16699,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-113c1e9adc",
@@ -16076,7 +16788,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-16dc04fefc",
@@ -16161,7 +16877,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1751279678",
@@ -16248,7 +16968,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1b73a60f59",
@@ -16333,7 +17057,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1b7861b5fe",
@@ -16420,7 +17148,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1cd641f2ec",
@@ -16506,7 +17238,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-220ab607ca",
@@ -16591,7 +17327,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2efb6f3cc7",
@@ -16676,7 +17416,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-32b5f57579",
@@ -16761,7 +17505,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3655ed554a",
@@ -16848,7 +17596,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-36c7275129",
@@ -16935,7 +17687,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-42118d2439",
@@ -17022,7 +17778,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-43f0653a6e",
@@ -17107,7 +17867,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-480cfed3b8",
@@ -17192,7 +17956,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5ec82e3b44",
@@ -17279,7 +18047,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5f5ba88651",
@@ -17366,7 +18138,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6441ba97f2",
@@ -17453,7 +18229,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6a1ea51f13",
@@ -17540,7 +18320,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6be135a836",
@@ -17626,7 +18410,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-71e9600a8f",
@@ -17712,7 +18500,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-763a423979",
@@ -17798,7 +18590,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-79483231d7",
@@ -17885,7 +18681,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7b562d3ae6",
@@ -17972,7 +18772,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-82f5268141",
@@ -18057,7 +18861,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-83b19b8a26",
@@ -18142,7 +18950,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-84619a6faf",
@@ -18228,7 +19040,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-84762afb26",
@@ -18315,7 +19131,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8b2f1f7667",
@@ -18401,7 +19221,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-91d6f82ce4",
@@ -18486,7 +19310,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9a350df059",
@@ -18572,7 +19400,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a0d8e5154d",
@@ -18657,7 +19489,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a476141732",
@@ -18742,7 +19578,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a584416fef",
@@ -18828,7 +19668,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b9a5f1f156",
@@ -18915,7 +19759,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bb3b9d6150",
@@ -19001,7 +19849,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c28ae07eec",
@@ -19087,7 +19939,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c393ff5578",
@@ -19172,7 +20028,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cfc003f46f",
@@ -19257,7 +20117,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d2431bbc46",
@@ -19343,7 +20207,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d65889bad8",
@@ -19430,7 +20298,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e8849ad60e",
@@ -19516,7 +20388,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ea3e4090c6",
@@ -19601,7 +20477,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f6a7ecfb2b",
@@ -19688,7 +20568,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-fe906a466b",
@@ -19774,7 +20658,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-03251b8309",
@@ -19859,7 +20747,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-03f5447b17",
@@ -19945,7 +20837,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-057a75ed8e",
@@ -20031,7 +20927,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-07e90cc2c7",
@@ -20117,7 +21017,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-08aca56ace",
@@ -20203,7 +21107,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-090f38c409",
@@ -20289,7 +21197,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0d9bf1f27a",
@@ -20374,7 +21286,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-12940d22fc",
@@ -20460,7 +21376,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1413442ea7",
@@ -20546,7 +21466,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-16e85d8e39",
@@ -20631,7 +21555,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-19bae9e50a",
@@ -20716,7 +21644,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-19f5a9af32",
@@ -20802,7 +21734,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1cffdd71fd",
@@ -20888,7 +21824,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-234bc5cafd",
@@ -20973,7 +21913,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-25ad724126",
@@ -21059,7 +22003,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2680b76526",
@@ -21145,7 +22093,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2b892a18d1",
@@ -21231,7 +22183,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-352b709a03",
@@ -21316,7 +22272,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-367b963937",
@@ -21401,7 +22361,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3701968e3e",
@@ -21487,7 +22451,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-39298e6144",
@@ -21573,7 +22541,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3b6da28802",
@@ -21658,7 +22630,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3b8b536699",
@@ -21743,7 +22719,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4521427760",
@@ -21828,7 +22808,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-47aaa6a2c4",
@@ -21914,7 +22898,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-488afa4d25",
@@ -21999,7 +22987,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-49c108efe7",
@@ -22085,7 +23077,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4a5f6ccbca",
@@ -22171,7 +23167,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-509336dde7",
@@ -22256,7 +23256,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-50f027f378",
@@ -22341,7 +23345,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-515037af4e",
@@ -22427,7 +23435,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-52c29e2803",
@@ -22513,7 +23525,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-553b773bd2",
@@ -22598,7 +23614,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-55869ab50c",
@@ -22683,7 +23703,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5b54d5aa73",
@@ -22769,7 +23793,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5b896e0815",
@@ -22855,7 +23883,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5b9542d277",
@@ -22940,7 +23972,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5bbee228c1",
@@ -23025,7 +24061,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5befbfd48e",
@@ -23111,7 +24151,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5dc8bd8e72",
@@ -23197,7 +24241,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6508f887d7",
@@ -23283,7 +24331,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-652d6fb757",
@@ -23368,7 +24420,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-69fa2ff384",
@@ -23453,7 +24509,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6af77a08f4",
@@ -23538,7 +24598,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6dca3bb369",
@@ -23624,7 +24688,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-711541e50a",
@@ -23710,7 +24778,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7339b789d6",
@@ -23796,7 +24868,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-756d911ec8",
@@ -23881,7 +24957,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-79f767fcbc",
@@ -23967,7 +25047,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7f20bad310",
@@ -24053,7 +25137,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8217bbebee",
@@ -24139,7 +25227,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-82aeaa82fc",
@@ -24224,7 +25316,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8582f5665e",
@@ -24310,7 +25406,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-86ef495f66",
@@ -24396,7 +25496,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8951c51cbf",
@@ -24482,7 +25586,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-89d4ba7f8c",
@@ -24567,7 +25675,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-90011cdb6e",
@@ -24653,7 +25765,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-91b5a14fd1",
@@ -24739,7 +25855,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-981160aa7f",
@@ -24824,7 +25944,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9fc57d4f41",
@@ -24909,7 +26033,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a00f9dc309",
@@ -24995,7 +26123,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a2697a6b7c",
@@ -25080,7 +26212,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a3885bc7c6",
@@ -25166,7 +26302,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a60b13ef5b",
@@ -25252,7 +26392,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-aa7f94ac55",
@@ -25338,7 +26482,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ad3012902a",
@@ -25424,7 +26572,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ae01bc6333",
@@ -25510,7 +26662,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ae3b2704ef",
@@ -25595,7 +26751,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b665b2f512",
@@ -25680,7 +26840,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b774859fff",
@@ -25765,7 +26929,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ba5e441b70",
@@ -25850,7 +27018,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bbb92ba201",
@@ -25935,7 +27107,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bdab52b65c",
@@ -26020,7 +27196,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-be062bda0e",
@@ -26106,7 +27286,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bf5d10cc91",
@@ -26191,7 +27375,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c1f9c6c69c",
@@ -26277,7 +27465,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c2ddead0d8",
@@ -26362,7 +27554,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c3c3abc0ae",
@@ -26447,7 +27643,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c3eb443b3d",
@@ -26532,7 +27732,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c4c9a190c2",
@@ -26618,7 +27822,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c6d82a684e",
@@ -26704,7 +27912,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cd1f9f66fc",
@@ -26789,7 +28001,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d1530a091c",
@@ -26874,7 +28090,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d264b9bbf1",
@@ -26959,7 +28179,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d567d27ca9",
@@ -27045,7 +28269,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-da302c7eba",
@@ -27131,7 +28359,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e0f0019652",
@@ -27216,7 +28448,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e1a9b5f0a9",
@@ -27302,7 +28538,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e361fe00c8",
@@ -27387,7 +28627,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e4773c9c71",
@@ -27472,7 +28716,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e49880e92c",
@@ -27558,7 +28806,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-eb974c1e05",
@@ -27643,7 +28895,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f0da522061",
@@ -27729,7 +28985,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f291d2dd7f",
@@ -27814,7 +29074,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f4796fc55d",
@@ -27899,7 +29163,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f492ca2d6d",
@@ -27984,7 +29252,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f8d6e641e9",
@@ -28070,7 +29342,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0056dd0f71",
@@ -28155,7 +29431,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-00e4b697a0",
@@ -28240,7 +29520,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0222495518",
@@ -28325,7 +29609,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-02c042717f",
@@ -28410,7 +29698,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-05120ffe7c",
@@ -28495,7 +29787,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-05e9c37fed",
@@ -28580,7 +29876,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-06c492472a",
@@ -28665,7 +29965,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-074472936b",
@@ -28750,7 +30054,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-07e9f4a972",
@@ -28835,7 +30143,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-08dbb0de1c",
@@ -28920,7 +30232,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0a29c434f6",
@@ -29005,7 +30321,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0c0d1db773",
@@ -29090,7 +30410,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0e1b555a61",
@@ -29175,7 +30499,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-0fc6ce7807",
@@ -29260,7 +30588,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-11264cdf55",
@@ -29345,7 +30677,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-115717a756",
@@ -29430,7 +30766,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1447bf8ed3",
@@ -29515,7 +30855,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1676fd6795",
@@ -29600,7 +30944,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-16c576ec63",
@@ -29685,7 +31033,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-17d09fe84d",
@@ -29770,7 +31122,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-182607dadf",
@@ -29855,7 +31211,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-187d271f04",
@@ -29940,7 +31300,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-19d51b29fa",
@@ -30025,7 +31389,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1a4fa2b444",
@@ -30110,7 +31478,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1aad26ea2d",
@@ -30195,7 +31567,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1afcf8322b",
@@ -30280,7 +31656,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1b5a29e256",
@@ -30365,7 +31745,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1cda94c167",
@@ -30450,7 +31834,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1da6276a54",
@@ -30535,7 +31923,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-1f5aa47ed3",
@@ -30620,7 +32012,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2165f275a1",
@@ -30705,7 +32101,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-232d9500f3",
@@ -30790,7 +32190,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-23e0a28a20",
@@ -30875,7 +32279,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2578d84c82",
@@ -30960,7 +32368,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-266c8ea099",
@@ -31045,7 +32457,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-282033ec86",
@@ -31130,7 +32546,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2c424ed54e",
@@ -31215,7 +32635,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2ca115d3e6",
@@ -31300,7 +32724,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2ec2ef6949",
@@ -31385,7 +32813,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-2f35d06cca",
@@ -31470,7 +32902,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-32db7accb9",
@@ -31555,7 +32991,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3583977c52",
@@ -31640,7 +33080,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-380122d037",
@@ -31725,7 +33169,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-380a9bc1ff",
@@ -31810,7 +33258,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3a5f403556",
@@ -31895,7 +33347,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3af05e7ae6",
@@ -31980,7 +33436,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3bcb7688ed",
@@ -32065,7 +33525,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3d3ef3fdd6",
@@ -32150,7 +33614,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-3f2d6118aa",
@@ -32235,7 +33703,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4128417c1e",
@@ -32320,7 +33792,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-43b4a55c05",
@@ -32405,7 +33881,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-461735266b",
@@ -32490,7 +33970,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-48a45ad1b2",
@@ -32575,7 +34059,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4e093e0094",
@@ -32660,7 +34148,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-4ff7b88db7",
@@ -32745,7 +34237,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5124dba283",
@@ -32830,7 +34326,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-534cdf121b",
@@ -32915,7 +34415,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5505e7cb55",
@@ -33000,7 +34504,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-55fdbf5223",
@@ -33085,7 +34593,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5647be0afe",
@@ -33170,7 +34682,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-56ba28fadc",
@@ -33255,7 +34771,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-585ea00c38",
@@ -33340,7 +34860,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5a89a53102",
@@ -33425,7 +34949,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5bb38f9ddc",
@@ -33510,7 +35038,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5bd6538f40",
@@ -33595,7 +35127,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5cb0c622f7",
@@ -33680,7 +35216,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5d2215763f",
@@ -33765,7 +35305,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5e7e97be26",
@@ -33850,7 +35394,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5eccbc38fb",
@@ -33935,7 +35483,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-5ffa7e9984",
@@ -34020,7 +35572,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-605a2f1529",
@@ -34105,7 +35661,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-60de298224",
@@ -34190,7 +35750,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-618baac43f",
@@ -34275,7 +35839,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-662e49857f",
@@ -34360,7 +35928,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6668942800",
@@ -34445,7 +36017,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-67a010e3e8",
@@ -34530,7 +36106,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-67a7b04159",
@@ -34615,7 +36195,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6c64c8adb9",
@@ -34700,7 +36284,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6c92f0523c",
@@ -34785,7 +36373,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-6ff26aac95",
@@ -34870,7 +36462,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-702a7848f9",
@@ -34955,7 +36551,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7098b66d63",
@@ -35040,7 +36640,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-72cc098658",
@@ -35125,7 +36729,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-73b7356229",
@@ -35210,7 +36818,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-73d1400a0e",
@@ -35295,7 +36907,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-73ff289436",
@@ -35380,7 +36996,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7586594f15",
@@ -35465,7 +37085,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-76678367bb",
@@ -35550,7 +37174,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-766ef5c11a",
@@ -35635,7 +37263,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-76c4c5db32",
@@ -35720,7 +37352,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-777dd26f42",
@@ -35805,7 +37441,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-79437618a4",
@@ -35890,7 +37530,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-79ab2f41be",
@@ -35975,7 +37619,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7a480945fa",
@@ -36060,7 +37708,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7dc16078d6",
@@ -36145,7 +37797,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-7f7cae4ea9",
@@ -36230,7 +37886,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-822716e43e",
@@ -36315,7 +37975,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-82305f8a37",
@@ -36400,7 +38064,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-83bc3c0fdb",
@@ -36485,7 +38153,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-83eee807ca",
@@ -36570,7 +38242,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-84b6cb667b",
@@ -36655,7 +38331,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-865bf43323",
@@ -36740,7 +38420,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-892588769f",
@@ -36825,7 +38509,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-89d5104492",
@@ -36910,7 +38598,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-8b72dc23df",
@@ -36995,7 +38687,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-936d1a3e19",
@@ -37080,7 +38776,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-95777b8ea3",
@@ -37165,7 +38865,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-964dc9b2d4",
@@ -37250,7 +38954,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-96dddc2114",
@@ -37335,7 +39043,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-972811c07e",
@@ -37420,7 +39132,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-973cc39d3a",
@@ -37505,7 +39221,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9b59b1cdf8",
@@ -37590,7 +39310,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9d442f19a8",
@@ -37675,7 +39399,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-9eee5f7177",
@@ -37760,7 +39488,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a0bc028436",
@@ -37845,7 +39577,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a1e3bcaa94",
@@ -37930,7 +39666,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a4d5a4c4fe",
@@ -38015,7 +39755,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a58dc65ae6",
@@ -38100,7 +39844,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a92c9c4bd1",
@@ -38185,7 +39933,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-a976c7c1ac",
@@ -38270,7 +40022,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-aa0813ca1b",
@@ -38355,7 +40111,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-aba38b75bf",
@@ -38440,7 +40200,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ac47b5c03c",
@@ -38525,7 +40289,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ad54f666a3",
@@ -38610,7 +40378,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-af8e15dfee",
@@ -38695,7 +40467,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b02c4c6e94",
@@ -38780,7 +40556,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b06c2d1453",
@@ -38865,7 +40645,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b096fb8d38",
@@ -38950,7 +40734,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b2abb6714d",
@@ -39035,7 +40823,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b3d68da9be",
@@ -39120,7 +40912,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b43aec407a",
@@ -39205,7 +41001,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b54979a5cd",
@@ -39290,7 +41090,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b6ed93b0bc",
@@ -39375,7 +41179,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b9212147c9",
@@ -39460,7 +41268,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-b9ad761b56",
@@ -39545,7 +41357,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ba722861de",
@@ -39630,7 +41446,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bc1d20c638",
@@ -39715,7 +41535,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bc3026a336",
@@ -39800,7 +41624,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bc75e4189f",
@@ -39885,7 +41713,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bdc2d81bd6",
@@ -39970,7 +41802,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bebb4c1216",
@@ -40055,7 +41891,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-bf8c12cae1",
@@ -40140,7 +41980,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c082e9a647",
@@ -40225,7 +42069,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c0aac81e7b",
@@ -40310,7 +42158,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c11959d7e5",
@@ -40395,7 +42247,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c1e8141503",
@@ -40480,7 +42336,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c2123ca984",
@@ -40565,7 +42425,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c2173e60b0",
@@ -40650,7 +42514,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c22043104a",
@@ -40735,7 +42603,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c357570054",
@@ -40820,7 +42692,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c3b3da763b",
@@ -40905,7 +42781,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c495726381",
@@ -40990,7 +42870,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c4f8d678c2",
@@ -41075,7 +42959,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-c85e210143",
@@ -41160,7 +43048,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ca3b56e9b7",
@@ -41245,7 +43137,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cb85695c91",
@@ -41330,7 +43226,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cbd814617a",
@@ -41415,7 +43315,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cbf8431e58",
@@ -41500,7 +43404,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ccb1ff340f",
@@ -41585,7 +43493,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cd725fe51e",
@@ -41670,7 +43582,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ceee652f39",
@@ -41755,7 +43671,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-cf68e39287",
@@ -41840,7 +43760,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d1a7d0d8f3",
@@ -41925,7 +43849,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d2d1fb500e",
@@ -42010,7 +43938,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d2d410291e",
@@ -42095,7 +44027,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d48d1946e7",
@@ -42180,7 +44116,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d58a4a528e",
@@ -42265,7 +44205,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d64cebb05e",
@@ -42350,7 +44294,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d7a701f98d",
@@ -42435,7 +44383,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d7f6f5f313",
@@ -42520,7 +44472,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d802bfbef2",
@@ -42605,7 +44561,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d85a2a697a",
@@ -42690,7 +44650,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d8d1aafd7d",
@@ -42775,7 +44739,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d9c091dc85",
@@ -42860,7 +44828,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-d9e7cb996a",
@@ -42945,7 +44917,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-dbb21b7886",
@@ -43030,7 +45006,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-dd55f84522",
@@ -43115,7 +45095,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-dd822e4d76",
@@ -43200,7 +45184,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-deb67a3515",
@@ -43285,7 +45273,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-df4709aca1",
@@ -43370,7 +45362,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e3afdf67e9",
@@ -43455,7 +45451,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e50d9553b1",
@@ -43540,7 +45540,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e56bb4cf57",
@@ -43625,7 +45629,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e5b895755e",
@@ -43710,7 +45718,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e72cdf6857",
@@ -43795,7 +45807,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e85175a39c",
@@ -43880,7 +45896,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-e943d34868",
@@ -43965,7 +45985,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ea4a1ad99e",
@@ -44050,7 +46074,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ea79611426",
@@ -44135,7 +46163,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-ec1bbe3a05",
@@ -44220,7 +46252,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f03276bd60",
@@ -44305,7 +46341,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f09518d7d5",
@@ -44390,7 +46430,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f2ff6e60fe",
@@ -44475,7 +46519,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f40dcb8291",
@@ -44560,7 +46608,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f5c9414c2b",
@@ -44645,7 +46697,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-f8227f1fc3",
@@ -44730,7 +46786,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-fae81a451c",
@@ -44815,7 +46875,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-fb2cac16a9",
@@ -44900,7 +46964,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": -1,
+      "sign_flip": {
+        "applied": false
+      }
     },
     {
       "region_id": "reg-fe08b2affe",
@@ -44985,7 +47053,11 @@
           }
         }
       },
-      "flagged_inverted": false
+      "flagged_inverted": false,
+      "effective_direction_sign": 1,
+      "sign_flip": {
+        "applied": false
+      }
     }
   ]
 }
