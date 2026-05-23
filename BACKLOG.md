@@ -16,11 +16,13 @@ When marking `Done`, leave the card in place for ~2 weeks then archive to `BACKL
 
 In priority order, the five items to work on next:
 
-1. **C-002 — Write up R-001 as the case-study Writing.** The bifurcation finding (+4.92pp HW vs SW gap, t=13.5, plus 3 counterintuitive sub-findings) is the strongest research result topicspace has produced. Publishing it is more compelling than another worked example. Research as content.
-2. **F-007 V2 phase 2 — sign-flip rule (DONE) + label-staleness V1 detector (DONE) + auto-relabel V2 (open).** Sign-flip ships in `region_calibration.json` as `effective_direction_sign`; UI surfacing on /architecture L4 + /actor Thesis Trail shipped same day with "calibrated historical behavior" framing discipline. Stale-label detector ships as `scripts/detect_stale_cluster_labels.py` → `data/derived/stale_label_candidates.{parquet,md}`. **Finding worth pulling forward:** 10 candidates flagged, every single one positive-sentiment label with bearish-skewed attached expectations (Datadog "strong Q4" / Intel "stock surge and optimism" / AI-driven-growth / etc.). This is the **same fade-dynamic pattern as the inverted-region investigation** viewed from a different angle — bearish L2 reads accumulate on hot-themed clusters, cluster labels capture the upbeat news framing, the two diverge. Auto-relabel (V2 acts) needs (a) a manual review round to validate threshold logic, (b) labeler in `build_cluster_lineage.py` extended to consider attached expectations alongside member titles when scoring need_relabel + when prompting the LLM relabel.
-3. **F-006 V2 — per-expectation walk-forward + reconfirmed event type (DONE 2026-05-21).** Single-split #4 + reconfirmed #5 shipped. Rolling re-test (in same session as F-007 V2 phase 1) refined the verdict: persistence-as-prior-weight signal is real at 5d but sign-flips at 10d/20d — narrower than the single-split suggested. F-006 #6 build gated on the same bias investigation + corpus extension as F-007 V2 phase 2.
-4. **I-001 — Real durable log store for intel briefs.** Current JSONL is ephemeral on Vercel. Has to land before intel sees real traffic; also starts building QA history.
-5. **R-011 — Update eligibility matrix to incorporate R-001 magnitudes.** Software CONFIRMED is actually negative (−5pp); hardware NEG_CONFIRMATION is +11.6pp. Better to do this AFTER C-002 ships — reader feedback will inform weighting decisions.
+1. **F-022 — `region_consult` MCP tool (the TKOS consultation interface).** The artifact that turns the substrate into an operating system. Until LLMs/agents can consult the calibration state *inline* within their own inference window, TKOS is a measurement layer with manifesto language. F-022 V1 is small (1-2 weeks) and reads existing artifacts; first real consumer is F-019. Strategic anchor: the [TKOS essay](https://topicspace.ai/writing/temporal-knowledge-operating-system) explicitly references this tool — until it exists, section 02 of that essay is a promise. **The fighter jet.**
+2. **F-013 — L4 emits decision-class event stream (typed handoff).** Reframed 2026-05-23. Sign-flip rule shipped in JSON; the remaining work is making it a streaming event API with the payload schema in the card. F-022 V1 reads the JSON; F-022 V2 subscribes to the stream once F-013 lands.
+3. **C-002 — Write up R-001 as the case-study Writing.** The bifurcation finding (+4.92pp HW vs SW gap, t=13.5, plus 3 counterintuitive sub-findings) is the strongest research result topicspace has produced. Worth interleaving with the TKOS engineering work as content cadence, not at the cost of F-022.
+4. **F-019 — Enterprise RAG governance POC.** Becomes natural the moment F-022 lands — first real LLM consumer of the consult tool. Sequence: F-022 V1 → F-019 wires it in → F-013 event stream takes over from JSON-read path.
+5. **F-007 V2 phase 2 follow-on — auto-relabel from stale_label_candidates.** The stale-label detector ships findings (10 candidates, all positive-label-with-bearish-attachments); auto-relabel in `build_cluster_lineage.py` is the next correctness fix. Schedule after F-022 lands so the TKOS arc isn't blocked.
+
+> **Backlog ordering principle update (2026-05-23):** with the TKOS essay published, the strategic anchor shifted. Items that *enable LLM consultation* (F-022, F-013, F-019) move ahead of measurement-side improvements (auto-relabel, persistence as L1 weight) because the consultation interface is what makes the rest legible. Measurement work continues at its own cadence; ordering reflects which items unlock the new arc.
 
 > **Principle**: field/product improvements come before content cadence. Publish and explain, but protect the time for the underlying improvements. The backlog ordering is a guardrail, not a suggestion — if content starts crowding out research, drop a content slot, not a research one.
 >
@@ -938,6 +940,76 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 
   Important: this is NOT a replacement for rolling walk-forward; it's a *parallel* channel that fires fast on shocks while rolling continues to track gradual drift.
 - **notes**: Adversarial robustness in disguise. Most enterprise eval pitches expect this layer once the basic story lands. Sequence with F-013 (event stream) so the regime-shift events route to the same consumer interface as drift-driven decisions.
+
+### F-022 — `region_consult` MCP tool (the TKOS consultation interface)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: F-007 V1 (region_calibration.json ships), F-020 (velocity field lands) — both shipped. **F-013 event stream is NOT a dependency for V1** (V1 reads the JSON snapshot; consumers swap to the stream later).
+- **why_it_matters**: This is the artifact that turns the substrate into an operating system. Until LLMs and agents can *consult* the calibration state inline — within their own inference window — TKOS is a measurement layer with manifesto language attached. The `region_consult` tool is the smallest concrete artifact that makes the TKOS vision (see [/writing/temporal-knowledge-operating-system](https://topicspace.ai/writing/temporal-knowledge-operating-system)) demonstrable rather than aspirational. Without it, every TKOS conversation ends with "...but you don't actually have an LLM consulting this yet." With it, the conversation ends with a working demo.
+- **success_condition**: An MCP tool callable from any agent / LLM session, with the following contract:
+  ```ts
+  region_consult(query: string, opts?: {
+    embedder?: "openai" | "mock",
+    min_sample_size?: number,    // default 10; below this returns cold_start
+  }) -> RegionConsultResult
+  ```
+  Inline 3-step flow per the TKOS essay §02:
+  1. Encode `query` (default OpenAI `text-embedding-3-small`, or mock for tests)
+  2. Nearest-centroid lookup in `region_calibration.json` (loaded + cached on first call)
+  3. Return payload
+
+  **Two payload shapes:**
+
+  Calibrated case:
+  ```json
+  {
+    "query_region_id":  "reg-83de2ee3ed",
+    "theme_label":      "Intel's AI Strategy and Challenges",
+    "velocity": {
+      "state":            "ossified",
+      "n_sig_events_14d": 0,
+      "days_since_last_event": 47
+    },
+    "last_calibration": {
+      "hit_5d":     0.07,
+      "n_obs":      14,
+      "tier":       "public",
+      "rolling_stable":  true,
+      "flagged_inverted": true
+    },
+    "decision_class":      "INVERT",
+    "effective_direction": -1,
+    "reliability_band":    "LOW_CONFIDENCE",
+    "cold_start":          false
+  }
+  ```
+
+  Cold-start fallback (when n_obs < `min_sample_size` OR no region match within similarity threshold):
+  ```json
+  {
+    "query_region_id":  null,
+    "reliability_band": "UNCALIBRATED",
+    "cold_start":       true,
+    "guidance":         "fall back to baseline-hedged language; no active feedback loop available"
+  }
+  ```
+
+  **Latency target**: <50ms once region_calibration.json is cached (single embedding call + dict lookup). First call may be slower if OpenAI is used; mock embedder keeps every call inline-fast for tests.
+
+  **V1 scope (1-2 weeks)**:
+  - Python tool living in `beliefstack-prototype` or a new `tkos/` directory
+  - Reads `topicspace-site/public/region_calibration.json` directly (no separate store yet)
+  - MCP server wrapper (FastMCP or similar) exposing the tool
+  - One worked example: an LLM agent that calls `region_consult` before answering a markets-themed query and demonstrates calibrated-doubt behavior on a known-inverted region (Intel AI Strategy −)
+
+  **Out of scope for V1**:
+  - Streaming subscriptions (subscribe-to-region) — that's F-013 V2 territory
+  - Cross-domain federation — that's a separate F-023 candidate
+  - Production-grade caching / pub-sub — for later if adoption pulls it
+- **notes**: This is the "fighter jet" piece — small, fast, tactical, the artifact that proves the TKOS vision in code rather than essay. After F-022 V1 lands, the natural follow-on is wiring it into F-019 (enterprise RAG governance POC) as the first real consumer, then upgrading the JSON-read path to a F-013 event-stream subscription once that lands. Strategic anchor: the TKOS essay explicitly references this tool; until it exists, the essay's section 02 is a promise.
 
 ---
 
