@@ -348,6 +348,97 @@ def main():
             r["effective_direction_sign"] = int(r["direction_sign"])
             r["sign_flip"] = {"applied": False}
 
+    # ── F-020: velocity of revision per region (turbulent / working / ossified) ─
+    # Aggregates L3 lifecycle events per region. A region is:
+    #   turbulent  — >= TURBULENT_EVENTS_IN_14D significant events in last 14 days
+    #                → down-weight conviction; region shifting faster than model can anchor
+    #   ossified   — 0 significant events in last 30 days AND region is >= 14 days old
+    #                → candidate for RETIRE-by-disuse (vs RETIRE-by-contradiction)
+    #   working    — otherwise (normal revision pace)
+    # Significant events: strengthened / weakened / contradicted / reconfirmed / inverted.
+    # `born` and `retired` excluded (natural state changes, not revisions).
+    TURBULENT_EVENTS_IN_14D     = 3
+    OSSIFIED_DAYS_SINCE_LAST    = 30
+    OSSIFIED_MIN_REGION_AGE_DAYS = 14
+    SIGNIFICANT_EVENT_TYPES     = {"strengthened", "weakened", "contradicted", "reconfirmed", "inverted"}
+
+    ENT_PARQ = ROOT / "data" / "derived" / "expectation_entities.parquet"
+    EV_PARQ  = ROOT / "data" / "derived" / "expectation_lifecycle_events.parquet"
+    region_events_lookup: dict[tuple[str, int], list[dt.date]] = {}
+    if ENT_PARQ.exists() and EV_PARQ.exists():
+        ent_df = pd.read_parquet(ENT_PARQ)
+        ev_df  = pd.read_parquet(EV_PARQ)
+        ev_df  = ev_df[ev_df["event_type"].isin(SIGNIFICANT_EVENT_TYPES)].copy()
+        # Map entity_id -> (theme_id, sign)
+        ent_to_key = {
+            row.entity_id: (row.stable_cluster_id, int(row.direction_sign))
+            for row in ent_df.itertuples(index=False)
+        }
+        for row in ev_df.itertuples(index=False):
+            key = ent_to_key.get(row.entity_id)
+            if key is None:
+                continue
+            try:
+                d = dt.date.fromisoformat(str(row.date)[:10])
+            except (ValueError, TypeError):
+                continue
+            region_events_lookup.setdefault(key, []).append(d)
+
+    today_d = dt.date.today()
+    two_weeks_ago = today_d - dt.timedelta(days=14)
+    month_ago     = today_d - dt.timedelta(days=OSSIFIED_DAYS_SINCE_LAST)
+
+    n_turbulent = n_working = n_ossified = n_velocity_unscored = 0
+    for r in regions_out:
+        key = (r["theme_id"], int(r["direction_sign"]))
+        events = sorted(region_events_lookup.get(key, []))
+        n_recent = sum(1 for d in events if d >= two_weeks_ago)
+        last_event = events[-1] if events else None
+        days_since = (today_d - last_event).days if last_event is not None else None
+
+        # Region age proxy: first_date in the region itself
+        try:
+            first_d = dt.date.fromisoformat(r["first_date"])
+            region_age = (today_d - first_d).days
+        except (KeyError, ValueError):
+            region_age = None
+
+        state = None
+        flag  = None
+        if n_recent >= TURBULENT_EVENTS_IN_14D:
+            state = "turbulent"
+            flag  = "down-weight conviction; region is shifting faster than the model can anchor"
+            n_turbulent += 1
+        elif (
+            (days_since is None or days_since >= OSSIFIED_DAYS_SINCE_LAST)
+            and region_age is not None and region_age >= OSSIFIED_MIN_REGION_AGE_DAYS
+            and len(events) == 0
+        ):
+            state = "ossified"
+            flag  = "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
+            n_ossified += 1
+        elif (
+            days_since is not None and days_since >= OSSIFIED_DAYS_SINCE_LAST
+            and n_recent == 0
+        ):
+            state = "ossified"
+            flag  = "candidate for RETIRE-by-disuse (last event was long ago)"
+            n_ossified += 1
+        elif region_age is not None and region_age < OSSIFIED_MIN_REGION_AGE_DAYS and len(events) == 0:
+            # Too new to judge — neither turbulent nor ossified
+            state = "working"
+            n_velocity_unscored += 1
+        else:
+            state = "working"
+            n_working += 1
+
+        r["velocity"] = {
+            "state":                 state,
+            "n_sig_events_14d":      int(n_recent),
+            "days_since_last_event": int(days_since) if days_since is not None else None,
+            "actionable_flag":       flag,
+        }
+
     # ── Compact site summary (deltas vs. baselines, sample-size tiering) ────
     def get_baseline(name: str, n: int):
         return baselines[name]["horizons"][f"{n}d"]["hit_rate"]
@@ -393,7 +484,21 @@ def main():
                     "levels (n=115). Persistence does NOT compound with "
                     "sign-flip; ship the two rules independently."
                 ),
-            }
+            },
+            # F-020: per-region velocity classification (turbulent / working / ossified).
+            # Counts how many lifecycle events the region has accumulated in recent
+            # windows; ties states to actionable downstream effects.
+            "velocity": {
+                "rule": (
+                    "turbulent: >=3 significant lifecycle events in last 14 days "
+                    "(strengthened/weakened/contradicted/reconfirmed/inverted). "
+                    "ossified: no significant events in last 30 days AND region >= 14 days old. "
+                    "working: everything else."
+                ),
+                "n_turbulent": n_turbulent,
+                "n_working":   n_working + n_velocity_unscored,
+                "n_ossified":  n_ossified,
+            },
         },
         "regions":   regions_out,
     }

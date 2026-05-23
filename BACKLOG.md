@@ -542,6 +542,13 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 - **also_in_this_commit**: data-quality fix — switched field pipeline + embed_events.py to read from `tech_ecosystem_filtered.jsonl + tech_ecosystem_backfill.jsonl` (matching `build_backtest_history.py`'s corpus). Previously they only read `tech_ecosystem.jsonl` which missed ~37k backfill events, causing SNOW/VST etc to show narr=95 / density=0 in the disagreement report. Now SNOW Dec 2025 shows actual events and density. Added `degenerate_event_share` metric (events with combined title+text < 30 chars excluded from centroid/density).
 - **next_dependencies_unlocked**: F-005 (L2 expectation clustering can now use stable theme IDs), F-006 (L3 fingerprints can use `actor + stable_cluster_id + direction_sign`).
 - **artifacts**: `scripts/build_cluster_lineage.py` · `scripts/embed_events.py` (updated) · `scripts/build_field_instrumentation.py` (updated) · `scripts/build_backtest_history.py` (wired in evening pipeline)
+- **V2_followup — cluster-lineage hardening (the "Heisenberg fix")**: V1 tracks lineage but IDs still drift across re-clustering passes faster than the lineage layer absorbs (felt on 2026-05-21 when a fresh `build_performance_regions.py` produced different `region_id`s than the prior pass, briefly orphaning the F-007 V2 phase 1 inverted-flag findings). V2 work:
+  1. **Clustering-pass-hash versioning** — every region carries `clustering_pass_id` so historical L3 hypotheses bind to the L1 version they were born under. Re-cluster → new pass id, with re-anchor mapping.
+  2. **`migrated_to: <new_region_id>` pointer** — the "301 redirect for embeddings." When a re-cluster definitively maps an old region to a single new region, retired entry redirects forward; consumers reading the old `region_id` get sent to the right place.
+  3. **Split / merge handling for L3 conviction transfer** — if Region A splits into A1 + A2, the L3 lifecycle entities attached to A need to know how to map (proportionally? to nearest centroid? marked as `requires_re_anchor`) without dividing by zero. If A and B merge into C, conviction histories combine with provenance preserved. This is the missing operational piece for the "lifecycle survives re-cluster" promise.
+  4. **Re-anchor verification step** — after re-cluster, scan all L3 entities; flag any whose post-cluster anchor confidence is below threshold for human review.
+
+  Triggered for V2 by Gemini's "Heisenberg / quantum feedback" trap and the 2026-05-21 stale-snapshot incident. Effort: M-L. Sequence after F-013 event stream so re-anchor decisions emit events on the same channel.
 
 ### F-003 — LLM-labeled cluster names
 - **category**: Field Architecture
@@ -746,25 +753,39 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
   Surface on `/architecture` L1 card (per region) and as an aggregate health line. **L4 → L1 re-cluster signal becomes data-driven** (auto-flag low-cohesion + high-bimodality regions as re-cluster candidates) instead of intuition-driven.
 - **notes**: Biggest architectural unlock since F-007. Promotes L1 from "the clustering step" to "a measured layer in its own right."
 
-### F-013 — L4 produces decision classes (PROMOTE / MONITOR / INTERVENE / RECLUSTER / INVERT / RETIRE / ESCALATE)
+### F-013 — L4 emits decision-class event stream (typed handoff to operating-layer consumers)
 - **category**: Field Architecture
 - **priority**: P1
-- **status**: Inbox
+- **status**: Partially Inbox (sign-flip decision class shipped 2026-05-21; rest open)
 - **effort**: M
 - **owner**: Sue
 - **dependencies**: F-007 V1 (region calibration shipping)
-- **why_it_matters**: L4 currently emits metrics. To go from analysis to operating system, every calibration result should end with a **recommendation class** — what to do about the finding. This is the missing actionability layer.
-- **success_condition**: Every per-region L4 row carries one of seven decision classes:
-  - **PROMOTE** — enough evidence + positive calibration; raise conviction / use in production
-  - **MONITOR** — early signal, insufficient sample; keep watching
-  - **INTERVENE** — active risk or poor performance; ship a fix
-  - **RECLUSTER** — bimodal or unstable; flag for L1 re-clustering (the L4 → L1 edge made operational)
-  - **INVERT** — prediction / control is consistently wrong; sign-flip candidate
-  - **RETIRE** — stale or unsupported; remove from active surface
-  - **ESCALATE** — high-severity or human review needed
-
-  Rules: thresholds documented in `/methods`; surface as a column on `/architecture` L4 table and on the `/governance/example` per-region table. Decisions ship with provenance (which metrics triggered which decision).
-- **notes**: This is what turns the architecture from "calibrated regions" into "this region is strengthening, this control is inverted, this risk reopened — and here's what to do." Marketing-wise: the difference between a dashboard and an operating system.
+- **why_it_matters**: L4 currently emits metrics + (post-2026-05-21) per-region `effective_direction_sign` in the JSON artifact. The real unlock is making this a **typed event stream** that downstream consumers (alert routers, prompt-versioning scripts, paper-trade tracers, EvalKit return values) subscribe to and react on, without parsing the whole calibration JSON. This is what turns the architecture from "a richer dashboard" into "an automation engine."
+- **success_condition**:
+  1. Every per-region L4 row carries one of seven decision classes:
+     - **PROMOTE** — enough evidence + positive calibration; raise conviction / use in production
+     - **MONITOR** — early signal, insufficient sample; keep watching
+     - **INTERVENE** — active risk or poor performance; ship a fix
+     - **RECLUSTER** — bimodal or unstable; flag for L1 re-clustering (the L4 → L1 edge made operational)
+     - **INVERT** — prediction / control is consistently wrong; sign-flip candidate
+     - **RETIRE** — stale or unsupported; remove from active surface
+     - **ESCALATE** — high-severity or human review needed
+  2. Decisions are emitted as a **typed event stream** alongside the JSON artifact, so consumers can subscribe and react instantly. Schema:
+     ```json
+     {
+       "event_type":     "decision_class_emitted",
+       "region_id":      "reg-83de2ee3ed",
+       "decision":       "INVERT",
+       "trigger_metric": "calibration_error",
+       "current_value":  0.42,
+       "threshold":      0.25,
+       "provenance":     {"detector": "rolling_walkforward", "fold": 3, "n_obs": 14},
+       "timestamp":      "2026-05-23T08:34:00Z"
+     }
+     ```
+     Each event ships with the metric that triggered it, the current value, the threshold, and the detector provenance. A consumer (alert router, prompt-versioning script, paper-trade tracer) can subscribe to specific `event_type`s or `decision`s without parsing the monolithic calibration JSON.
+  3. Surface in `/architecture` L4 table + `/governance/example` region table.
+- **notes**: This is the difference between a dashboard and an operating system. The sign-flip rule shipped in `effective_direction_sign` (2026-05-21) is the first real instance of L4-driven action; the event-stream framing generalizes it. EvalKit's `region_calibration_eval` MCP tool should emit these events as its return value, not just a region-card report.
 
 ### F-014 — L3 lifecycle states action-mapped (workflow-driving)
 - **category**: Field Architecture
@@ -872,6 +893,51 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 
   Honest framing: synthetic data, illustrative. The current Claude-logs POC is the real-data proof; this is the audience-translation artifact.
 - **notes**: Lower priority than F-011–F-016. Build only after the canonical semantics + action layer are locked, so the POC inherits a stable architecture.
+
+### F-020 — Velocity of revision metric per region (turbulent / working / ossified)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: S
+- **owner**: Sue
+- **dependencies**: F-006 (lifecycle events exist), F-007 V1 (regions exist)
+- **why_it_matters**: Lifecycle events tell you *what* changed for a single entity; aggregating them per region tells you *how fast* a region's hypothesis is rotating. A region with 5 lifecycle events in 10 days is "turbulent" — the underlying behavior is shifting faster than the model can confidently anchor. A region with zero events in 60 days is "ossified" — burning compute tracking a dead or solved space. Both states are operationally important and currently invisible.
+- **success_condition**: Per region in `region_calibration.json`:
+  ```json
+  "velocity": {
+    "state": "turbulent" | "working" | "ossified",
+    "n_sig_events_14d":         3,
+    "days_since_last_event":    2,
+    "actionable_flag":          "down-weight conviction"
+  }
+  ```
+  Significant events = `strengthened`, `weakened`, `contradicted`, `reconfirmed`, `inverted` (excludes `born`/`retired`, which are natural state changes, not revisions).
+
+  Thresholds (defaults; revisit after a few weeks of data):
+  - **turbulent**: ≥ 3 significant events in last 14 days → `actionable_flag = "down-weight conviction; region is shifting faster than the model can anchor"`
+  - **ossified**: 0 significant events in last 30 days AND region is ≥ 14 days old → `actionable_flag = "candidate for RETIRE-by-disuse (vs RETIRE-by-contradiction)"`
+  - **working**: everything else
+
+  Counts surface in `v2_phase2`-style summary at payload root (`n_turbulent`, `n_working`, `n_ossified`).
+- **notes**: One-session implementation in `build_region_calibration.py`. Ties cleanly into F-013's RETIRE decision class (ossified regions are RETIRE candidates) and into the sign-flip / conviction-reweight pipeline (turbulent regions get conviction down-weighted automatically).
+
+### F-021 — Regime-shift detector (distributional, separate from drift)
+- **category**: Field Architecture
+- **priority**: P1
+- **status**: Inbox
+- **effort**: M
+- **owner**: Sue
+- **dependencies**: F-007 V1 (region calibration), F-020 (velocity, to disambiguate drift from regime)
+- **why_it_matters**: Rolling walk-forward catches *gradual* drift but not *step-function* regime change. In markets: Fed pivots, sector rotations, war. In AI evaluation: a new attack class lands, a silent model version change, an upstream prompt change. The stack currently has to wait for the next fold to converge on the new regime — too slow to operate against. Gemini-feedback verbatim: *"if the error rate spikes across all regions simultaneously, it's not drift — the world just changed."*
+- **success_condition**: A regime-shift detector running alongside (not inside) the calibration pipeline. Uses **distributional metrics, not rolling averages**:
+  - **KL-divergence on input embeddings** between current N-day window and prior baseline window (catches new input topology)
+  - **Cross-region error variance spike** — if L4 error variance jumps simultaneously across ≥ K independent regions, the shock is exogenous to any one region (catches regime breaks)
+  - **Response-archetype distribution shift** (when archetype layer exists) — sudden change in which response types the model produces
+
+  Emits a `decision_class = "ESCALATE"` event (via F-013 stream) with `trigger_metric = "regime_shift"`, distinct from drift-triggered ESCALATE. Provenance includes which distributional metric tripped and by how much.
+
+  Important: this is NOT a replacement for rolling walk-forward; it's a *parallel* channel that fires fast on shocks while rolling continues to track gradual drift.
+- **notes**: Adversarial robustness in disguise. Most enterprise eval pitches expect this layer once the basic story lands. Sequence with F-013 (event stream) so the regime-shift events route to the same consumer interface as drift-driven decisions.
 
 ---
 

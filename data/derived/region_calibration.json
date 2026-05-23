@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-05-21",
+  "as_of": "2026-05-23",
   "n_regions": 506,
   "n_observations_total": 3796,
   "n_observations_signed": 2405,
@@ -70,24 +70,24 @@
       "description": "Predict direction = sign of trailing N-day relative-to-QQQ return; score the same way as system predictions. Tests whether the narrative-driven system beats dumb momentum.",
       "horizons": {
         "5d": {
-          "n_obs": 2285,
-          "hit_rate": 0.4853391684901532,
-          "avg_excess_return": 0.005113069925031405,
-          "std_excess": 0.08000607285441774,
+          "n_obs": 2268,
+          "hit_rate": 0.48544973544973546,
+          "avg_excess_return": 0.005035825061808462,
+          "std_excess": 0.08018068285553724,
           "tier": "public"
         },
         "10d": {
-          "n_obs": 2060,
-          "hit_rate": 0.4786407766990291,
-          "avg_excess_return": 0.01025056386825764,
-          "std_excess": 0.11597146682824046,
+          "n_obs": 2043,
+          "hit_rate": 0.47968673519334315,
+          "avg_excess_return": 0.010779251492268866,
+          "std_excess": 0.11611250415041263,
           "tier": "public"
         },
         "20d": {
-          "n_obs": 1615,
-          "hit_rate": 0.518266253869969,
-          "avg_excess_return": 0.029213697067117687,
-          "std_excess": 0.17788712764391573,
+          "n_obs": 1599,
+          "hit_rate": 0.5165728580362726,
+          "avg_excess_return": 0.029174089317327845,
+          "std_excess": 0.17787451882317368,
           "tier": "public"
         }
       }
@@ -174,6 +174,12 @@
       "n_regions_flipped": 10,
       "rule": "effective_direction_sign = -direction_sign",
       "evidence_summary": "Compound test 2026-05-21: contrarian (sign-flipped) hit_5d 73-81% on inverted public regions across all persistence levels (n=115). Persistence does NOT compound with sign-flip; ship the two rules independently."
+    },
+    "velocity": {
+      "rule": "turbulent: >=3 significant lifecycle events in last 14 days (strengthened/weakened/contradicted/reconfirmed/inverted). ossified: no significant events in last 30 days AND region >= 14 days old. working: everything else.",
+      "n_turbulent": 2,
+      "n_working": 62,
+      "n_ossified": 442
     }
   },
   "regions": [
@@ -282,6 +288,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 114,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -387,6 +399,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 138,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -525,6 +543,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 64,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -633,6 +657,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 102,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -758,6 +788,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "turbulent",
+        "n_sig_events_14d": 3,
+        "days_since_last_event": 11,
+        "actionable_flag": "down-weight conviction; region is shifting faster than the model can anchor"
       }
     },
     {
@@ -893,6 +929,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "turbulent",
+        "n_sig_events_14d": 4,
+        "days_since_last_event": 10,
+        "actionable_flag": "down-weight conviction; region is shifting faster than the model can anchor"
       }
     },
     {
@@ -1017,6 +1059,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 22,
+        "actionable_flag": null
       }
     },
     {
@@ -1147,6 +1195,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 52,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -1251,6 +1305,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 138,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -1381,6 +1441,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 67,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -1479,6 +1545,12 @@
         "corpus_hit_5d_raw": 0.2667,
         "contrarian_hit_5d": 0.7333,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 121,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -1596,6 +1668,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 2,
+        "days_since_last_event": 5,
+        "actionable_flag": null
       }
     },
     {
@@ -1720,6 +1798,12 @@
         "corpus_hit_5d_raw": 0.2414,
         "contrarian_hit_5d": 0.7586,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 32,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -1822,6 +1906,12 @@
         "corpus_hit_5d_raw": 0.2963,
         "contrarian_hit_5d": 0.7037,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 165,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -1922,6 +2012,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 145,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -2052,6 +2148,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -2170,6 +2272,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 16,
+        "actionable_flag": null
       }
     },
     {
@@ -2298,6 +2406,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 51,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -2394,6 +2508,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 109,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -2492,6 +2612,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -2592,6 +2718,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 130,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -2715,6 +2847,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 2,
+        "days_since_last_event": 9,
+        "actionable_flag": null
       }
     },
     {
@@ -2842,6 +2980,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 67,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -2969,6 +3113,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 52,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -3069,6 +3219,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -3195,6 +3351,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 68,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -3325,6 +3487,12 @@
         "corpus_hit_5d_raw": 0.2941,
         "contrarian_hit_5d": 0.7059,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 39,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -3452,6 +3620,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -3573,6 +3747,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 54,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -3663,6 +3843,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 129,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -3786,6 +3972,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 5,
+        "actionable_flag": null
       }
     },
     {
@@ -3882,6 +4074,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 165,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -3979,6 +4177,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -4106,6 +4310,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 78,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -4202,6 +4412,12 @@
         "corpus_hit_5d_raw": 0.0714,
         "contrarian_hit_5d": 0.9286,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -4320,6 +4536,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 29,
+        "actionable_flag": null
       }
     },
     {
@@ -4417,6 +4639,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -4542,6 +4770,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 53,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -4667,6 +4901,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 54,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -4758,6 +4998,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -4856,6 +5102,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -4981,6 +5233,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -5079,6 +5337,12 @@
         "corpus_hit_5d_raw": 0.2308,
         "contrarian_hit_5d": 0.7692,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 114,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -5206,6 +5470,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 30,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -5301,6 +5571,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 110,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -5425,6 +5701,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 74,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -5543,6 +5825,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 16,
+        "actionable_flag": null
       }
     },
     {
@@ -5670,6 +5958,12 @@
         "corpus_hit_5d_raw": 0.1667,
         "contrarian_hit_5d": 0.8333,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -5770,6 +6064,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -5891,6 +6191,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 40,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -5984,6 +6290,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -6107,6 +6419,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 29,
+        "actionable_flag": null
       }
     },
     {
@@ -6201,6 +6519,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 122,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -6318,6 +6642,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 16,
+        "actionable_flag": null
       }
     },
     {
@@ -6411,6 +6741,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -6504,6 +6840,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 121,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -6626,6 +6968,12 @@
         "corpus_hit_5d_raw": 0.3,
         "contrarian_hit_5d": 0.7,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 45,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -6727,6 +7075,12 @@
         "corpus_hit_5d_raw": 0.3,
         "contrarian_hit_5d": 0.7,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 88,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -6848,6 +7202,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -6973,6 +7333,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -7068,6 +7434,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -7162,6 +7534,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 4,
+        "actionable_flag": null
       }
     },
     {
@@ -7286,6 +7664,12 @@
         "corpus_hit_5d_raw": 0.2,
         "contrarian_hit_5d": 0.8,
         "evidence": "scripts/test_compound_persistence_inversion.py"
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 80,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -7377,6 +7761,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -7473,6 +7863,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -7568,6 +7964,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -7662,6 +8064,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 45,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -7753,6 +8161,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -7846,6 +8260,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -7937,6 +8357,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 45,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -8033,6 +8459,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 78,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -8128,6 +8560,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 22,
+        "actionable_flag": null
       }
     },
     {
@@ -8224,6 +8662,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -8314,6 +8758,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 79,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -8404,6 +8854,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 162,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -8496,6 +8952,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 122,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -8585,6 +9047,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 19,
+        "actionable_flag": null
       }
     },
     {
@@ -8676,6 +9144,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 150,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -8767,6 +9241,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 170,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -8857,6 +9337,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 155,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -8946,6 +9432,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -9039,6 +9531,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 26,
+        "actionable_flag": null
       }
     },
     {
@@ -9132,6 +9630,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -9224,6 +9728,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -9318,6 +9828,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 102,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -9413,6 +9929,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 74,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -9505,6 +10027,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -9594,6 +10122,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 8,
+        "actionable_flag": null
       }
     },
     {
@@ -9687,6 +10221,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -9780,6 +10320,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 110,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -9873,6 +10419,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -9964,6 +10516,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 109,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -10056,6 +10614,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 37,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -10149,6 +10713,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -10239,6 +10809,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 114,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -10331,6 +10907,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -10420,6 +11002,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -10513,6 +11101,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -10603,6 +11197,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -10695,6 +11295,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 106,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -10786,6 +11392,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 39,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -10879,6 +11491,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 12,
+        "actionable_flag": null
       }
     },
     {
@@ -10972,6 +11590,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 65,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -11066,6 +11690,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -11155,6 +11785,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 29,
+        "actionable_flag": null
       }
     },
     {
@@ -11245,6 +11881,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 145,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -11334,6 +11976,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -11427,6 +12075,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -11517,6 +12171,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 3,
+        "actionable_flag": null
       }
     },
     {
@@ -11609,6 +12269,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -11700,6 +12366,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -11793,6 +12465,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 51,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -11884,6 +12562,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -11976,6 +12660,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -12068,6 +12758,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 103,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -12159,6 +12855,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -12251,6 +12953,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -12341,6 +13049,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -12434,6 +13148,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 37,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -12527,6 +13247,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 44,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -12616,6 +13342,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 164,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -12709,6 +13441,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -12799,6 +13537,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -12889,6 +13633,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -12978,6 +13728,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 150,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -13071,6 +13827,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -13162,6 +13924,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 30,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -13253,6 +14021,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -13345,6 +14119,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -13434,6 +14214,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -13527,6 +14313,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -13619,6 +14411,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 61,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -13711,6 +14509,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -13801,6 +14605,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -13893,6 +14703,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -13984,6 +14800,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 5,
+        "actionable_flag": null
       }
     },
     {
@@ -14074,6 +14896,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 11,
+        "actionable_flag": null
       }
     },
     {
@@ -14166,6 +14994,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -14257,6 +15091,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 164,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -14349,6 +15189,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -14438,6 +15284,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -14529,6 +15381,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -14620,6 +15478,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -14712,6 +15576,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -14803,6 +15673,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -14894,6 +15770,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -14986,6 +15868,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 38,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -15075,6 +15963,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15164,6 +16058,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15254,6 +16154,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15346,6 +16252,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15435,6 +16347,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15525,6 +16443,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15617,6 +16541,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15706,6 +16636,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15797,6 +16733,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15888,6 +16830,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -15980,6 +16928,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -16070,6 +17024,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 2,
+        "days_since_last_event": 3,
+        "actionable_flag": null
       }
     },
     {
@@ -16161,6 +17121,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -16251,6 +17217,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 37,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -16343,6 +17315,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -16433,6 +17411,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -16523,6 +17507,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -16612,6 +17602,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 16,
+        "actionable_flag": null
       }
     },
     {
@@ -16703,6 +17699,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -16792,6 +17794,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 4,
+        "actionable_flag": null
       }
     },
     {
@@ -16881,6 +17889,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 86,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -16972,6 +17986,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17061,6 +18081,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17152,6 +18178,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 47,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -17242,6 +18274,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 47,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -17331,6 +18369,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17420,6 +18464,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17509,6 +18559,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17600,6 +18656,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17691,6 +18753,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17782,6 +18850,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17871,6 +18945,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -17960,6 +19040,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -18051,6 +19137,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -18142,6 +19234,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -18233,6 +19331,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -18324,6 +19428,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -18414,6 +19524,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -18504,6 +19620,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 29,
+        "actionable_flag": null
       }
     },
     {
@@ -18594,6 +19716,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 58,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -18685,6 +19813,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 172,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -18776,6 +19910,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -18865,6 +20005,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 29,
+        "actionable_flag": null
       }
     },
     {
@@ -18954,6 +20100,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 121,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -19044,6 +20196,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -19135,6 +20293,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -19225,6 +20389,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 156,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -19314,6 +20484,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -19404,6 +20580,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -19493,6 +20675,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 113,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -19582,6 +20770,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 52,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -19672,6 +20866,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -19763,6 +20963,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 159,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -19853,6 +21059,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -19943,6 +21155,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -20032,6 +21250,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 17,
+        "actionable_flag": null
       }
     },
     {
@@ -20121,6 +21345,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 16,
+        "actionable_flag": null
       }
     },
     {
@@ -20211,6 +21441,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -20302,6 +21538,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 127,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -20392,6 +21634,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -20481,6 +21729,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 127,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -20572,6 +21826,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -20662,6 +21922,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -20751,6 +22017,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -20841,6 +22113,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -20931,6 +22209,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -21021,6 +22305,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -21111,6 +22401,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 163,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -21201,6 +22497,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -21290,6 +22592,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -21380,6 +22688,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -21470,6 +22784,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -21559,6 +22879,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 121,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -21648,6 +22974,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -21738,6 +23070,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -21828,6 +23166,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -21917,6 +23261,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -22007,6 +23357,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 52,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -22097,6 +23453,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -22187,6 +23549,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 120,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -22276,6 +23644,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -22365,6 +23739,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -22455,6 +23835,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -22545,6 +23931,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -22634,6 +24026,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 109,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -22723,6 +24121,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -22812,6 +24216,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 38,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -22902,6 +24312,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -22991,6 +24407,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23081,6 +24503,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23171,6 +24599,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23260,6 +24694,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23349,6 +24789,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 2,
+        "days_since_last_event": 9,
+        "actionable_flag": null
       }
     },
     {
@@ -23439,6 +24885,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23529,6 +24981,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -23618,6 +25076,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23707,6 +25171,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23797,6 +25267,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23887,6 +25363,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -23976,6 +25458,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24065,6 +25553,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24155,6 +25649,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24245,6 +25745,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24335,6 +25841,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24424,6 +25936,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24513,6 +26031,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24602,6 +26126,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24692,6 +26222,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24782,6 +26318,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -24872,6 +26414,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -24961,6 +26509,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -25051,6 +26605,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -25141,6 +26701,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -25231,6 +26797,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -25320,6 +26892,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -25410,6 +26988,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 68,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -25500,6 +27084,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -25590,6 +27180,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 1,
+        "days_since_last_event": 12,
+        "actionable_flag": null
       }
     },
     {
@@ -25679,6 +27275,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 24,
+        "actionable_flag": null
       }
     },
     {
@@ -25769,6 +27371,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -25859,6 +27467,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -25948,6 +27562,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26037,6 +27657,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 32,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -26127,6 +27753,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26216,6 +27848,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26306,6 +27944,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 25,
+        "actionable_flag": null
       }
     },
     {
@@ -26396,6 +28040,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26486,6 +28136,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26576,6 +28232,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26666,6 +28328,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26755,6 +28423,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26844,6 +28518,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -26933,6 +28613,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -27022,6 +28708,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -27111,6 +28803,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -27200,6 +28898,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -27290,6 +28994,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -27379,6 +29089,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -27469,6 +29185,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 87,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -27558,6 +29280,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 165,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -27647,6 +29375,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 157,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -27736,6 +29470,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -27826,6 +29566,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -27916,6 +29662,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28005,6 +29757,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -28094,6 +29852,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28183,6 +29947,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28273,6 +30043,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28363,6 +30139,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28452,6 +30234,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28542,6 +30330,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28631,6 +30425,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28720,6 +30520,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 46,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -28810,6 +30616,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28899,6 +30711,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -28989,6 +30807,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -29078,6 +30902,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 106,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -29167,6 +30997,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 141,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -29256,6 +31092,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -29346,6 +31188,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 47,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -29435,6 +31283,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -29524,6 +31378,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -29613,6 +31473,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -29702,6 +31568,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -29791,6 +31663,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -29880,6 +31758,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -29969,6 +31853,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30058,6 +31948,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30147,6 +32043,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30236,6 +32138,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30325,6 +32233,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30414,6 +32328,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30503,6 +32423,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30592,6 +32518,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30681,6 +32613,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30770,6 +32708,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -30859,6 +32803,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -30948,6 +32898,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31037,6 +32993,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31126,6 +33088,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31215,6 +33183,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31304,6 +33278,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31393,6 +33373,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31482,6 +33468,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31571,6 +33563,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31660,6 +33658,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31749,6 +33753,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31838,6 +33848,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -31927,6 +33943,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 85,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -32016,6 +34038,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32105,6 +34133,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 141,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -32194,6 +34228,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32283,6 +34323,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 120,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -32372,6 +34418,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32461,6 +34513,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32550,6 +34608,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32639,6 +34703,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32728,6 +34798,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32817,6 +34893,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32906,6 +34988,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -32995,6 +35083,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33084,6 +35178,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33173,6 +35273,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -33262,6 +35368,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33351,6 +35463,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33440,6 +35558,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33529,6 +35653,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -33618,6 +35748,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33707,6 +35843,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33796,6 +35938,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33885,6 +36033,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -33974,6 +36128,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 72,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -34063,6 +36223,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 54,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -34152,6 +36318,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -34241,6 +36413,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -34330,6 +36508,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -34419,6 +36603,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -34508,6 +36698,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -34597,6 +36793,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -34686,6 +36888,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -34775,6 +36983,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -34864,6 +37078,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -34953,6 +37173,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35042,6 +37268,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -35131,6 +37363,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35220,6 +37458,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35309,6 +37553,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35398,6 +37648,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35487,6 +37743,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35576,6 +37838,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35665,6 +37933,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35754,6 +38028,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35843,6 +38123,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -35932,6 +38218,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36021,6 +38313,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36110,6 +38408,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36199,6 +38503,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36288,6 +38598,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36377,6 +38693,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -36466,6 +38788,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36555,6 +38883,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36644,6 +38978,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -36733,6 +39073,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36822,6 +39168,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -36911,6 +39263,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37000,6 +39358,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37089,6 +39453,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37178,6 +39548,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37267,6 +39643,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -37356,6 +39738,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37445,6 +39833,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37534,6 +39928,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37623,6 +40023,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37712,6 +40118,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37801,6 +40213,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37890,6 +40308,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -37979,6 +40403,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38068,6 +40498,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38157,6 +40593,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38246,6 +40688,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38335,6 +40783,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -38424,6 +40878,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38513,6 +40973,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -38602,6 +41068,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38691,6 +41163,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38780,6 +41258,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38869,6 +41353,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -38958,6 +41448,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -39047,6 +41543,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -39136,6 +41638,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -39225,6 +41733,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 16,
+        "actionable_flag": null
       }
     },
     {
@@ -39314,6 +41828,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -39403,6 +41923,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -39492,6 +42018,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -39581,6 +42113,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 51,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -39670,6 +42208,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -39759,6 +42303,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -39848,6 +42398,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 80,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -39937,6 +42493,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40026,6 +42588,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40115,6 +42683,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40204,6 +42778,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40293,6 +42873,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40382,6 +42968,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40471,6 +43063,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40560,6 +43158,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40649,6 +43253,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -40738,6 +43348,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40827,6 +43443,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -40916,6 +43538,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41005,6 +43633,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41094,6 +43728,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41183,6 +43823,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41272,6 +43918,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41361,6 +44013,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41450,6 +44108,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41539,6 +44203,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41628,6 +44298,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41717,6 +44393,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -41806,6 +44488,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -41895,6 +44583,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 78,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -41984,6 +44678,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -42073,6 +44773,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42162,6 +44868,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42251,6 +44963,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42340,6 +45058,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42429,6 +45153,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42518,6 +45248,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42607,6 +45343,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42696,6 +45438,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42785,6 +45533,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 101,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -42874,6 +45628,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -42963,6 +45723,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -43052,6 +45818,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 26,
+        "actionable_flag": null
       }
     },
     {
@@ -43141,6 +45913,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -43230,6 +46008,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -43319,6 +46103,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -43408,6 +46198,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -43497,6 +46293,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -43586,6 +46388,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -43675,6 +46483,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -43764,6 +46578,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 38,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -43853,6 +46673,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -43942,6 +46768,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 45,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     },
     {
@@ -44031,6 +46863,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "working",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": null
       }
     },
     {
@@ -44120,6 +46958,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44209,6 +47053,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44298,6 +47148,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44387,6 +47243,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44476,6 +47338,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44565,6 +47433,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44654,6 +47528,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44743,6 +47623,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44832,6 +47718,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -44921,6 +47813,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45010,6 +47908,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45099,6 +48003,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45188,6 +48098,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45277,6 +48193,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45366,6 +48288,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45455,6 +48383,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45544,6 +48478,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45633,6 +48573,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45722,6 +48668,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45811,6 +48763,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45900,6 +48858,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -45989,6 +48953,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46078,6 +49048,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46167,6 +49143,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46256,6 +49238,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46345,6 +49333,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46434,6 +49428,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46523,6 +49523,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46612,6 +49618,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46701,6 +49713,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46790,6 +49808,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46879,6 +49903,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -46968,6 +49998,12 @@
       "effective_direction_sign": -1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": null,
+        "actionable_flag": "candidate for RETIRE-by-disuse (no significant lifecycle activity)"
       }
     },
     {
@@ -47057,6 +50093,12 @@
       "effective_direction_sign": 1,
       "sign_flip": {
         "applied": false
+      },
+      "velocity": {
+        "state": "ossified",
+        "n_sig_events_14d": 0,
+        "days_since_last_event": 145,
+        "actionable_flag": "candidate for RETIRE-by-disuse (last event was long ago)"
       }
     }
   ]
