@@ -944,10 +944,11 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 ### F-022 — `region_consult` MCP tool (the TKOS consultation interface)
 - **category**: Field Architecture
 - **priority**: P1
-- **status**: Inbox
+- **status**: V0 seed-crystal landed (2026-05-23); V1 implementation in inbox
 - **effort**: M
 - **owner**: Sue
 - **dependencies**: F-007 V1 (region_calibration.json ships), F-020 (velocity field lands) — both shipped. **F-013 event stream is NOT a dependency for V1** (V1 reads the JSON snapshot; consumers swap to the stream later).
+- **seed_artifact**: `/Users/sue/Documents/git/tkos/` (initial commit `364b6df`, 2026-05-23). Contains the canonical `tkos_trace_001.json` data contract, `print_lifecycle.py` replay utility, README with the Rule of Engagement (*"TKOS is not memory. TKOS is belief-state revision under changing reality."*), and `PATENT_PROVISIONAL_001.md` priority-date artifact. The seed locks the schema every downstream component must emit and consume — V1 must conform to this contract; schema drift requires explicit `schema_version` bumps. Repo has no remote and `DO_NOT_REDISTRIBUTE.txt` enforces seed-stage IP discipline.
 - **why_it_matters**: This is the artifact that turns the substrate into an operating system. Until LLMs and agents can *consult* the calibration state inline — within their own inference window — TKOS is a measurement layer with manifesto language attached. The `region_consult` tool is the smallest concrete artifact that makes the TKOS vision (see [/writing/temporal-knowledge-operating-system](https://topicspace.ai/writing/temporal-knowledge-operating-system)) demonstrable rather than aspirational. Without it, every TKOS conversation ends with "...but you don't actually have an LLM consulting this yet." With it, the conversation ends with a working demo.
 - **success_condition**: An MCP tool callable from any agent / LLM session, with the following contract:
   ```ts
