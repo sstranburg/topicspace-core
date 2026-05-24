@@ -944,10 +944,18 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 ### F-022 — Belief Stack Subscription API (Runtime MCP Gateway)
 - **category**: Field Architecture / Runtime Governance Layer
 - **priority**: Critical (Priority-Date Milestone)
-- **status**: V0 seed-crystal landed (2026-05-23, refined to schema 0.3.0 2026-05-24); V1 implementation in progress
+- **status**: V0 seed-crystal landed (2026-05-23, refined to schema 0.3.0 2026-05-24); Test A existential gate FAILED criterion 1 with nuanced result (see Test A note below); V1 implementation proceeds under narrowed claim
 - **component**: `storm-runtime` / `tkos-delivery`
-- **tracking_reference**: Patent Provisional Doc 001 (State-Aware Epistemic Context Interception). Contract spec: `tkos/BELIEF_STACK_CONTRACT.md` (schema 0.3.0). Seed-crystal repo: `https://github.com/sstranburg/tkos` (private).
+- **tracking_reference**: Patent Provisional Doc 001 (State-Aware Epistemic Context Interception). Contract spec: `tkos/BELIEF_STACK_CONTRACT.md` (schema 0.3.0). Seed-crystal repo: `https://github.com/sstranburg/tkos` (private). Test A validation report: `data/derived/test_a_region_distinctness.md`.
 - **dependencies**: F-007 V1 (region_calibration.json ships), F-020 (velocity field lands) — both shipped. **F-013 event stream is NOT a dependency for V1** (V1 reads the JSON snapshot; consumers swap to the stream later).
+
+#### Test A finding (2026-05-24) — narrows the operational claim
+Ran `scripts/test_a_region_distinctness.py` with thresholds locked before reading the data:
+- **[1] chi-square p<0.05 fraction:** 8/51 = 15.7% (threshold ≥ 30%) — **FAIL**
+- **[2] median KL across public regions:** 0.0270 nats (threshold ≥ 0.02) — pass
+- **[3] public regions with KL ≥ 0.10:** 11 (threshold ≥ 5) — pass
+
+Interpretation: a **minority (~15-22%) of public-tier regions are strongly distinct** from the global marginal; the majority are statistically indistinguishable. The sign-flip rule already ships on exactly this strongly-distinct subset (10 inverted public regions). The operational claim is therefore **narrowed**: TKOS identifies and governs the subset of regions where local assumptions are structurally distinct; cold-start fallback is the correct routing for the global-like majority. Schema unchanged; patent claim strengthened by being empirically scoped rather than universally asserted. Vocabulary moves contingent on Test A passing (6-layer rename, internal `expectation_anchors` sweep) are **NOT proceeding** — only the narrower-claim batch lands.
 
 #### User/system story
 As an AI Agent or Application Developer, I want to subscribe my probabilistic system directly to a domain-specific Belief Stack (via an MCP tool or HTTP endpoint), so that my system instantly inherits a calibrated runtime governance layer that steers its generation boundaries without model fine-tuning.
@@ -985,11 +993,12 @@ As an AI Agent or Application Developer, I want to subscribe my probabilistic sy
 
 #### Acceptance criteria (the validation gate)
 1. **Contract validity.** The API response must seamlessly ingest and parse the active-intervention state (`tkos_trace_001.json`, `level=mid`) and the deterministic cold-start boundary state (`tkos_trace_002_cold_start.json`, `level=floor`) without breaking the `print_lifecycle.py` replay contract. Schema conformance is checked by running `print_lifecycle.py` against any V1 emission.
-2. **Deterministic safeguard trigger.** When the inbound query maps to a region where sample density `n` falls below the configured threshold `N` (default `N=10`), the gateway MUST force `cold_start = true`, set `reliability_band = "UNCALIBRATED"`, bypass the contextual transformation layer, and inject fallback boundaries that command the downstream LLM to drop systematic-verification claims.
-3. **The empirical demo — measurable A/B.** Build a standardized execution harness evaluating a control agent vs. a treated agent:
-   - **Control:** Pure static RAG (or no consult at all). Given a compromised context (e.g., `Region_LLM_Format_Constraints` under sequential failure), it processes the prompt natively and fails downstream.
+2. **Deterministic safeguard trigger.** When the inbound query maps to a region where sample density `n` falls below the configured threshold `N` (default `N=10`), the gateway MUST force `cold_start = true`, set `reliability_band = "UNCALIBRATED"`, bypass the contextual transformation layer, and inject fallback boundaries that command the downstream LLM to drop systematic-verification claims. **Per Test A: this path is expected to fire for the majority of arbitrary queries on the current corpus.** That is the contract working as designed, not a failure mode.
+3. **The empirical demo — measurable A/B, scoped to strongly-distinct regions.** Build a standardized execution harness evaluating a control agent vs. a treated agent:
+   - **Control:** Pure static RAG (or no consult at all). Given a compromised context (e.g., `Region_LLM_Format_Constraints` under sequential failure — a strongly-distinct region per Test A), it processes the prompt natively and fails downstream.
    - **Treatment:** Subscribed agent. Prior to inference, queries the Belief Stack Subscription API, receives an `INTERVENE` decision class with structured `injected_context` + `enforcement` payload, and automatically restricts behavior / applies schema validation.
-   - **Success metric:** The treatment agent must demonstrate a measurable reduction (target: ≥80% on the canonical trace; ideally 100% on the format-constraints trace) in unmitigated downstream execution failures relative to the control, verified by an automated evaluation script.
+   - **Test set scope:** prompts mapping to one of the **strongly-distinct** public regions identified by Test A (KL ≥ 0.10 against global marginal). The A/B is scoped here because this is where the operational claim applies. Prompts mapping to global-like regions correctly hit cold-start; their A/B would be control-vs-honest-disclaimer rather than control-vs-INTERVENE, which is a separate (and weaker) story.
+   - **Success metric:** The treatment agent must demonstrate a measurable reduction (target: ≥80%, ideally 100% on the format-constraints canonical trace) in unmitigated downstream execution failures relative to the control, verified by an automated evaluation script.
 
 #### V1 implementation order (~1–2 weeks)
 1. MCP wrapper + Python tool reading `region_calibration.json`, emitting traces conforming to schema 0.3.0
