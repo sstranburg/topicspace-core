@@ -942,13 +942,47 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
 - **notes**: Adversarial robustness in disguise. Most enterprise eval pitches expect this layer once the basic story lands. Sequence with F-013 (event stream) so the regime-shift events route to the same consumer interface as drift-driven decisions.
 
 ### F-022 — `region_consult` MCP tool (the TKOS consultation interface)
-- **category**: Field Architecture
+- **category**: Field Architecture / Runtime Governance Layer
 - **priority**: P1
-- **status**: V0 seed-crystal landed (2026-05-23); V1 implementation in inbox
+- **status**: V0 seed-crystal landed (2026-05-23, refined to schema 0.3.0 2026-05-24); V1 implementation in inbox
 - **effort**: M
 - **owner**: Sue
 - **dependencies**: F-007 V1 (region_calibration.json ships), F-020 (velocity field lands) — both shipped. **F-013 event stream is NOT a dependency for V1** (V1 reads the JSON snapshot; consumers swap to the stream later).
-- **seed_artifact**: `/Users/sue/Documents/git/tkos/` (initial commit `364b6df`, 2026-05-23). Contains the canonical `tkos_trace_001.json` data contract, `print_lifecycle.py` replay utility, README with the Rule of Engagement (*"TKOS is not memory. TKOS is belief-state revision under changing reality."*), and `PATENT_PROVISIONAL_001.md` priority-date artifact. The seed locks the schema every downstream component must emit and consume — V1 must conform to this contract; schema drift requires explicit `schema_version` bumps. Repo has no remote and `DO_NOT_REDISTRIBUTE.txt` enforces seed-stage IP discipline.
+- **strategic_framing**: Per external feedback (Gemini + GPT, 2026-05-24): TKOS is best understood as a **runtime governance layer for probabilistic systems**, not as "memory middleware." That framing is broader and more durable — it covers any probabilistic system (LLMs, agents, recommenders, decision engines), connects to existing enterprise vocabulary (AI governance, model risk management), and centers what TKOS actually does: *quantify uncertainty locally, track calibration drift, dynamically alter inference behavior*.
+- **seed_artifact**: `/Users/sue/Documents/git/tkos/` (initial commit `364b6df`, 2026-05-23; refined to schema 0.3.0 in subsequent commits). Mirrored at private remote `https://github.com/sstranburg/tkos` (commit timestamps independently corroborated by GitHub). RFC-3161 timestamped via `SEED_CRYSTAL_HASHES_txt.tsr`. Schema drift requires explicit `schema_version` bumps. `DO_NOT_REDISTRIBUTE.txt` enforces seed-stage IP discipline.
+- **enforcement_payload_shape (schema 0.3.0)**: per external review (Claude + GPT, 2026-05-24), the contract evolved beyond a passive metrics payload into one that carries **enforcement hooks**. `runtime_consult.enforcement` block:
+  ```json
+  {
+    "level":               "best | mid | floor",
+    "output_schema":       { "...json-schema for structured output..." },
+    "required_disclaimers":["..."],
+    "logit_bias_hints":    { "forbid_tokens": [...], "discourage_tokens": [...] },
+    "few_shot_examples":   [{ "input": "...", "output": "..." }, ...]
+  }
+  ```
+  The MCP wrapper consumes these hooks and applies them at the right protocol layer (system-prompt placement, structured-output mode, grammar constraints, automated few-shot injection).
+- **graceful-degradation ladder**: enforcement is layered, not a single technique. The MCP tool must declare the level it delivered per consult.
+
+  | Level | Implementation | Where it works | Compliance |
+  |---|---|---|---|
+  | **best** | grammar-level enforcement (Outlines / Guidance / local model logits) | open models, self-hosted | guaranteed |
+  | **mid** | schema-level enforcement via provider structured-output / tool-use mode | OpenAI `response_format: json_schema`, Anthropic tool-use | very high |
+  | **floor** | system-prompt placement + automated few-shot injection only | every chat API including vanilla | measurable, not guaranteed |
+
+  Floor case is the universal guarantee; best case is the ceiling. The MCP tool detects what's available per provider/call and degrades gracefully, reporting `enforcement.level` in the return payload so consumers know what compliance level they got.
+- **V1 acceptance gate — measurable A/B**: The discipline call from both Claude and GPT review (2026-05-24): the F-022 V1 is NOT considered done until there's a **measurable A/B** demonstration:
+  - Same prompt
+  - Two runs: unconstrained baseline vs `region_consult`-enforced
+  - Measurable behavioral delta (hallucination rate, calibration-aware disclosure, schema conformance, refusal of out-of-distribution queries, etc.)
+
+  Without the A/B, the V1 is an academic demo. With the A/B, the operating-layer claim is proven. The A/B is the gate; the rest is plumbing.
+- **V1 implementation order** (recommended, ~1-2 weeks):
+  1. MCP wrapper + Python tool reading `region_calibration.json`, emitting traces conforming to schema 0.3.0
+  2. **Floor-case enforcement first** (system-prompt + few-shot) because it works on every API — this is the universal guarantee
+  3. **Mid-case enforcement** (OpenAI structured output / Anthropic tool-use) — the realistic production path
+  4. **Best-case enforcement** (Outlines on a local model) — the ceiling, harder to demo but the strongest claim
+  5. **A/B test rig** that runs the same prompt with/without enforcement and records the behavioral delta — this is the V1 done-gate
+- **honest_constraint**: Even with all three enforcement levels, a downstream consumer calling a vanilla chat API has only the floor case available (system-prompt + few-shot). Compliance there is measurable, not guaranteed. The architecture acknowledges this in the `enforcement.level` field rather than over-claiming.
 - **why_it_matters**: This is the artifact that turns the substrate into an operating system. Until LLMs and agents can *consult* the calibration state inline — within their own inference window — TKOS is a measurement layer with manifesto language attached. The `region_consult` tool is the smallest concrete artifact that makes the TKOS vision (see [/writing/temporal-knowledge-operating-system](https://topicspace.ai/writing/temporal-knowledge-operating-system)) demonstrable rather than aspirational. Without it, every TKOS conversation ends with "...but you don't actually have an LLM consulting this yet." With it, the conversation ends with a working demo.
 - **success_condition**: An MCP tool callable from any agent / LLM session, with the following contract:
   ```ts
