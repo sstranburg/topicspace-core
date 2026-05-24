@@ -941,27 +941,39 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
   Important: this is NOT a replacement for rolling walk-forward; it's a *parallel* channel that fires fast on shocks while rolling continues to track gradual drift.
 - **notes**: Adversarial robustness in disguise. Most enterprise eval pitches expect this layer once the basic story lands. Sequence with F-013 (event stream) so the regime-shift events route to the same consumer interface as drift-driven decisions.
 
-### F-022 — `region_consult` MCP tool (the TKOS consultation interface)
+### F-022 — Belief Stack Subscription API (Runtime MCP Gateway)
 - **category**: Field Architecture / Runtime Governance Layer
-- **priority**: P1
-- **status**: V0 seed-crystal landed (2026-05-23, refined to schema 0.3.0 2026-05-24); V1 implementation in inbox
-- **effort**: M
-- **owner**: Sue
+- **priority**: Critical (Priority-Date Milestone)
+- **status**: V0 seed-crystal landed (2026-05-23, refined to schema 0.3.0 2026-05-24); V1 implementation in progress
+- **component**: `storm-runtime` / `tkos-delivery`
+- **tracking_reference**: Patent Provisional Doc 001 (State-Aware Epistemic Context Interception). Contract spec: `tkos/BELIEF_STACK_CONTRACT.md` (schema 0.3.0). Seed-crystal repo: `https://github.com/sstranburg/tkos` (private).
 - **dependencies**: F-007 V1 (region_calibration.json ships), F-020 (velocity field lands) — both shipped. **F-013 event stream is NOT a dependency for V1** (V1 reads the JSON snapshot; consumers swap to the stream later).
-- **strategic_framing**: Per external feedback (Gemini + GPT, 2026-05-24): TKOS is best understood as a **runtime governance layer for probabilistic systems**, not as "memory middleware." That framing is broader and more durable — it covers any probabilistic system (LLMs, agents, recommenders, decision engines), connects to existing enterprise vocabulary (AI governance, model risk management), and centers what TKOS actually does: *quantify uncertainty locally, track calibration drift, dynamically alter inference behavior*.
-- **seed_artifact**: `/Users/sue/Documents/git/tkos/` (initial commit `364b6df`, 2026-05-23; refined to schema 0.3.0 in subsequent commits). Mirrored at private remote `https://github.com/sstranburg/tkos` (commit timestamps independently corroborated by GitHub). RFC-3161 timestamped via `SEED_CRYSTAL_HASHES_txt.tsr`. Schema drift requires explicit `schema_version` bumps. `DO_NOT_REDISTRIBUTE.txt` enforces seed-stage IP discipline.
-- **enforcement_payload_shape (schema 0.3.0)**: per external review (Claude + GPT, 2026-05-24), the contract evolved beyond a passive metrics payload into one that carries **enforcement hooks**. `runtime_consult.enforcement` block:
+
+#### User/system story
+As an AI Agent or Application Developer, I want to subscribe my probabilistic system directly to a domain-specific Belief Stack (via an MCP tool or HTTP endpoint), so that my system instantly inherits a calibrated runtime governance layer that steers its generation boundaries without model fine-tuning.
+
+#### Technical metaphor shift (product reframe 2026-05-24)
+- **Old view:** An engine tool that runs an inline region lookup on a local JSON file.
+- **New view:** The runtime boundary interface of a *subscribable asset*. The consumer calls the stack; the stack returns an active state envelope and programmatic context injections to govern the model mid-inference.
+- **Strategic framing (Gemini + GPT, 2026-05-24):** TKOS is best understood as a **runtime governance layer for probabilistic systems**, not as "memory middleware." Broader category (any probabilistic system: LLMs, agents, recommenders, decision engines), connects to existing enterprise vocabulary (AI governance, model risk management), centers what TKOS actually does: *quantify uncertainty locally, track calibration drift, dynamically alter inference behavior.*
+
+#### Execution specifications & bounds
+- **Latency budget:** Total inline execution window strictly below 50ms (stretch target < 15ms). At inference time, *no* walk-forward statistical or calibration math is permitted. The runtime path must be a pure low-latency key-value read against a pre-computed cluster index.
+- **State vocabulary transparency:** The response payload must preserve and return three structurally distinct, orthogonal signals for the mapped vector region:
+  - `lifecycle_state` ∈ {WORKING | STRENGTHENED | WEAKENED | CONTRADICTED | RETIRED | RECONFIRMED | INVERTED}
+  - `velocity.state` ∈ {turbulent | working | ossified}
+  - `reliability_band` ∈ {HIGH_CONFIDENCE | MEDIUM_CONFIDENCE | LOW_CONFIDENCE | UNCALIBRATED}
+- **Enforcement payload (schema 0.3.0):** `runtime_consult.enforcement` carries actionable hooks, not just metrics:
   ```json
   {
     "level":               "best | mid | floor",
-    "output_schema":       { "...json-schema for structured output..." },
+    "output_schema":       { "...json-schema for structured output..." } | null,
     "required_disclaimers":["..."],
     "logit_bias_hints":    { "forbid_tokens": [...], "discourage_tokens": [...] },
     "few_shot_examples":   [{ "input": "...", "output": "..." }, ...]
   }
   ```
-  The MCP wrapper consumes these hooks and applies them at the right protocol layer (system-prompt placement, structured-output mode, grammar constraints, automated few-shot injection).
-- **graceful-degradation ladder**: enforcement is layered, not a single technique. The MCP tool must declare the level it delivered per consult.
+  The MCP wrapper applies these at the appropriate protocol layer per the **graceful-degradation ladder**:
 
   | Level | Implementation | Where it works | Compliance |
   |---|---|---|---|
@@ -969,82 +981,28 @@ Multi-phase plan to transition from stacked-data (today) to stacked-fields. See 
   | **mid** | schema-level enforcement via provider structured-output / tool-use mode | OpenAI `response_format: json_schema`, Anthropic tool-use | very high |
   | **floor** | system-prompt placement + automated few-shot injection only | every chat API including vanilla | measurable, not guaranteed |
 
-  Floor case is the universal guarantee; best case is the ceiling. The MCP tool detects what's available per provider/call and degrades gracefully, reporting `enforcement.level` in the return payload so consumers know what compliance level they got.
-- **V1 acceptance gate — measurable A/B**: The discipline call from both Claude and GPT review (2026-05-24): the F-022 V1 is NOT considered done until there's a **measurable A/B** demonstration:
-  - Same prompt
-  - Two runs: unconstrained baseline vs `region_consult`-enforced
-  - Measurable behavioral delta (hallucination rate, calibration-aware disclosure, schema conformance, refusal of out-of-distribution queries, etc.)
+  Floor is the universal guarantee; best is the ceiling. The MCP tool detects what's available per provider and reports `enforcement.level` so consumers know the compliance level delivered.
 
-  Without the A/B, the V1 is an academic demo. With the A/B, the operating-layer claim is proven. The A/B is the gate; the rest is plumbing.
-- **V1 implementation order** (recommended, ~1-2 weeks):
-  1. MCP wrapper + Python tool reading `region_calibration.json`, emitting traces conforming to schema 0.3.0
-  2. **Floor-case enforcement first** (system-prompt + few-shot) because it works on every API — this is the universal guarantee
-  3. **Mid-case enforcement** (OpenAI structured output / Anthropic tool-use) — the realistic production path
-  4. **Best-case enforcement** (Outlines on a local model) — the ceiling, harder to demo but the strongest claim
-  5. **A/B test rig** that runs the same prompt with/without enforcement and records the behavioral delta — this is the V1 done-gate
-- **honest_constraint**: Even with all three enforcement levels, a downstream consumer calling a vanilla chat API has only the floor case available (system-prompt + few-shot). Compliance there is measurable, not guaranteed. The architecture acknowledges this in the `enforcement.level` field rather than over-claiming.
-- **why_it_matters**: This is the artifact that turns the substrate into an operating system. Until LLMs and agents can *consult* the calibration state inline — within their own inference window — TKOS is a measurement layer with manifesto language attached. The `region_consult` tool is the smallest concrete artifact that makes the TKOS vision (see [/writing/temporal-knowledge-operating-system](https://topicspace.ai/writing/temporal-knowledge-operating-system)) demonstrable rather than aspirational. Without it, every TKOS conversation ends with "...but you don't actually have an LLM consulting this yet." With it, the conversation ends with a working demo.
-- **success_condition**: An MCP tool callable from any agent / LLM session, with the following contract:
-  ```ts
-  region_consult(query: string, opts?: {
-    embedder?: "openai" | "mock",
-    min_sample_size?: number,    // default 10; below this returns cold_start
-  }) -> RegionConsultResult
-  ```
-  Inline 3-step flow per the TKOS essay §02:
-  1. Encode `query` (default OpenAI `text-embedding-3-small`, or mock for tests)
-  2. Nearest-centroid lookup in `region_calibration.json` (loaded + cached on first call)
-  3. Return payload
+#### Acceptance criteria (the validation gate)
+1. **Contract validity.** The API response must seamlessly ingest and parse the active-intervention state (`tkos_trace_001.json`, `level=mid`) and the deterministic cold-start boundary state (`tkos_trace_002_cold_start.json`, `level=floor`) without breaking the `print_lifecycle.py` replay contract. Schema conformance is checked by running `print_lifecycle.py` against any V1 emission.
+2. **Deterministic safeguard trigger.** When the inbound query maps to a region where sample density `n` falls below the configured threshold `N` (default `N=10`), the gateway MUST force `cold_start = true`, set `reliability_band = "UNCALIBRATED"`, bypass the contextual transformation layer, and inject fallback boundaries that command the downstream LLM to drop systematic-verification claims.
+3. **The empirical demo — measurable A/B.** Build a standardized execution harness evaluating a control agent vs. a treated agent:
+   - **Control:** Pure static RAG (or no consult at all). Given a compromised context (e.g., `Region_LLM_Format_Constraints` under sequential failure), it processes the prompt natively and fails downstream.
+   - **Treatment:** Subscribed agent. Prior to inference, queries the Belief Stack Subscription API, receives an `INTERVENE` decision class with structured `injected_context` + `enforcement` payload, and automatically restricts behavior / applies schema validation.
+   - **Success metric:** The treatment agent must demonstrate a measurable reduction (target: ≥80% on the canonical trace; ideally 100% on the format-constraints trace) in unmitigated downstream execution failures relative to the control, verified by an automated evaluation script.
 
-  **Two payload shapes:**
+#### V1 implementation order (~1–2 weeks)
+1. MCP wrapper + Python tool reading `region_calibration.json`, emitting traces conforming to schema 0.3.0
+2. **Floor-case enforcement first** (system-prompt + few-shot) — universal guarantee
+3. **Mid-case enforcement** (OpenAI structured output / Anthropic tool-use) — realistic production path
+4. **Best-case enforcement** (Outlines on a local model) — the ceiling
+5. **A/B test rig** — the V1 done-gate
 
-  Calibrated case:
-  ```json
-  {
-    "query_region_id":  "reg-83de2ee3ed",
-    "theme_label":      "Intel's AI Strategy and Challenges",
-    "velocity": {
-      "state":            "ossified",
-      "n_sig_events_14d": 0,
-      "days_since_last_event": 47
-    },
-    "last_calibration": {
-      "hit_5d":     0.07,
-      "n_obs":      14,
-      "tier":       "public",
-      "rolling_stable":  true,
-      "flagged_inverted": true
-    },
-    "decision_class":      "INVERT",
-    "effective_direction": -1,
-    "reliability_band":    "LOW_CONFIDENCE",
-    "cold_start":          false
-  }
-  ```
-
-  Cold-start fallback (when n_obs < `min_sample_size` OR no region match within similarity threshold):
-  ```json
-  {
-    "query_region_id":  null,
-    "reliability_band": "UNCALIBRATED",
-    "cold_start":       true,
-    "guidance":         "fall back to baseline-hedged language; no active feedback loop available"
-  }
-  ```
-
-  **Latency target**: <50ms once region_calibration.json is cached (single embedding call + dict lookup). First call may be slower if OpenAI is used; mock embedder keeps every call inline-fast for tests.
-
-  **V1 scope (1-2 weeks)**:
-  - Python tool living in `beliefstack-prototype` or a new `tkos/` directory
-  - Reads `topicspace-site/public/region_calibration.json` directly (no separate store yet)
-  - MCP server wrapper (FastMCP or similar) exposing the tool
-  - One worked example: an LLM agent that calls `region_consult` before answering a markets-themed query and demonstrates calibrated-doubt behavior on a known-inverted region (Intel AI Strategy −)
-
-  **Out of scope for V1**:
-  - Streaming subscriptions (subscribe-to-region) — that's F-013 V2 territory
-  - Cross-domain federation — that's a separate F-023 candidate
-  - Production-grade caching / pub-sub — for later if adoption pulls it
-- **notes**: This is the "fighter jet" piece — small, fast, tactical, the artifact that proves the TKOS vision in code rather than essay. After F-022 V1 lands, the natural follow-on is wiring it into F-019 (enterprise RAG governance POC) as the first real consumer, then upgrading the JSON-read path to a F-013 event-stream subscription once that lands. Strategic anchor: the TKOS essay explicitly references this tool; until it exists, the essay's section 02 is a promise.
+#### Out of scope for V1
+- Streaming subscriptions (subscribe-to-region) — F-013 V2 territory
+- Cross-domain federation
+- Production-grade pub-sub or marketplace infrastructure
+- Honest constraint: vanilla chat-API consumers get only floor-case; compliance is measurable, not guaranteed. The architecture reports the delivered level in `enforcement.level` rather than over-claiming.
 
 ---
 
