@@ -1015,6 +1015,58 @@ As an AI Agent or Application Developer, I want to subscribe my probabilistic sy
 
 ---
 
+### F-023 — TKOS log-replay proof-of-concept (Claude session audit)
+- **category**: Research / Empirical Validation
+- **priority**: P2 (deferred; high-value, no urgency)
+- **status**: Backlog — parked 2026-05-29 to clear bandwidth for the TopicSpace sensemaking case study (C-002 series)
+- **component**: `tkos-research` / `belief-stack-validation`
+- **dependencies**: v0.1 spec shipped (`topicspace.ai/research/belief-stack`); warrants module shipped (`beliefstack-prototype/beliefstack/warrants.py`); no further blocking dependencies. ~330 MB of Claude session JSONLs already accumulated at `~/.claude/projects/-Users-sue-Documents-git-storm/` and `~/.claude/projects/-Users-sue-Documents-git-storm/subagents/` (5 main sessions, 159 subagent traces).
+
+#### Strategic frame
+The "LLM That Forgot Time" essay landed on a single anecdote (one goodnight glitch). The log-replay POC scales that to *thousands* of moments across the existing Claude session corpus. It produces the first empirical artifact that exercises the v0.1 spec on a substrate uniquely available to this project — long-running assistant workflow logs with observable belief lifecycle, real intervention points, and ground-truth outcomes (the actual session continued or didn't, the user corrected or didn't, the deploy fired or didn't).
+
+This is the strongest empirical move available right now. Stronger than the OSS reference impl, because the data already exists and isn't replicable from outside this project. Stronger than a Petri-style detection experiment, because it tests the *runtime* claim (does belief lifecycle infrastructure change behavior?) rather than the *detection* claim (does it match a judge?).
+
+#### What the POC produces
+1. **A reasoning ledger** for each session: every (label, warrant) pair extracted from the trace, with operation_type, evidence_refs, validation_status, birth_timestamp, and current authority weight computed under the v0.1 spec.
+2. **An intervention catalog**: at every assistant action, the TKOS-equivalent check — does the active warrant for the action's prerequisite survive at firing time? Pass/fail per intervention.
+3. **A comparison table**: actual session behavior vs. TKOS-replay verdict. Counts of:
+   - Both flag (true positive): TKOS would have suppressed, the actual run produced a stale/wrong output
+   - TKOS flag only (false positive): TKOS would have suppressed, the actual run was fine
+   - TKOS miss (false negative): TKOS would have allowed, the actual run produced a stale/wrong output that the user corrected
+   - Both pass (true negative): clean
+
+#### Methodology discipline (must hold to avoid selection-bias dunking)
+- **Random sample, not failure-cherry-picking.** Pull N sessions uniformly from `~/.claude/projects/`, not just sessions the human remembers as broken.
+- **Pre-registered intervention criteria.** Before reading the logs, define what counts as "stale prior triggers intervention" (e.g., warrant authority below threshold X at time Y for prior class Z). Lock criteria; don't tune them to the data.
+- **False positive accounting.** Report cases where TKOS would have intervened but the actual run was fine. Without this, the writeup looks like "TKOS catches the exact failures we already knew about."
+- **Honest framing of the comparison.** This is offline detection rate against retrospective ground truth, not measured live impact. TKOS would have *flagged* X; whether it would have *changed* the outcome is hypothesis, not evidence. The writeup must say so in the methodology section.
+
+#### L0–L4 mapping for assistant workflow substrate
+- **L0**: tool outputs, commits, errors, file changes, user instructions, system events (with timestamps + provenance).
+- **L1**: workflow regions (typed a priori): `data_fetch`, `pipeline_run`, `failure_diagnosis`, `validation`, `deploy_readiness`, `report_generation`, `evidence_sealing`. Substrate-aware typology, not learned clustering.
+- **L2**: operational expectations per region (`pipeline_should_complete`, `report_dates_should_align`, `source_health_sufficient`, `deploy_waits_for_approval`, etc.).
+- **L3**: lifecycle states for each active belief (`active`, `stale`, `contradicted`, `resolved`, `blocked`, `repeated_failure`).
+- **L4**: did the expected next step work? did the assistant update after failure? did stale assumptions persist?
+
+#### Strongest sub-claim to lead with
+**Repeated-failure-loop detection.** Sessions where the assistant kept retrying the same broken thing for 5+ turns are easy to identify after the fact, and TKOS has the clearest edge over what assistants do natively (they don't track "I've tried this 5 times and it's still failing"). If the writeup leads with "TKOS would have flagged N% of repeated-failure loops at turn K, before the assistant entered the loop" — that's a falsifiable, citable claim.
+
+#### Suggested artifact
+Writeup: **"Watching an Assistant Forget: A Belief-Lifecycle Audit of Long-Running LLM Sessions."** Frames the work in terms of the failure mode the audience cares about, technique second. Publishes at `topicspace.ai/research/log-replay-audit` (or similar) as the second proof-point under the research surface.
+
+#### Effort estimate
+~1–2 weeks of focused work. Splits roughly:
+- 2-3 days: log parsing + ledger extraction
+- 2-3 days: warrant assignment + intervention catalog
+- 1-2 days: replay + comparison table
+- 2-3 days: writeup with proper methodology framing
+
+#### Why parked
+2026-05-29: shifting focus to the TopicSpace sensemaking effectiveness case study (descriptive statistics + effectiveness claims + trace examples — see C-002 follow-on). The sensemaking case study uses an existing, more mature substrate (the daily TopicSpace pipeline) and exercises the same Belief Stack vocabulary on data already accumulated. F-023 remains the next strongest research artifact after the sensemaking case study ships.
+
+---
+
 ## How to use this file
 
 - Edit cards by hand. Status is the most important field to keep current.
