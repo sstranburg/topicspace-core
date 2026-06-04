@@ -13,7 +13,8 @@ Status: **partial — consolidated from two prior backlog files on 2026-06-03.**
 | **OPS-001** | Formalize the operating model | in progress — Session A shipped 2026-06-03 (`/ops/operating_principles.md`, this backlog) | Session B: write `CLAUDE.md` at storm root |
 | **OPS-001 / Session B** | CLAUDE.md / AGENTS.md entry-point artifact | queued | Single-file project orientation, readable cold in <10 min |
 | **OPS-001 / Session C** | `/write-work-order` Claude Skill | queued | Reusable ritual for structured work delegation |
-| **v0.4** | Belief Stack v0.4 — replication across 4 axes | scoping | End-to-end cost + model variance + domain transfer + extraction-mechanism robustness (see `project_belief_stack_cost_frontier.md`) |
+| **PAPER-001** | *Maintained State as a Planning Primitive* — paper | in progress | Working draft v0.1 written 2026-06-04 (`paper/MAINTAINED_STATE_AS_PLANNING_PRIMITIVE_v0.1.md`). Covers v0.3 + v0.4a.1 + v0.4a.2. Iterate as cross-substrate, model-variance, and end-to-end-economics results land. |
+| **v0.4** | Belief Stack v0.4 — replication across 4 axes | scoping | End-to-end cost + model variance + domain transfer + extraction-mechanism robustness (see `project_belief_stack_cost_frontier.md`). Post-v0.4a, **cross-substrate replication is highest priority** — the single-substrate caveat is the largest live risk to the v0.4a interpretation. |
 | **TKOS write-path** | Live event ingestion → rule engine → derived `belief_instances` / `belief_events` | not started | Required to move v0.4 off fixtured beliefs onto a live substrate |
 | **`tkos timeline`** | Belief-events stream CLI surface | not started | TKOS-002 §5.1 Q2/Q4/Q7 — quality-of-life for the human surface |
 | **`tkos explain <belief_id>`** | Single-belief drill-down CLI | not started | TKOS-002 §5.1 Q3/Q5/Q8 — quality-of-life for the human surface |
