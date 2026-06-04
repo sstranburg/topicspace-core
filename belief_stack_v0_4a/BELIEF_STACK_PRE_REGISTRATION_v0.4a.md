@@ -1,8 +1,8 @@
 # Belief Stack v0.4a — Mechanism Ablation Pre-Registration
 
 **Date:** 2026-06-03
-**Status:** **LOCKED 2026-06-03 as v0.4a; AMENDED + RE-LOCKED 2026-06-03 as v0.4a.1** (D4 clarification surfaced by build-time audit — observed-token target replaced by budget-cap target; cluster-admission named as the audit condition). See §11 Amendment log.
-**Lineage:** OB-001 (v0.1) → OB-002 (v0.2.2) → Belief Stack v0.3 (planning-side, locked + run 2026-06-03) → **v0.4a.1 (mechanism ablation, this document)** → v0.4b (end-to-end cost) → v0.4c (replication)
+**Status:** **LOCKED 2026-06-03 as v0.4a; AMENDED + RE-LOCKED as v0.4a.1; FURTHER AMENDED + RE-LOCKED as v0.4a.2** (compression-vs-substrate isolation — Arm A′ added to test whether the maintained-state lift survives prose compression of the raw log at matched budget). See §11 Amendment log.
+**Lineage:** OB-001 (v0.1) → OB-002 (v0.2.2) → Belief Stack v0.3 (planning-side, locked + run 2026-06-03) → **v0.4a.2 (mechanism ablation + compression confound isolation, this document)** → v0.4b (end-to-end cost) → v0.4c (replication)
 
 ---
 
@@ -248,6 +248,61 @@ v0.4a as implemented used budget = 285. Observed tokens land below 285 because t
 The experimental design is unchanged. Only the *interpretation* of D4's "matched budget" claim is clarified. Contexts already generated (`belief_stack_v0_4a/data/contexts_arm_{a,b,c,d,e}.jsonl`) are preserved; no re-render required.
 
 **Discipline reflection:** This amendment is exactly the build-time audit the *Lock before run* operating principle is designed to surface. Catching the D4 ambiguity at the context-construction step — *before* answer generation flows — is the discipline working as intended. The v0.4a → v0.4a.1 trace is part of the experiment's provenance, not a stain on it.
+
+---
+
+---
+
+## §12 v0.4a.2 extension — Arm A′ (compression-vs-substrate isolation)
+
+**Locked 2026-06-03 by Sue Stranburg.** Added after v0.4a.1 results landed (Outcome 5: lifecycle/warrant discipline does not add measurable value over maintained summaries on this substrate). The result left one architectural ambiguity unresolved: **is the maintained-state lift coming from compression itself, or from the substrate transformation?**
+
+### Why this arm
+
+Arm B summarizes the *maintained-state substrate* (the §3.5a-clustered active beliefs with full warrant + lifecycle fields). Arm A summarizes nothing — it shows the raw K=20 log. The B − A lift (5.3 pp) is therefore confounded between:
+
+1. **Compression** (B is shorter than A).
+2. **Source transformation** (B's input is substrate-derived; A's input is raw log).
+
+Arm A′ holds compression constant and varies source. If A′ ≈ B, the substrate transformation contributes nothing measurable beyond compression — the architectural thesis weakens substantively. If A′ < B, the substrate transformation matters above and beyond compression — the thesis strengthens.
+
+### Arm A′ definition
+
+| Field | Value |
+|---|---|
+| Source | Raw K=20 log (identical to Arm A's input) |
+| Compression mechanism | LLM-generated prose summary, same protocol as Arm B |
+| Summarizer model | `gpt-4o-2024-08-06` |
+| Summarizer temperature | 0 |
+| Summarizer seed | 20260601 |
+| Summarizer max output | 285 tokens (matched to Arm B) |
+| Summarizer system prompt | Same as Arm B's, but instructed to summarize "what is currently true" from raw session history rather than from a maintained belief list |
+
+### Pre-registered predictions (locked at amendment time)
+
+**Three outcome classes, with locked action commitments:**
+
+| Result | Architectural implication | Action |
+|---|---|---|
+| **A′ ≈ B/C** (within 2 pp) | **Compression alone explains v0.4a's B-vs-A lift.** The maintained-state thesis weakens substantively: the substrate transformation contributes nothing measurable beyond LLM-compression of raw log at the same budget. | Amend `project_belief_stack_database_analogy.md` and `project_belief_stack_claim_hierarchy.md` to reflect the new central claim ("LLM-compressed context is the planning primitive; substrate-derived maintenance is unverified to add above compression"). The matter claim itself doesn't disappear — A′ ≈ B is still substantively better than A — but it would lose its architectural distinctiveness. |
+| **A′ < B** by ≥ 3 pp | **Substrate transformation does meaningful work above compression.** The maintained-state thesis strengthens; the rule-engine-derived view of the substrate is doing planning-useful work the LLM cannot replicate by summarizing raw history. | Strengthen `project_belief_stack_database_analogy.md` first-prediction line. Amend `project_belief_stack_claim_hierarchy.md` to reflect the sharpened thesis. |
+| **A′ ≈ A** (within 2 pp) | **Compression of raw log doesn't help — maintained state must be doing the work.** Strongest possible support for the architecture's thesis at this cell of the design space. | Strengthen the thesis layer of `project_belief_stack_claim_hierarchy.md` substantively. Amend `project_belief_stack_database_analogy.md`. |
+| **Between** (A′ between A and B by more than 2 pp on each side) | **Compression and substrate transformation each contribute partially.** Magnitude tells you how much. | Quantify the split. Report honestly. Likely a mid-tier amendment. |
+
+Effect-size threshold matches v0.4a.1's pre-reg: **3 pp for "advanced," ≤ 2 pp for "noise floor."**
+
+### What this experiment does NOT test
+
+- Not budget-sensitivity (still ~285 token cap).
+- Not model variance (still gpt-4o-2024-08-06).
+- Not domain transfer (still Claude Code session logs).
+- Not "what is the optimal raw-log compression strategy" — A′ uses a single fixed prose-summarization protocol matched to Arm B.
+
+### Lock signature
+
+**v0.4a.2 amendment locked by:** Sue Stranburg
+**v0.4a.2 amendment locked on:** 2026-06-03 (same evening as v0.4a.1 results)
+**Triggered by:** v0.4a.1 result revealed Outcome 5 (lifecycle/warrant discipline ≈ maintained summaries); Sue's follow-up question identified the compression-vs-substrate confound as the load-bearing thesis-level question; agreed to run the disambiguating experiment before broader memory amendments and any cross-substrate replication.
 
 ---
 
