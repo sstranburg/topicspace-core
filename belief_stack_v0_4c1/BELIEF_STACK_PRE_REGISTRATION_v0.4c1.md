@@ -1,8 +1,8 @@
 # Belief Stack v0.4c1 — Cross-Model Replication Pre-Registration
 
 **Date:** 2026-06-04
-**Status:** **LOCKED 2026-06-04.** All eight decisions resolved; pre-registration is now closed. No amendments without re-lock and re-version (v0.4c1.1, etc.).
-**Lineage:** OB-001 (v0.1) → OB-002 (v0.2.2) → Belief Stack v0.3 → v0.4a.1 → v0.4a.2 → **v0.4c1 (cross-model replication, this document)** → v0.4c2 (cross-substrate replication)
+**Status:** **LOCKED 2026-06-04 as v0.4c1; AMENDED + RE-LOCKED 2026-06-04 as v0.4c1.1** (provider API discoveries — `gemini-2.5-pro` requires thinking mode; `claude-opus-4-7` does not accept `temperature` parameter). See §11 Amendment log.
+**Lineage:** OB-001 (v0.1) → OB-002 (v0.2.2) → Belief Stack v0.3 → v0.4a.1 → v0.4a.2 → **v0.4c1.1 (cross-model replication, this document)** → v0.4c2 (cross-substrate replication)
 
 ---
 
@@ -23,7 +23,7 @@ v0.3 and v0.4a held the generator fixed at `gpt-4o-2024-08-06` (T=0, seed 202606
 | **D1** | Substrate | **RESOLVED** | Reuse v0.1 / v0.2.2 / v0.3 / v0.4a substrate unchanged. 75 paired single-next-action planning questions, derived from 164 Claude Code session logs (~20,190 evaluation turns). Same 5 categories. Maximizes cross-experiment comparability. |
 | **D2** | Number of arms | **RESOLVED** | 4 (A / A' / B / C). Drops D and E from v0.4a's ladder because their result (E ≈ B; D ≈ C, both slightly below) was substrate-and-budget-specific; re-running them across models is mechanism-question scope, not thesis scope. v0.4c1 tests the thesis. |
 | **D3** | **Models** | **RESOLVED** | Four models locked: <br/>1. `gpt-4o-2024-08-06` (parity check; same as v0.3 / v0.4a) <br/>2. `claude-opus-4-7` (frontier-class, different family) <br/>3. `gemini-2.5-pro` (frontier-class, different family) <br/>4. `claude-haiku-4-5-20251001` (smaller; scale-variance question)<br/><br/>**Rationale:** *"does this hold on frontier alternatives?"* and *"does this hold on cheaper models?"* are separate questions and both worth answering. Three would be the minimum defensible; the fourth model (Haiku) addresses scale variance and is worth the additional cost. |
-| **D4** | Per-model generator configurations | **RESOLVED** | All models: `temperature=0`, top_p 1.0, max output 1500 tokens. Seed is set to `20260601` where the provider supports it; residual non-determinism is accepted where seed is unsupported and **explicitly noted as a limitation in the paper**. Per-provider seed support recorded in §3 at lock time; verified at implementation time before any data flows. Seed parity is not allowed to block the experiment. |
+| **D4** | Per-model generator configurations | **RESOLVED (v0.4c1.1 amendment)** | All models: `temperature=0` where supported, top_p 1.0, max output 1500 tokens. Seed is set to `20260601` where the provider supports it. Per-provider behavior documented in §3 — three real provider-specific divergences are now recorded:<br/><br/>• `gpt-4o-2024-08-06`: full v0.4a parity (T=0, seed supported).<br/>• `claude-opus-4-7`: the API rejects `temperature` (deprecated for this model). Uses Anthropic's default sampling. Seed not supported.<br/>• `claude-haiku-4-5-20251001`: accepts T=0; seed not supported.<br/>• `gemini-2.5-pro`: the API requires thinking mode (`thinking_budget=0` returns 400). Run with `thinking_budget=2048` to give the model headroom for internal reasoning. Seed supported as a config parameter.<br/><br/>Cross-model parity is not perfect; the divergences are recorded honestly and surfaced as paper limitations. Per-provider config is locked here; no further variation at run time. |
 | **D5** | Context budgets | **RESOLVED** | Match v0.4a's locked budget cap of ~285 tokens for B and C. Arm A's raw K=20 log unchanged. Arm A''s LLM summary cap matched to B at ~285 tokens. The §3.5a dedup-ranking machinery from v0.4a is the canonical projection pipeline; same code, same parameters across all models. |
 | **D6** | Scoring | **RESOLVED** | **Hold the judge constant; only the generator varies.** Reuse v0.4a's deterministic oracle (`score_operational_label.Scorer`) + LLM judge (`gpt-5-mini-2025-08-07`, reasoning_effort=medium, seed 20260601). Same `combine_oracle_and_judge` policy (oracle wins on disagreement). Holding the judge constant isolates the generator question from any judge-variance confound. |
 | **D7** | Primary outcome metric | **RESOLVED** | Per-model paired planning correctness. n = 75 paired observations per (model, arm pair). Pre-registered minimum effect size for "advancement" between arms: **3 percentage points**. |
@@ -52,51 +52,61 @@ The **summarizer model** for arms B and A' is the same as the per-model generato
 
 All four models locked. Per-provider seed support recorded; residual non-determinism accepted where seed is unsupported per D4.
 
+All four models locked. Per-provider configurations updated per the v0.4c1.1 amendment after build-time API verification.
+
 ```
-Model 1: gpt-4o-2024-08-06        (provider: OpenAI)
+Model 1: gpt-4o-2024-08-06         (provider: OpenAI)
   temperature:      0
   top_p:            1.0
   max_tokens:       1500
-  seed:             20260601       (supported)
-  parity:           reproduces v0.4a exactly; any drift > 2 pp on any arm
-                    prompts sanity audit before cross-model interpretation
+  seed:             20260601                  (supported)
+  thinking:         n/a (model has no thinking phase)
+  parity note:      reproduces v0.4a exactly; any drift > 2 pp on
+                    any arm prompts sanity audit before cross-model
+                    interpretation
 
-Model 2: claude-opus-4-7           (provider: Anthropic)
-  temperature:      0
-  top_p:            1.0
+Model 2: claude-opus-4-7            (provider: Anthropic)
+  temperature:      NOT SUPPORTED — API rejects this parameter for
+                    this model; default sampling is used
+  top_p:            not explicitly set
   max_tokens:       1500
-  seed:             NOT SUPPORTED  (Anthropic API does not expose a
-                                   deterministic seed parameter as of
-                                   pre-reg lock 2026-06-04)
-  notes:            residual non-determinism accepted; if seed support
-                    has been added by implementation time, lock seed
-                    to 20260601 in the build script and note the
-                    addition in the audit
+  seed:             NOT SUPPORTED
+  thinking:         n/a — model uses Anthropic-internal sampling
+  notes:            this model has the most provider divergence from
+                    v0.4a parity. Residual non-determinism + non-zero
+                    effective temperature both accepted. Will be the
+                    arm most likely to show run-to-run variation.
 
-Model 3: gemini-2.5-pro            (provider: Google / Gemini API)
+Model 3: gemini-2.5-pro             (provider: Google / Gemini API)
   temperature:      0
   top_p:            1.0
-  max_tokens:       1500
-  seed:             VERIFY AT IMPLEMENTATION (Gemini API seed support
-                                              status may have changed
-                                              between pre-reg date and
-                                              run date; record actual
-                                              status in build script
-                                              audit, use seed if
-                                              available, accept residual
-                                              non-determinism otherwise)
-  notes:            implementation-time check required; outcome recorded
-                    in audit JSON
+  max_tokens:       1500     (final answer cap)
+  seed:             20260601                  (supported)
+  thinking_budget:  2048      (REQUIRED — API rejects thinking_budget=0
+                              with 'This model only works in thinking
+                              mode.' v0.4c1.1 sets a fixed budget that
+                              gives the model headroom for internal
+                              reasoning before producing the final
+                              answer.)
+  notes:            Gemini has a larger effective compute envelope per
+                    call than the other three models. Documented as a
+                    paper limitation. The cross-model claim becomes
+                    'maintained state beats reconstruction on three
+                    non-thinking models AND on one thinking model
+                    with internal reasoning budget' — itself an
+                    architecturally interesting comparison.
 
-Model 4: claude-haiku-4-5-20251001 (provider: Anthropic)
-  temperature:      0
+Model 4: claude-haiku-4-5-20251001  (provider: Anthropic)
+  temperature:      0                         (supported)
   top_p:            1.0
   max_tokens:       1500
-  seed:             NOT SUPPORTED  (same as Claude Opus 4.7)
-  notes:            residual non-determinism accepted
+  seed:             NOT SUPPORTED
+  thinking:         n/a
+  notes:            standard Anthropic sampling at T=0 minus seed.
+                    Residual non-determinism accepted.
 ```
 
-**Audit requirement:** the build script verifies and records actual seed support per provider at run time. If any provider's behavior differs from what's recorded above (e.g., Anthropic has added seed support; Gemini has removed it), the audit captures the change and the build proceeds without amendment to the locked design — only the seed parameter usage differs from the documented baseline. The paper's "single model family" caveat in v0.4a becomes "models in this family, with per-provider seed-support notes" in v0.4c1.
+**Audit requirement:** the build script captures actual per-provider behavior in the audit JSON (request configs sent, responses received, any provider-specific telemetry). The four divergences from a hypothetical "perfect parity" config are documented in the audit + the paper. The paper's "single model family" caveat in v0.4a becomes "models in this family, with per-provider sampling and (for Gemini) thinking-mode notes" in v0.4c1.
 
 Total expected API calls: 75 questions × 4 arms × 4 models = **1,200 generation calls** + **1,200 judge calls** (judge held constant on `gpt-5-mini-2025-08-07`). Estimated wall-clock: 6-12 hours depending on per-provider rate limits. Estimated cost: ~$30-80 across all model APIs.
 
@@ -202,22 +212,29 @@ Same as v0.4a:
 
 ## §10 Lock signature
 
-This pre-registration is **LOCKED.**
+This pre-registration is **LOCKED at v0.4c1.1.**
 
 - [x] D1 — substrate reused from v0.1 / v0.2.2 / v0.3 / v0.4a
 - [x] D2 — four arms (A / A' / B / C); no D, no E
 - [x] D3 — four models (`gpt-4o-2024-08-06`, `claude-opus-4-7`, `gemini-2.5-pro`, `claude-haiku-4-5-20251001`)
-- [x] D4 — `temperature=0` across all models; seed where supported; residual non-determinism accepted where seed unsupported and documented as a paper limitation
+- [x] D4 — **AMENDED v0.4c1.1:** per-provider configurations recorded in §3 after build-time API verification surfaced two real divergences (`claude-opus-4-7` rejects `temperature`; `gemini-2.5-pro` requires thinking mode). Residual non-determinism + thinking-mode confound accepted; both documented as paper limitations.
 - [x] D5 — ~285-token budget cap matched across B and C, with the v0.4a §3.5a dedup-ranking machinery
 - [x] D6 — judge held constant (`gpt-5-mini-2025-08-07`); oracle wins on disagreement; same `combine_oracle_and_judge` as v0.3 / v0.4a
 - [x] D7 — paired planning correctness, 3 pp advancement threshold, 2 pp noise floor
 - [x] D8 — per-model 5-class interpretation rules locked with cross-model action commitments
 
-**Locked by:** Sue Stranburg
-**Locked on:** 2026-06-04
-**Lock hash:** [commit SHA of this file at lock time — set by the git commit that lands this lock]
+**v0.4c1 lock:**
+- Locked by: Sue Stranburg
+- Locked on: 2026-06-04
+- Lock hash: commit `641edff` (initial v0.4c1 lock)
 
-After lock: no amendments without a re-lock and re-version (v0.4c1.1, etc.).
+**v0.4c1.1 re-lock (this version):**
+- Re-locked by: Sue Stranburg
+- Re-locked on: 2026-06-04 (same day as v0.4c1 lock)
+- Lock hash: [commit SHA of this re-lock — set by the git commit that lands v0.4c1.1]
+- Triggered by: build-time API verification before any context generation flowed. Two provider-specific behaviors surfaced (Anthropic Opus 4.7 rejects `temperature`; Gemini 2.5 Pro requires thinking mode). Both are real API behaviors, not design choices.
+
+After lock: no amendments without a re-lock and re-version (v0.4c1.2, etc.).
 
 ---
 
@@ -225,7 +242,45 @@ After lock: no amendments without a re-lock and re-version (v0.4c1.1, etc.).
 
 > *Proceed with 4 models, lock D4 with provider-specific seed support recorded, and lock D8 as drafted. Then commit the locked pre-reg before writing any execution code.*
 
+> *(v0.4c1.1, after Path B chosen for Gemini):* keep `gemini-2.5-pro` with thinking enabled at a fixed budget; document as per-provider behavior; the paper records this as a real fact about how Gemini's frontier model operates rather than swapping to a smaller Gemini model to chase methodology parity.
+
 The discipline holds: locked design → committed pre-reg → only then execution code → only then data flows.
+
+---
+
+## §11 Amendment log
+
+### v0.4c1 → v0.4c1.1 (2026-06-04)
+
+**Trigger:** Build-time API verification before any context-generation calls flowed. Per the lock-before-run + build-time-audit discipline, all four provider API endpoints were exercised with the locked D3 / D4 configurations to confirm reachability and parameter acceptance.
+
+**Two real provider-specific behaviors surfaced:**
+
+1. **`claude-opus-4-7` does not accept the `temperature` parameter.** Anthropic deprecated `temperature` for this model. The API returns 400 with *"`temperature` is deprecated for this model."* The model must be called without `temperature`; default Anthropic sampling is used. Verified that `claude-haiku-4-5-20251001` still accepts `temperature=0` — only Opus 4.7 has this restriction.
+
+2. **`gemini-2.5-pro` requires thinking mode.** Setting `thinking_budget=0` (to disable thinking) returns 400 with *"This model only works in thinking mode."* Confirmed `gemini-2.5-flash` accepts `thinking_budget=0` (can run without thinking) and `gemini-2.0-flash` is deprecated. The only way to use `gemini-2.5-pro` is with a non-zero thinking budget.
+
+**Resolution paths considered:**
+
+For the Opus issue: no alternative within the locked design — record as a per-provider behavior, accept the divergence, document as paper limitation. Not a true amendment to the experimental design; just an honest recording of provider behavior.
+
+For the Gemini issue, three paths considered:
+- *Path A:* swap `gemini-2.5-pro` → `gemini-2.5-flash` (non-thinking). Trade-off: lose frontier-class Gemini.
+- *Path B:* keep `gemini-2.5-pro` with `thinking_budget=2048`. Trade-off: Gemini has more effective compute per call than the other models.
+- *Path C:* include both Pro (thinking) and Flash (non-thinking). Trade-off: 25% more cost; 5 models.
+
+**Decision (Path B):** Keep `gemini-2.5-pro` with `thinking_budget=2048`. The thinking-vs-not-thinking distinction is part of how Gemini's frontier model actually operates; swapping to Flash to chase methodology parity would be avoiding a real fact about the model field. The cross-model question becomes more interesting under Path B: *"Does maintained state still produce better planning judgments even when one model has an internal thinking phase?"* Either outcome (lift survives with thinking; lift vanishes with thinking) is informative.
+
+**What changed in the pre-reg:**
+
+- §1 D4 (per-model configurations): rewrote to record the per-provider divergences explicitly. Status reads `RESOLVED (v0.4c1.1 amendment)`.
+- §3 (Models and locked configurations): per-model config blocks updated. `claude-opus-4-7` block notes `temperature: NOT SUPPORTED`. `gemini-2.5-pro` block records `thinking_budget: 2048 (REQUIRED)`.
+- §10 lock signature: re-lock entry added; D4 marked as amended.
+- Status header at top: reflects amendment to v0.4c1.1.
+
+**What did NOT change:** D1 (substrate), D2 (arm set), D3 (which four models), D5 (budget), D6 (scoring), D7 (effect-size thresholds), D8 (interpretation rules), §2 (arm definitions), §4 (context construction protocol), §5 (scoring methodology), §6 (predictions), §7 (interpretation rules), §8 (anti-curation discipline), §9 (scope limits). The experimental design is unchanged.
+
+**Discipline reflection:** v0.4c1.1 is a textbook application of the build-time-audit-is-discipline memory. Verifying the four provider endpoints before any data flowed surfaced two real provider behaviors that the locked design implicitly assumed away. Honoring them with an explicit amendment log is the discipline working as intended. The amendment trace is part of the experiment's provenance.
 
 ---
 
