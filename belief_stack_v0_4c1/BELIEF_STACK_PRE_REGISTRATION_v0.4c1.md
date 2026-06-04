@@ -1,7 +1,7 @@
 # Belief Stack v0.4c1 — Cross-Model Replication Pre-Registration
 
 **Date:** 2026-06-04
-**Status:** **DRAFT — NOT YET LOCKED.** Six decisions need resolution before lock. See §1 Decisions table.
+**Status:** **LOCKED 2026-06-04.** All eight decisions resolved; pre-registration is now closed. No amendments without re-lock and re-version (v0.4c1.1, etc.).
 **Lineage:** OB-001 (v0.1) → OB-002 (v0.2.2) → Belief Stack v0.3 → v0.4a.1 → v0.4a.2 → **v0.4c1 (cross-model replication, this document)** → v0.4c2 (cross-substrate replication)
 
 ---
@@ -22,14 +22,14 @@ v0.3 and v0.4a held the generator fixed at `gpt-4o-2024-08-06` (T=0, seed 202606
 |---|---|---|---|
 | **D1** | Substrate | **RESOLVED** | Reuse v0.1 / v0.2.2 / v0.3 / v0.4a substrate unchanged. 75 paired single-next-action planning questions, derived from 164 Claude Code session logs (~20,190 evaluation turns). Same 5 categories. Maximizes cross-experiment comparability. |
 | **D2** | Number of arms | **RESOLVED** | 4 (A / A' / B / C). Drops D and E from v0.4a's ladder because their result (E ≈ B; D ≈ C, both slightly below) was substrate-and-budget-specific; re-running them across models is mechanism-question scope, not thesis scope. v0.4c1 tests the thesis. |
-| **D3** | **Models** | **LEANING — needs lock** | Four models proposed: <br/>1. `gpt-4o-2024-08-06` (original — parity check; same as v0.3 / v0.4a) <br/>2. `claude-opus-4-7` (frontier-class, different family) <br/>3. `gemini-2.5-pro` (frontier-class, different family) <br/>4. `claude-haiku-4-5-20251001` (smaller, model-scale variance) <br/><br/>**Rationale:** four models give us original-parity + two frontier-class-from-different-families + one smaller-model. Three is the minimum defensible (drop #4); four is the version that also addresses *"does this hold on cheaper models?"* If cost or wall-clock pressure motivates a cut, drop Haiku (#4) and accept the scale-variance question as v0.5+ scope. *Alternative if Sue prefers different smaller model:* substitute `gemini-2.5-flash` for Haiku. |
-| **D4** | Per-model generator configurations | **LEANING — needs lock** | Match v0.4a's protocol where the model supports it: temperature 0, top_p 1.0, max output 1500 tokens, seed 20260601. Some models (Anthropic family) do not natively support deterministic seed — for those, use `temperature=0` and accept that residual non-determinism may slightly inflate variance. Each model's locked config recorded in §3 of this pre-reg before any data flows. |
+| **D3** | **Models** | **RESOLVED** | Four models locked: <br/>1. `gpt-4o-2024-08-06` (parity check; same as v0.3 / v0.4a) <br/>2. `claude-opus-4-7` (frontier-class, different family) <br/>3. `gemini-2.5-pro` (frontier-class, different family) <br/>4. `claude-haiku-4-5-20251001` (smaller; scale-variance question)<br/><br/>**Rationale:** *"does this hold on frontier alternatives?"* and *"does this hold on cheaper models?"* are separate questions and both worth answering. Three would be the minimum defensible; the fourth model (Haiku) addresses scale variance and is worth the additional cost. |
+| **D4** | Per-model generator configurations | **RESOLVED** | All models: `temperature=0`, top_p 1.0, max output 1500 tokens. Seed is set to `20260601` where the provider supports it; residual non-determinism is accepted where seed is unsupported and **explicitly noted as a limitation in the paper**. Per-provider seed support recorded in §3 at lock time; verified at implementation time before any data flows. Seed parity is not allowed to block the experiment. |
 | **D5** | Context budgets | **RESOLVED** | Match v0.4a's locked budget cap of ~285 tokens for B and C. Arm A's raw K=20 log unchanged. Arm A''s LLM summary cap matched to B at ~285 tokens. The §3.5a dedup-ranking machinery from v0.4a is the canonical projection pipeline; same code, same parameters across all models. |
 | **D6** | Scoring | **RESOLVED** | **Hold the judge constant; only the generator varies.** Reuse v0.4a's deterministic oracle (`score_operational_label.Scorer`) + LLM judge (`gpt-5-mini-2025-08-07`, reasoning_effort=medium, seed 20260601). Same `combine_oracle_and_judge` policy (oracle wins on disagreement). Holding the judge constant isolates the generator question from any judge-variance confound. |
 | **D7** | Primary outcome metric | **RESOLVED** | Per-model paired planning correctness. n = 75 paired observations per (model, arm pair). Pre-registered minimum effect size for "advancement" between arms: **3 percentage points**. |
-| **D8** | Interpretation rules | **DRAFTED — needs lock** | See §7 below. Lock interpretation BEFORE results. |
+| **D8** | Interpretation rules | **RESOLVED** | See §7 below. Per-model five-class outcome classifier locked; cross-model outcome classes locked with explicit action commitments. Locked BEFORE any data flows. No amendments after results without re-lock and re-version. |
 
-**Five decisions need explicit Sue review before lock:** D3 (which models), D4 (per-model configs, particularly the seed handling), D8 (interpretation rules). D1, D2, D5, D6, D7 are essentially resolved at the v0.4a inheritance level.
+**All eight decisions resolved.** Pre-registration is LOCKED. Sue's sign-off on D3 (4 models), D4 (accept residual non-determinism; record per-provider seed support; do not let seed parity block), and D8 (interpretation rules as drafted) recorded 2026-06-04.
 
 ---
 
@@ -50,38 +50,55 @@ The **summarizer model** for arms B and A' is the same as the per-model generato
 
 ## §3 Models and locked configurations
 
-**Each model's full configuration must be locked here before any data flows.** This section is filled at lock time per D3 + D4 resolution.
+All four models locked. Per-provider seed support recorded; residual non-determinism accepted where seed is unsupported per D4.
 
 ```
-Model 1: gpt-4o-2024-08-06
+Model 1: gpt-4o-2024-08-06        (provider: OpenAI)
   temperature:      0
   top_p:            1.0
   max_tokens:       1500
-  seed:             20260601
-  (matches v0.4a exactly)
+  seed:             20260601       (supported)
+  parity:           reproduces v0.4a exactly; any drift > 2 pp on any arm
+                    prompts sanity audit before cross-model interpretation
 
-Model 2: claude-opus-4-7
-  temperature:      0
-  top_p:            1.0 (or equivalent — Anthropic API default)
-  max_tokens:       1500
-  seed:             [TBD — Anthropic API does not support deterministic seed as of pre-reg date;
-                     verify at lock time]
-  notes:            residual non-determinism accepted if seed unsupported
-
-Model 3: gemini-2.5-pro
+Model 2: claude-opus-4-7           (provider: Anthropic)
   temperature:      0
   top_p:            1.0
   max_tokens:       1500
-  seed:             [TBD — Gemini API seed support to verify at lock time]
+  seed:             NOT SUPPORTED  (Anthropic API does not expose a
+                                   deterministic seed parameter as of
+                                   pre-reg lock 2026-06-04)
+  notes:            residual non-determinism accepted; if seed support
+                    has been added by implementation time, lock seed
+                    to 20260601 in the build script and note the
+                    addition in the audit
 
-Model 4: claude-haiku-4-5-20251001
+Model 3: gemini-2.5-pro            (provider: Google / Gemini API)
   temperature:      0
   top_p:            1.0
   max_tokens:       1500
-  seed:             [TBD per Anthropic]
+  seed:             VERIFY AT IMPLEMENTATION (Gemini API seed support
+                                              status may have changed
+                                              between pre-reg date and
+                                              run date; record actual
+                                              status in build script
+                                              audit, use seed if
+                                              available, accept residual
+                                              non-determinism otherwise)
+  notes:            implementation-time check required; outcome recorded
+                    in audit JSON
+
+Model 4: claude-haiku-4-5-20251001 (provider: Anthropic)
+  temperature:      0
+  top_p:            1.0
+  max_tokens:       1500
+  seed:             NOT SUPPORTED  (same as Claude Opus 4.7)
+  notes:            residual non-determinism accepted
 ```
 
-Total expected API calls (if 4 models locked): 75 questions × 4 arms × 4 models = **1,200 generation calls** + **1,200 judge calls** (judge held constant). Estimated wall-clock: 6-12 hours depending on rate limits. Estimated cost: ~$30-80 across all model APIs.
+**Audit requirement:** the build script verifies and records actual seed support per provider at run time. If any provider's behavior differs from what's recorded above (e.g., Anthropic has added seed support; Gemini has removed it), the audit captures the change and the build proceeds without amendment to the locked design — only the seed parameter usage differs from the documented baseline. The paper's "single model family" caveat in v0.4a becomes "models in this family, with per-provider seed-support notes" in v0.4c1.
+
+Total expected API calls: 75 questions × 4 arms × 4 models = **1,200 generation calls** + **1,200 judge calls** (judge held constant on `gpt-5-mini-2025-08-07`). Estimated wall-clock: 6-12 hours depending on per-provider rate limits. Estimated cost: ~$30-80 across all model APIs.
 
 ---
 
@@ -185,19 +202,30 @@ Same as v0.4a:
 
 ## §10 Lock signature
 
-This pre-registration is **NOT YET LOCKED.** It requires:
+This pre-registration is **LOCKED.**
 
-- [ ] D3 — confirm model set (4 models proposed; could cut to 3 by dropping Haiku)
-- [ ] D4 — confirm per-model configurations (especially seed handling for non-OpenAI models)
-- [ ] D8 — confirm interpretation rules
-- [ ] §3 — fill per-model locked configs after D3/D4 resolved
-- [ ] Lock signature line below filled in
+- [x] D1 — substrate reused from v0.1 / v0.2.2 / v0.3 / v0.4a
+- [x] D2 — four arms (A / A' / B / C); no D, no E
+- [x] D3 — four models (`gpt-4o-2024-08-06`, `claude-opus-4-7`, `gemini-2.5-pro`, `claude-haiku-4-5-20251001`)
+- [x] D4 — `temperature=0` across all models; seed where supported; residual non-determinism accepted where seed unsupported and documented as a paper limitation
+- [x] D5 — ~285-token budget cap matched across B and C, with the v0.4a §3.5a dedup-ranking machinery
+- [x] D6 — judge held constant (`gpt-5-mini-2025-08-07`); oracle wins on disagreement; same `combine_oracle_and_judge` as v0.3 / v0.4a
+- [x] D7 — paired planning correctness, 3 pp advancement threshold, 2 pp noise floor
+- [x] D8 — per-model 5-class interpretation rules locked with cross-model action commitments
 
-**Locked by:** _______________________
-**Locked on:** _______________________
-**Lock hash (commit SHA of this file at lock time):** _______________________
+**Locked by:** Sue Stranburg
+**Locked on:** 2026-06-04
+**Lock hash:** [commit SHA of this file at lock time — set by the git commit that lands this lock]
 
 After lock: no amendments without a re-lock and re-version (v0.4c1.1, etc.).
+
+---
+
+**Closing anchor (Sue's framing at lock time):**
+
+> *Proceed with 4 models, lock D4 with provider-specific seed support recorded, and lock D8 as drafted. Then commit the locked pre-reg before writing any execution code.*
+
+The discipline holds: locked design → committed pre-reg → only then execution code → only then data flows.
 
 ---
 
