@@ -1,4 +1,10 @@
-# TKOS Write-Path Sidecar — Scope v0.1.1
+# TKOS Write-Path Sidecar — Scope v0.1.1 (SUPERSEDED by v0.2 / v0.2.1)
+
+> **Note 2026-06-06:** Superseded by `TKOS_WRITE_PATH_SCOPE_v0.2.md` and amended in `AUDIT_RESPONSE_2026-06-06.md`. Retained as the artifact of what was originally locked; do not implement against this version.
+
+---
+
+
 
 **Date:** 2026-06-05 (v0.1 locked; amended to v0.1.1 same day for §10 Q2 resolution)
 **Status:** Scope draft. Not implementation.

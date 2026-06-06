@@ -1,7 +1,16 @@
-# TKOS Write-Path Sidecar — Scope v0.2
+# TKOS Write-Path Sidecar — Scope v0.2.1
 
-**Date:** 2026-06-05
+**Date:** 2026-06-05 (v0.2 locked); amended to v0.2.1 on 2026-06-06 per [`AUDIT_RESPONSE_2026-06-06.md`](./AUDIT_RESPONSE_2026-06-06.md)
 **Status:** LOCKED — implementation-ready. Supersedes v0.1.1.
+
+**v0.2 → v0.2.1 amendments (six findings):**
+- **Finding 1** (raw-line accounting): three categories — Mapped / Ignored-known / Unrecognized — applied in §4.1 and §6.2; new `raw_lines` table in §8.
+- **Finding 2** (transcript hash): replaced single-hash check with two distinct hashes (`raw_rollout_sha256` + `line_hash_chain`); applied in §6.2 and §8.3.
+- **Finding 3** (read-path is NOT unchanged): explicit acknowledgment in §2; full migration scope split into new [`TKOS_READ_PATH_MIGRATION_v0.2.md`](./TKOS_READ_PATH_MIGRATION_v0.2.md).
+- **Finding 4** (SQLite ALTER limits): §8.1 now keeps `event_id` integer PK and adds `source_event_id TEXT NOT NULL UNIQUE`; no ALTER PRIMARY KEY.
+- **Finding 6** (machine-stable hash): §3.1 hash inputs no longer include absolute path.
+- **Finding 7** (turn boundary): §3.2 + §4.4 use Codex native `turn_id` with deterministic mapping; fallback rule documented.
+- **Finding 9** (export ordering): §10 Q6 sorts by `(turn_idx, event_idx, source_line_number)`, not lexicographic `source_event_id`.
 **Predecessors:**
 - [`TKOS_WRITE_PATH_SCOPE_v0.1.md`](./TKOS_WRITE_PATH_SCOPE_v0.1.md) — v0.1 / v0.1.1; superseded by this document. v0.1.1 conflated software scope, v0.4c2 substrate admissibility, and streaming/batch correctness in ways that a build-time audit (Codex review, 2026-06-05) found contradictory before any code flowed.
 - [`TKOS_SIDECAR_SKETCH_v0.1.md`](./TKOS_SIDECAR_SKETCH_v0.1.md) — architectural sketch from 2026-06-01. Still load-bearing for §2 API shape and the design principles.
@@ -71,7 +80,9 @@ Unchanged from v0.1.1:
 
 ## §2 Reference architecture
 
-The existing TKOS read-path (`tkos_sidecar/tkos.py`) is unmodified. The write-path adds three new files:
+The existing TKOS read-path (`tkos_sidecar/tkos.py`) requires a v0.2-aligned migration (v0.2.1 — finding 3 fix). The migration is scoped in [`TKOS_READ_PATH_MIGRATION_v0.2.md`](./TKOS_READ_PATH_MIGRATION_v0.2.md) and ships alongside the write-path build's step 5 of §9. Specifically: `reconstruct_state` must filter by `effective_turn` (not `at_turn`), `weakened` must remain in active state, and `action_blocked` must be rendered synthetically at query time. The original v0.2 claim that the read-path was unchanged was wrong; this v0.2.1 explicitly recognizes the migration as a parallel work item.
+
+The write-path adds three new files:
 
 ```
 tkos_sidecar/
@@ -101,28 +112,27 @@ Every ingested event has a stable, deterministic `source_event_id`. This is the 
 
 **If Codex emits native event IDs in the rollout JSONL:** use those.
 
-**Otherwise (the v0.2 default):**
+**Otherwise (the v0.2.1 default — finding 6 fix):**
 
 ```
 source_event_id = sha256(
-    source_rollout_path + "\n" +
-    source_line_number  + "\n" +
-    source_event_type   + "\n" +
-    source_timestamp
+    session_id          + "\n" +
+    str(source_line_number) + "\n" +
+    sha256(raw_line_bytes)
 )
 ```
 
-The hash inputs are normalized strings: `source_rollout_path` is the absolute path to the rollout JSONL file; `source_line_number` is a 1-indexed integer; `source_event_type` is the normalized event type (§4); `source_timestamp` is the ISO 8601 value from the rollout line.
+Where `session_id` is the Codex session UUID (from the rollout's `session_meta` payload `id` field), `source_line_number` is the 1-indexed line number, and `raw_line_bytes` is the exact byte content of the JSONL line (UTF-8, no trailing newline). Absolute paths are deliberately excluded — they differ across machines for the same conceptual session.
 
-Same input → same hash → same `source_event_id`, every time, across machines.
+Same Codex rollout JSONL → same `source_event_id` for each line, regardless of which machine reads it.
 
 ### §3.2 Derived identity tuple
 
 `(session_id, turn_idx, event_idx)` are **derived** fields, useful for reasoning, grouping, and queries, but they are not the primary key.
 
-- `session_id`: stable within a rollout file (the Codex session UUID).
-- `turn_idx`: monotonic per session; increments on each new user message OR each Codex task-start boundary. The exact rule is locked in §4.4.
-- `event_idx`: monotonic within a turn; assigned by the adapter as it reads rollout lines.
+- `session_id`: stable within a rollout file (the Codex session UUID from `session_meta.payload.id`).
+- `turn_idx`: derived from Codex's native `turn_id` per §4.4. `turn_idx = -1` for lines without an associated turn (e.g., `session_meta`).
+- `event_idx`: monotonic within a turn_idx, assigned by the adapter in source-line order.
 
 If the adapter recomputes these from the same rollout, it gets the same values. They are deterministic but secondary; the hash is what enforces uniqueness.
 
@@ -139,19 +149,40 @@ Two reasons:
 
 The rule engine fires against this schema. Locking it first prevents the rules from drifting against undefined event shapes.
 
-### §4.1 Event type taxonomy (v0.2)
+### §4.1 Rollout line categories (v0.2.1 — finding 1 fix)
 
-| `event_type`        | Source in Codex rollout | Required fields beyond identity | Optional |
+Every line in a Codex rollout JSONL falls into exactly one of three categories. All three count toward capture completeness; only the first becomes an event.
+
+| Category | Definition | Persistence | Becomes event? |
 |---|---|---|---|
-| `user_message`      | user role line | `content` (string) | — |
-| `assistant_message` | assistant role line, content-only (no tool calls inside) | `content` (string) | — |
-| `assistant_reasoning` | reasoning record | `content` (string) | — |
-| `tool_call`         | assistant role line, tool_calls block | `tool_name`, `arguments_json`, `call_id` | — |
-| `tool_result`       | tool role line | `call_id` (matches a prior tool_call), `output` (string), `exit_code` (int, when shell), `stderr_first_line` (string) | `file_paths_touched` (list), `terminal_output` (string) |
-| `task_start`        | task start record | `task_name` | `task_id` |
-| `task_completion`   | task completion record | `task_id` | `final_status` |
+| **Mapped** | Translates to an event_type below per the adapter normalization rules (INTEGRATION_PATTERN §3.5) | `events` table (and `raw_lines`) | Yes |
+| **Ignored-known** | Source type is explicitly recognized as non-event | `raw_lines` table only | No |
+| **Unrecognized** | Source type matches neither | `raw_lines` with `flag=unrecognized` | No; flips admissibility to false |
 
-This is the complete v0.2 taxonomy. Any rollout line that doesn't match one of these is logged and ignored. The session is marked `admissibility-eligible=false` if any line is unmatched (capture completeness, §6).
+**Ignored-known set (v0.2.1, locked):**
+
+```
+session_meta
+turn_context
+event_msg(payload.type == token_count)
+event_msg(payload.type == agent_message)   # duplicate of response_item(payload.type == message)
+```
+
+Any source line whose type is not Mapped or Ignored-known is Unrecognized.
+
+**Mapped event_types:**
+
+| `event_type`        | Required fields beyond identity | Optional |
+|---|---|---|
+| `user_message`      | `content` (string) | — |
+| `assistant_message` | `content` (string) | — |
+| `assistant_reasoning` | `content` (string) | — |
+| `tool_call`         | `tool_name`, `command` (when shell), `call_id` | `paths` (list) |
+| `tool_result`       | `call_id`, `output`, `exit_code` | `stderr_first_line`, `paths` |
+| `task_start`        | `task_name` | `task_id` |
+| `task_completion`   | `task_id` | `final_status` |
+
+Adapter rules for deriving these fields from Codex rollout records are locked in [`INTEGRATION_PATTERN_v0.1.md`](./INTEGRATION_PATTERN_v0.1.md) §3.5.
 
 ### §4.2 Event record shape
 
@@ -176,14 +207,23 @@ Every persisted event row carries:
 
 The HTTP endpoint validates every incoming event against §4.1 before persistence. Validation failures are logged with the source line number; the offending event is rejected; the session is marked `admissibility-eligible=false`. Validation has no fuzzy paths — a missing required field is a hard reject.
 
-### §4.4 Turn-boundary rule (locked)
+### §4.4 Turn-boundary rule (v0.2.1 — finding 7 fix)
 
-A new `turn_idx` increments on either of these conditions, whichever comes first:
+`turn_idx` is derived from Codex's native `turn_id`. The locked derivation:
 
-1. A `user_message` event is observed.
-2. A `task_start` event is observed.
+1. Track each distinct `turn_id` observed in the rollout as it first appears.
+2. The first `turn_id` observed maps to `turn_idx = 0`. The next new `turn_id` maps to `turn_idx = 1`. And so on.
+3. All lines associated with the same `turn_id` share the same `turn_idx`.
+4. `event_idx` is monotonic within a `turn_idx`, assigned in source-line order starting at 0.
+5. Lines with no associated `turn_id` (e.g., `session_meta`, `turn_context`) are persisted to `raw_lines` with `turn_idx = -1` and do not become events.
 
-`event_idx` resets to 0 at each turn boundary. This rule is deterministic and replayable.
+`turn_id` is found in:
+- `event_msg.payload.turn_id` (for `task_started`, `task_complete`)
+- `turn_context.payload.turn_id`
+
+Adjacent `response_item` and `event_msg` lines inherit the most-recent prior `turn_id` observed in the stream.
+
+Fallback (for non-Codex adapters whose source doesn't provide native turn_ids): increment `turn_idx` on `user_message` OR `task_start` with alternation enforcement. That fallback lives in the adapter's own spec; the Codex adapter uses native `turn_id` per the rules above.
 
 ---
 
@@ -267,16 +307,26 @@ If any step fails, the entire transaction rolls back. The DB is never in a half-
 
 If a rule throws an unhandled exception, the transaction rolls back, the rule failure is logged in a separate `rule_failures` table (outside the rolled-back transaction), and the HTTP endpoint returns a 500 with the rule name. The session is marked `admissibility-eligible=false`.
 
-### §6.2 Capture completeness checks
+### §6.2 Capture completeness checks (v0.2.1 — findings 1 + 2 fix)
 
-A session is **capture-complete** if and only if all of the following pass after the rollout file has been ingested:
+A session is **capture-complete** if and only if all five checks pass after the rollout file has been ingested:
 
-1. **Sequence validation.** Within each `turn_idx`, `event_idx` is `[0, 1, 2, ...]` with no gaps and no duplicates.
-2. **Transcript hash.** A hash of the rollout JSONL file (taken at ingest time and stored in `session_status`) matches a hash recomputed from the persisted events (reconstructed in `source_line_number` order). Mismatch means truncation, corruption, or out-of-order ingestion.
-3. **Schema completeness.** Every line of the rollout matched a §4.1 event type (no unmatched lines, no validation failures).
-4. **No rule failures.** No rows in `rule_failures` for this session.
+1. **Line-count completeness.** The count of rows in `raw_lines` for this session equals the count of non-empty lines in the source rollout JSONL.
+2. **No Unrecognized lines.** Zero rows in `raw_lines` for this session with `flag=unrecognized`.
+3. **Sequence validation.** Within each `turn_idx ≥ 0`, `event_idx` values form the sequence `[0, 1, 2, ...]` in `events` — no gaps, no duplicates.
+4. **Hash verification (both must match):**
+   - `raw_rollout_sha256` recomputed from the source file at verify time matches the value stored in `session_status` at ingest time.
+   - `line_hash_chain` recomputed by replaying `raw_lines` rows in `source_line_number` order matches the value stored in `session_status` at ingest time.
+5. **No rule failures.** No rows in `rule_failures` for this session.
 
-The CLI command `tkos verify <session_id>` runs all four checks and returns pass/fail with the specific failure mode if any fail. A session is `admissibility-eligible=true` only if all four pass.
+The CLI command `tkos verify <session_id>` runs all five checks and returns pass/fail with the specific failure mode if any fail. A session is `admissibility-eligible=true` only if all five pass.
+
+**Hash chain definition:** `line_hash_chain` is computed iteratively:
+```
+H_0 = "" (empty)
+H_n = sha256(H_{n-1} || raw_line_n_bytes)
+```
+where `||` is byte concatenation and `raw_line_n_bytes` is the exact byte content of the n-th line (UTF-8, no trailing newline). The final `H_N` (after the last line) is `line_hash_chain`. This chain guarantees that no line was dropped, reordered, mutated, or inserted post-ingest — any single-byte change anywhere in the rollout would propagate to a different final hash.
 
 ### §6.3 What admissibility-eligibility means here
 
@@ -306,29 +356,61 @@ Tests 5, 6, 8, and 9 are the load-bearing ones. They define what "correct" means
 
 ## §8 Data model additions
 
-The read-path's existing tables get one additive change (the new identity column); existing read-path queries continue to work unchanged.
+The read-path's existing tables get additive changes (new columns); the read-path migration is a separate scope (see `TKOS_READ_PATH_MIGRATION_v0.2.md`) because the existing `reconstruct_state` semantics need updating regardless.
 
-### §8.1 `events` schema amendment
+### §8.1 `events` schema amendment (v0.2.1 — finding 4 fix)
 
-The existing `events` table gets `source_event_id TEXT PRIMARY KEY` as the new primary key, with `(session_id, turn_idx, event_idx)` indexed. Existing fixtured rows backfill `source_event_id` deterministically with a fixture-specific scheme (e.g., `sha256("fixture:" + session_id + ":" + turn_idx)`).
+The existing `events` table already has `event_id INTEGER PRIMARY KEY`. SQLite does not support swapping primary keys via ALTER TABLE. The v0.2.1 amendment keeps `event_id` as the internal storage-level primary key and adds `source_event_id` as the substrate-level identity (UNIQUE constraint, not PRIMARY KEY).
 
-Additional new columns on `events`:
-- `event_idx INTEGER NOT NULL DEFAULT 0`
-- `source_rollout_path TEXT`
-- `source_line_number INTEGER`
-- `call_id TEXT`
+```sql
+ALTER TABLE events ADD COLUMN source_event_id TEXT NOT NULL UNIQUE;
+ALTER TABLE events ADD COLUMN event_idx INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE events ADD COLUMN source_rollout_path TEXT;
+ALTER TABLE events ADD COLUMN source_line_number INTEGER;
+ALTER TABLE events ADD COLUMN call_id TEXT;
+CREATE INDEX idx_events_source_event_id ON events(source_event_id);
+CREATE INDEX idx_events_session_turn_event ON events(session_id, turn_idx, event_idx);
+```
+
+Internal foreign keys (e.g., `belief_events.event_id → events.event_id`) can stay on the integer PK; the substrate-level identity for spec conformance and equivalence testing (RULES_SPEC §5) is `source_event_id`.
+
+Existing fixtured rows backfill:
+- `source_event_id = sha256("fixture:" + session_id + ":" + str(turn) + ":0")`
+- `event_idx = 0` (default; fixtures are one event per turn)
+- `source_rollout_path = NULL`, `source_line_number = NULL` (fixtures have no source rollout)
+- `call_id = NULL`
+
+### §8.1a `raw_lines` (new — finding 1 fix)
+
+Every line of every ingested rollout JSONL is persisted here regardless of category. This is what the line-count and hash-chain checks in §6.2 verify against.
+
+| Column | Type | Notes |
+|---|---|---|
+| raw_line_id | INTEGER PRIMARY KEY | autoincrement |
+| session_id | TEXT NOT NULL | |
+| source_line_number | INTEGER NOT NULL | 1-indexed line in the rollout |
+| raw_line_bytes | BLOB NOT NULL | the exact bytes of the JSONL line |
+| raw_line_sha256 | TEXT NOT NULL | precomputed hash for chain verification |
+| category | TEXT NOT NULL | `mapped` / `ignored-known` / `unrecognized` |
+| flag | TEXT | reason for `unrecognized` if applicable |
+| event_id | INTEGER | foreign key to `events.event_id` if `category=mapped`; null otherwise |
+| turn_idx | INTEGER NOT NULL | -1 for lines with no associated turn_id |
+
+UNIQUE constraint on `(session_id, source_line_number)`.
 
 ### §8.2 `belief_events` schema amendment
 
 Add `effective_turn INTEGER` (nullable, defaults to `at_turn`). The existing `at_turn` field is renamed semantically to `observed_at_turn` (column name unchanged for compatibility). For non-retro rules, `effective_turn = observed_at_turn` is enforced at write time.
 
-### §8.3 `session_status` (new)
+### §8.3 `session_status` (new — v0.2.1 finding 2 fix: two distinct hashes)
 
 | Column | Type | Notes |
 |---|---|---|
 | session_id | TEXT PRIMARY KEY | |
-| source_rollout_path | TEXT NOT NULL | |
-| transcript_hash | TEXT NOT NULL | hash of the rollout JSONL at ingest time |
+| source_rollout_path | TEXT NOT NULL | the path Codex wrote, for audit only — not in any hash |
+| raw_rollout_sha256 | TEXT NOT NULL | sha256 of the source file's bytes at ingest time |
+| line_hash_chain | TEXT NOT NULL | final value of the line-by-line hash chain (§6.2) |
+| total_line_count | INTEGER NOT NULL | count of non-empty lines in source rollout at ingest time |
 | capture_started_at | TEXT NOT NULL | ISO 8601 |
 | capture_ended_at | TEXT | nullable until session closed |
 | capture_started_at_turn | INTEGER NOT NULL | must be 0 for admissibility-eligible |
@@ -415,7 +497,7 @@ These hold across v0.2 and constrain refactors:
 - **Q3. Long-running tool detection:** K=3 unmatched-result rule, with `effective_turn` = original `tool_call` turn, `observed_at_turn` = retro-mint turn. Refined per §5.4.
 - **Q4. Failure signature:** simple `exit code + first stderr line` matcher.
 - **Q5. Multi-process safety:** SQLite WAL + startup lock file.
-- **Q6. Export format:** JSONL per session, one line per event, sorted by `source_event_id` lexicographically. Each line carries the event record (§4.2) plus the `active_beliefs` snapshot computed up-to-and-including that event. Stable ordering and deterministic content per acceptance test 9.
+- **Q6. Export format (v0.2.1 — finding 9 fix):** JSONL per session, one line per event, sorted by `(turn_idx, event_idx, source_line_number)`. Each line carries the event record (§4.2) plus the `active_beliefs` snapshot computed up-to-and-including that event. The order matches the session timeline, making the snapshot semantically meaningful. Stable ordering (deterministic sort key) and deterministic content per acceptance test 9. Hash-based ordering (the v0.2 original) was rejected because it randomized event order vs the session timeline, making the snapshot misleading.
 
 ---
 

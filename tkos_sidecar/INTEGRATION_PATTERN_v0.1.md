@@ -1,8 +1,12 @@
-# Belief Stack Integration Pattern v0.1
+# Belief Stack Integration Pattern v0.1.1
 
-**Date:** 2026-06-06
-**Status:** v0.1 working draft — harness-focused, not product copy. Iterates as integrations land.
+**Date:** 2026-06-06 (v0.1 locked; amended to v0.1.1 same day per [`AUDIT_RESPONSE_2026-06-06.md`](./AUDIT_RESPONSE_2026-06-06.md))
+**Status:** v0.1.1 working draft — harness-focused, not product copy. Iterates as integrations land.
 **Audience:** anyone wiring Belief Stack (via the TKOS sidecar or any compatible implementation) into an agent harness (Claude Code, Codex, custom).
+
+**v0.1 → v0.1.1 amendments:**
+- **Finding 5** (Codex source mapping): new §3.5 documents adapter normalization rules for Codex rollout JSONL — how to derive `tool_name`, `command`, `exit_code`, `stderr_first_line`, `paths` from the actual rollout records (which carry `function_call` envelopes, not normalized fields).
+- **Finding 11** (scope contradiction): §7.4 reclassifies the Codex v0.2 reference integration as **capture-only**. Live overlay injection at planning moments is not in scope for v0.2 (Codex offers no documented hook).
 
 This document is **not** about why Belief Stack matters. It is about how to slot it into a real agent's context-construction pipeline. For positioning copy, see [`topicspace.ai/research/belief-stack`](https://topicspace.ai/research/belief-stack).
 
@@ -91,6 +95,84 @@ Belief Stack runs as a sidecar. It is not part of the agent harness's main proce
 - **Human surface:** `state()` returns the same beliefs with full warrant chains, lifecycle audit trail, and authority signals. This is what a developer/auditor reads via CLI or trace viewer.
 
 Same substrate. Different projections. The substrate-vs-projection split is the architectural commitment.
+
+### §3.5 Adapter normalization rules — Codex (v0.1.1, finding 5 fix)
+
+The Codex rollout JSONL does not carry pre-normalized fields. The adapter is responsible for translating Codex's `function_call` / `function_call_output` envelopes into the canonical event contract that `RULES_SPEC_v0.2.md` §1 expects.
+
+**Source → mapped event_type:**
+
+| Codex source line | Mapped event_type |
+|---|---|
+| `response_item(payload.type=function_call, name=exec_command)` | `tool_call` |
+| `response_item(payload.type=function_call, name≠exec_command)` | `tool_call` |
+| `response_item(payload.type=function_call_output)` | `tool_result` |
+| `response_item(payload.type=message, role=assistant)` | `assistant_message` |
+| `response_item(payload.type=reasoning)` | `assistant_reasoning` |
+| `event_msg(payload.type=user_message)` | `user_message` |
+| `event_msg(payload.type=task_started)` | `task_start` |
+| `event_msg(payload.type=task_complete)` | `task_completion` |
+
+**Field derivation:**
+
+For `tool_call` from `function_call` with `name == "exec_command"`:
+- `tool_name` = `arguments.cmd.split()[0]` (the first shell token after parsing arguments JSON)
+- `command` = `arguments.cmd` (the full command string)
+- `paths` = parsed from `arguments.cmd` per the path-extraction heuristic below
+- `call_id` = `payload.call_id`
+
+For `tool_call` from `function_call` with `name != "exec_command"`:
+- `tool_name` = `payload.name` (the function name)
+- `command` = empty string
+- `paths` = parsed from `arguments.path` / `arguments.paths` / `arguments.file_path` if present in the arguments JSON
+- `call_id` = `payload.call_id`
+
+For `tool_result` from `function_call_output`:
+- `call_id` = `payload.call_id`
+- `parent_event_id` = the `source_event_id` of the `function_call` with matching `call_id` (look up in `events`)
+- `exit_code` = parse from `payload.output` (regex `Process exited with code (\d+)`; default 0 if not present — Codex convention)
+- `stderr_first_line` = parse from `payload.output` per the heuristic below
+- `output` = `payload.output` (the full output string)
+- `paths` = inherit from the parent `tool_call`
+
+For `assistant_message`, `assistant_reasoning`, `user_message`: `content` = the appropriate text field (`content`, `summary`, `message`).
+
+For `task_start`: `task_name` = derived from `turn_id` and `started_at` (e.g., `f"task-{turn_id[:8]}-{started_at}"`).
+
+For `task_completion`: `final_status` = `"ok"` if `last_agent_message` present, else `"incomplete"`.
+
+**Exit code extraction:**
+
+```python
+import re
+EXIT_RE = re.compile(r"Process exited with code (\d+)", re.MULTILINE)
+
+def exit_code_from_output(output: str) -> int:
+    m = EXIT_RE.search(output)
+    return int(m.group(1)) if m else 0  # absence = success per Codex convention
+```
+
+**Stderr first line extraction (heuristic):**
+
+```python
+def stderr_first_line(output: str) -> str | None:
+    for line in output.splitlines():
+        s = line.strip()
+        if not s or s.startswith("Output:") or s.startswith("Chunk ID") or s.startswith("Process exited"):
+            continue
+        if any(marker in s.lower() for marker in ("error:", "traceback", "exception:", "stderr:")):
+            return s
+    return None
+```
+
+**Path extraction (heuristic, v0.2.1):**
+
+For shell commands extracted from `arguments.cmd`:
+1. Recognized file-touching tools: read (`nl`, `cat`, `head`, `tail`, `less`, `grep`); write (`cp`, `mv`, `rm`, `ln`, `chmod`, `chown`, `touch`, `mkdir`, `rmdir`); modify (`git`, `sed -i`, `awk -i inplace`).
+2. Extract path-shaped tokens (containing `/` or starting with `.`) from the command, skipping the tool name.
+3. Filter out flag-shaped tokens (`--foo`, `-f`).
+
+This is intentionally crude for v0.2.1. Precision is not load-bearing for the v0.2 acceptance tests; conservative path matching (shared prefix) is acceptable for the rules that depend on path overlap (`fix_attempted`, `validation_complete weakened`, `report_ready`).
 
 ---
 
@@ -196,10 +278,11 @@ That's the minimum. Four touchpoints. No streaming, no native integration, no ha
 
 Belief Stack adds a layer; it doesn't replace what's already there.
 
-### §7.4 Reference integrations
+### §7.4 Reference integrations (v0.1.1 — finding 11 fix)
 
-- **Codex via TKOS write-path sidecar (v0.2):** the reference integration. See [`TKOS_WRITE_PATH_SCOPE_v0.2.md`](./TKOS_WRITE_PATH_SCOPE_v0.2.md). The Codex trace adapter reads `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` and POSTs events to the sidecar. Overlay is injected at planning moments.
-- **Claude Code (planned):** would use the same sidecar with a different trace adapter reading Claude Code's session logs. Architecturally identical; differs only in the input adapter.
+- **Codex via TKOS write-path sidecar (v0.2.1) — capture-only:** the v0.2.1 reference integration. See [`TKOS_WRITE_PATH_SCOPE_v0.2.md`](./TKOS_WRITE_PATH_SCOPE_v0.2.md). The Codex trace adapter reads `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` and POSTs events to the sidecar. The overlay is *available* via `overlay()` for inspection and audit, but Codex offers no documented hook for context injection in v0.2, so **automatic injection is not in scope**. The overlay-in-context value proposition is reserved for a future integration milestone — likely a Claude Code adapter that can intercept planning steps, or a custom-built harness with explicit hooks.
+- **Claude Code (planned, future):** would use the same sidecar with a different trace adapter reading Claude Code's session logs, plus a planning-step hook for overlay injection. Architecturally identical to the Codex adapter on the capture side; adds live injection on the read side.
+- **Custom harnesses:** any harness that controls its own context construction can wire the overlay in directly as a tool result per §5.
 
 ---
 

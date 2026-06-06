@@ -1,8 +1,10 @@
-# Belief Derivation Spec — RULES_SPEC_v0.2
+# Belief Derivation Spec — RULES_SPEC_v0.2.1
 
-**Date:** 2026-06-06
-**Status:** LOCKED. This is the final lock-before-code artifact for the TKOS write-path build.
+**Date:** 2026-06-06 (v0.2 locked; amended to v0.2.1 same day per [`AUDIT_RESPONSE_2026-06-06.md`](./AUDIT_RESPONSE_2026-06-06.md))
+**Status:** LOCKED at v0.2.1. This is the lock-before-code artifact for the TKOS write-path build.
 **Implementations:** the streaming engine in `tkos_sidecar/rules.py` and the batch engine in `operational_belief_v1/build_operational_belief_substrate.py` (restricted to the v0.2 belief subset) must both implement this spec. Equivalence is defined here, not in either codebase.
+
+**v0.2 → v0.2.1 amendments:** finding 8 (deterministic rule conflict on repeated failures): tightened `pipeline_failed_born` precondition to require no matching active belief. Findings 1, 5, and 10 are bridged here with notes pointing to TKOS scope v0.2.1 §4.1 (the adapter taxonomy / ignored-known accounting) and INTEGRATION_PATTERN v0.1.1 §3.5 (adapter normalization rules). RULES_SPEC §3.8 (computed `action_blocked`) is unchanged; its read-path rendering is scoped in `TKOS_READ_PATH_MIGRATION_v0.2.md`.
 
 **Predecessors:**
 - [`TKOS_WRITE_PATH_SCOPE_v0.2.md`](./TKOS_WRITE_PATH_SCOPE_v0.2.md) — the software scope this spec serves.
@@ -28,6 +30,8 @@ The spec is the system definition. Everything downstream is plumbing.
 ## §1 Canonical event contract
 
 Every event the rule engine sees is a record over these fields. Rules cannot reference fields outside this contract. Implementations cannot inject runtime context (wallclock now, environment variables, etc.) into rule evaluation.
+
+**Adapter responsibility (v0.2.1 clarification per finding 5):** the canonical contract below is what the *rule engine* sees. The *adapter* is responsible for translating source-specific records (e.g., Codex `function_call` / `function_call_output` envelopes) into events that match this contract. Field derivation rules for the Codex adapter are locked in [`INTEGRATION_PATTERN_v0.1.1.md`](./INTEGRATION_PATTERN_v0.1.md) §3.5. Rules in §3 always read from the canonical contract, never from source-native fields directly.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -315,6 +319,8 @@ NOTE_TEMPLATE: "pipeline_running resolved — exit {exit_code} at turn {turn_idx
 ```
 RULE: pipeline_failed_born
 TRIGGERS_ON: tool_result WHERE event.exit_code != 0
+PRECONDITIONS:
+  - NO active pipeline_failed belief exists whose failure_signature matches this event's failure_signature
 ACTION:
   - Mint pipeline_failed with claim referencing the failure_signature (§3.5.1)
 EFFECTIVE_TURN: event.turn_idx
@@ -322,6 +328,8 @@ OBSERVED_AT_TURN: event.turn_idx
 AUTHORITY: confirmed_by_tool
 NOTE_TEMPLATE: "pipeline_failed — {tool_name} exit {exit_code} signature '{failure_signature}' at turn {turn_idx}"
 ```
+
+The `pipeline_failed_born` and `pipeline_failed_strengthened` preconditions are mutually exclusive: on any failing `tool_result`, exactly one of the two rules fires. This pattern (mint-vs-refresh disambiguation) applies whenever the spec specifies both a born rule and a strengthened rule for the same belief type.
 
 **Retired.**
 
