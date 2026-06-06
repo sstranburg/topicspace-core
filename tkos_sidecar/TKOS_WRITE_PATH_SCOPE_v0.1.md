@@ -1,12 +1,14 @@
-# TKOS Write-Path Sidecar — Scope v0.1
+# TKOS Write-Path Sidecar — Scope v0.1.1
 
-**Date:** 2026-06-05
-**Status:** Scope draft. Not locked. Not implementation.
+**Date:** 2026-06-05 (v0.1 locked; amended to v0.1.1 same day for §10 Q2 resolution)
+**Status:** Scope draft. Not implementation.
 **Predecessors:**
 - [`TKOS_SIDECAR_SKETCH_v0.1.md`](./TKOS_SIDECAR_SKETCH_v0.1.md) — the architectural sketch from 2026-06-01. This document extends §2.1 (`observe()`) into a concrete write-path build.
 - [`TKOS-002_IMPLEMENTATION_SLICE_v0.1.md`](./TKOS-002_IMPLEMENTATION_SLICE_v0.1.md) — the read-path slice (existing `tkos.py`).
 - [`operational_belief_v1/build_operational_belief_substrate.py`](../operational_belief_v1/build_operational_belief_substrate.py) — the v0.1 rule engine in batch form. The write-path ports these derivations to streaming.
 - [`belief_stack_v0_4c2/V04C2_SUBSTRATE_ADMISSION_CRITERIA.md`](../belief_stack_v0_4c2/V04C2_SUBSTRATE_ADMISSION_CRITERIA.md) — the gates the resulting trace capture must satisfy.
+
+**v0.1 → v0.1.1 amendment (2026-06-05):** §10 Q2 (Codex transcript location) resolved. The rollout JSONL at `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` is the source. Investigation surfaced that the rollout contains **multiple events per conversational turn**, which forces a schema-level change: event identity becomes `(session_id, turn_idx, event_idx)` instead of `(session_id, turn_idx)`. This amendment threads that change through §4, §5 test 5, §6, §8, §10 Q1, and §10 Q6. No code has been written; this is a pre-implementation re-lock per the build-time-audit discipline.
 
 ---
 
@@ -162,10 +164,12 @@ Reads a Codex session's structured output (transcript / tool-call history / file
 Each emitted event carries the v0.4c2-required fields per the admission criteria §1:
 
 - `session_id`
-- `turn_idx` (monotonic per session)
+- `turn_idx` (monotonic per session; a new turn begins on each new user message or each task start/completion boundary — final rule documented in the adapter)
+- `event_idx` (monotonic within a turn; required because Codex rollout JSONL emits multiple events per conversational turn — assistant reasoning, tool calls, tool results, assistant messages)
 - `timestamp` (ISO 8601)
 - `event_type`
-- `payload` (the raw Codex content for that turn)
+- `payload` (the raw Codex content for that event)
+- `call_id` (when applicable; correlates tool_call with tool_result per the rollout JSONL schema)
 - `file_paths_touched` (when applicable)
 - `terminal_output` (when applicable)
 
@@ -190,7 +194,7 @@ Nine tests, in the style of the existing read-path's six. Each is concrete, runn
 2. **End-to-end demo session.** Replay the sketch §7 demo scenario (18 turns) through `observe()`. Verify the final `active_beliefs` contains exactly the beliefs the sketch enumerates as the end-state (post-deploy: `report_ready` active, all others retired or confirmed).
 3. **Lifecycle transitions.** Replay the same scenario and verify each `belief_events` row matches the expected lifecycle transition (born → contradicted → retired for the first fix's `validation_pending`).
 4. **Out-of-window beliefs survive.** Replay a longer (50-turn) synthetic session in which a `user_approval_pending` belief is minted at turn 5 and not addressed until turn 48. Verify `state(session, turn=48)` returns it (the lifecycle audit trail makes this possible even though raw event K=20 windowing would have lost it).
-5. **Replay idempotency.** Run `tkos replay <trace.jsonl>` twice; verify the second run produces zero new `belief_events` rows (idempotent ingestion based on `(session_id, turn_idx)` primary key).
+5. **Replay idempotency.** Run `tkos replay <trace.jsonl>` twice; verify the second run produces zero new `belief_events` rows (idempotent ingestion based on `(session_id, turn_idx, event_idx)` primary key).
 6. **Batch-equivalence.** Take a real Claude Code session from the v0.1 corpus; replay it through the streaming rule engine; verify the resulting `active_beliefs` matches what the batch v0.1 rule engine produces for the same session. This is the correctness check that makes v0.4c2 a defensible cross-substrate run.
 7. **Codex adapter round-trip.** Capture a real Codex session in live mode; replay the same captured trace in batch mode; verify identical results.
 8. **Read-path compatibility.** After the write-path has populated the DB from a Codex session, call the existing read-path's `reconstruct_state` and `build_overlay` against it. Verify both queries return well-formed results with no schema mismatches. This is the test that the substrate-vs-projection split actually holds.
@@ -202,7 +206,11 @@ Tests 6, 8, and 9 are the load-bearing ones. They are what make the write-path *
 
 ## 6. Data model additions
 
-The read-path's existing tables are unchanged. The write-path adds two operational tables:
+The read-path's existing tables get one additive change (an `event_idx` column on `events`); existing read-path queries continue to work unchanged. The write-path adds two new operational tables.
+
+### 6.0 `events` schema amendment
+
+Existing `events` table from the read-path slice has primary key on `(session_id, turn)`. Amendment: add `event_idx INTEGER NOT NULL DEFAULT 0` and change the natural key to `(session_id, turn_idx, event_idx)`. Existing fixtured rows backfill with `event_idx = 0` — non-breaking because the fixture is one event per turn. Read-path queries that ignore `event_idx` continue to return the same results.
 
 ### 6.1 `session_status` (new)
 
@@ -237,7 +245,7 @@ Append-only audit of every `observe()` call, for debugging. Not required for cor
 Build in this order so each step has a working preceding step to test against.
 
 1. **Bootstrap.** Set up the new files (`ingest.py`, `rules.py`, `trace_adapter_codex.py`) and the corresponding test files. Add `session_status` and `ingest_log` tables to the existing DDL (additive, doesn't break read-path).
-2. **Trace capture, no rules.** Implement the HTTP endpoint and event persistence. Get `tkos serve` and `tkos replay` working with events flowing into the `events` table. **Wire Codex trace adapter at this point** so trace capture from session 1 is real and not just promised. Pass acceptance test 1. *Prerequisite:* §10 Q2 must be resolved before step 2 — the Codex transcript location and capture mechanism must be known concretely. Until then, exploration is fine; admissible tracing has not started.
+2. **Trace capture, no rules.** Implement the HTTP endpoint and event persistence. Get `tkos serve` and `tkos replay` working with events flowing into the `events` table. **Wire Codex trace adapter at this point** so trace capture from session 1 is real and not just promised. The adapter reads `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` line-by-line, assigns `event_idx` monotonically within each `turn_idx`, and POSTs one event per line. Pass acceptance test 1. *§10 Q2 resolved (2026-06-05) — step 2 can proceed without further investigation.*
 3. **First rule pair.** Implement the two simplest rules (`validation_pending` minted from `tool_call`; `validation_complete` minted from `tool_result`). Pass acceptance tests 2 and 3 partially (for these two belief types only).
 4. **Remaining rules.** Add the remaining rule families from §3.2. Pass acceptance tests 2 and 3 fully.
 5. **Long-session correctness.** Pass acceptance test 4 (out-of-window beliefs).
@@ -256,7 +264,7 @@ These hold across v0.1 and constrain refactors:
 
 - **Read-path is read-only of the write-path's output.** The write-path writes to `events`, `belief_instances`, `belief_events`, `session_status`, `ingest_log`. The read-path reads from `events`, `belief_instances`, `belief_events`. Neither reaches into the other's code path.
 - **Every belief lifecycle transition has a `belief_events` row.** No silent state mutations.
-- **No event is processed twice.** `(session_id, turn_idx)` is the idempotency key.
+- **No event is processed twice.** `(session_id, turn_idx, event_idx)` is the idempotency key.
 - **Streaming-equals-batch.** Acceptance test 6 must pass; if it doesn't, the rule engine is wrong.
 - **Trace capture is binary.** A session is either fully captured (admissible=1) or it isn't (admissible=0). No partial-capture-with-asterisks.
 
@@ -276,11 +284,11 @@ These hold across v0.1 and constrain refactors:
 Five of six are now locked. Q2 remains open and is an explicit gate on §7 step 2.
 
 - **Q1. HTTP framing.** ✅ *Locked: one event per POST.* No batching semantics in v0.1.
-- **Q2. Codex transcript location.** ⛔ *Gate.* Must be resolved by investigating the actual Codex tooling before §7 step 2 begins. Until Q2 is resolved, no admissible tracing can start — any Codex session run before resolution is not part of the v0.4c2 corpus (per the §4 admission hard rule).
+- **Q2. Codex transcript location.** ✅ *Resolved (2026-06-05):* primary trace is `~/.codex/sessions/YYYY/MM/DD/rollout-{timestamp}-{uuid}.jsonl` (live JSONL appended by Codex during the session). The trace adapter reads this file. Adjacent stores (`session_index.jsonl`, `state_5.sqlite`) are useful for thread metadata but not required. **Schema implication:** the rollout JSONL contains multiple events per conversational turn, forcing the event identity from `(session_id, turn_idx)` to `(session_id, turn_idx, event_idx)`. Threaded through §4, §5 test 5, §6, §8 above. Full details in `reference_codex_trace_storage.md` memory.
 - **Q3. Long-running tool detection.** ✅ *Locked: K=3 unmatched-result retro-mint rule.* If a `tool_call` has no matching `tool_result` within K=3 subsequent turns, retro-mint `pipeline_running` at the original turn. Simpler than guessing at ingest time.
 - **Q4. Failure signature derivation.** ✅ *Locked: simple `exit code + first stderr line` matcher for v0.1.* Full v0.1 signature derivation (the more sophisticated batch-engine version) moves to v0.2.
 - **Q5. Multi-process safety.** ✅ *Locked: SQLite WAL mode + startup lock file.* Constraint documented; no distributed-safety work in v0.1.
-- **Q6. v0.4c2-specific export format.** ✅ *Locked: JSONL per session, one line per turn, with the v0.4c2 §1 required fields plus the matching `active_beliefs` snapshot at that turn.* Stable ordering and deterministic content per acceptance test 9.
+- **Q6. v0.4c2-specific export format.** ✅ *Locked (v0.1.1 amendment): JSONL per session, **one line per event** (not per turn), with the v0.4c2 §1 required fields including `event_idx` plus the matching `active_beliefs` snapshot computed up-to-and-including that event.* The end-of-turn snapshot is naturally available as the last event's snapshot in each turn. Stable ordering and deterministic content per acceptance test 9.
 
 The locks above were chosen on 2026-06-05 against this scope. Any change to a locked answer during the build is an explicit re-version of this document (per the program's amendment discipline), not a silent code edit.
 

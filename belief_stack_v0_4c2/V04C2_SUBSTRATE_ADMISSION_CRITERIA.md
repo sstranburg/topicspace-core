@@ -1,8 +1,10 @@
 # Belief Stack v0.4c2 — Substrate Admission Criteria
 
-**Date locked:** 2026-06-05
+**Date locked:** 2026-06-05 (initial); amended to v0.1.1 same day after the Codex rollout JSONL schema was investigated.
 **Predecessor:** [`belief_stack_v0_4c1/BELIEF_STACK_REPORT_v0.4c1.md`](../belief_stack_v0_4c1/BELIEF_STACK_REPORT_v0.4c1.md)
-**Status:** LOCKED — gates whether a Codex project corpus is eligible to become the v0.4c2 substrate.
+**Status:** LOCKED at v0.1.1 — gates whether a Codex project corpus is eligible to become the v0.4c2 substrate.
+
+**v0.1 → v0.1.1 amendment (2026-06-05):** §1 required-fields list updated to include `event_idx`. The Codex rollout JSONL (resolved as the trace source by TKOS write-path scope §10 Q2) contains multiple events per conversational turn; canonical event identity becomes `(session_id, turn_idx, event_idx)`. This affects only §1; the gate structure (§2–§5) is unchanged.
 
 ---
 
@@ -24,15 +26,18 @@ Each trace must preserve:
 
 - `session_id`
 - `turn_idx` (monotonically increasing within a session)
+- `event_idx` (monotonically increasing within a turn; required because Codex's rollout JSONL emits multiple events per conversational turn — reasoning, tool calls, tool results, assistant messages all carry distinct event_idx within the same turn_idx)
 - timestamp
-- user instruction
-- assistant response
-- tool call, if any
-- tool output, if any
+- event_type (user_message / assistant_message / tool_call / tool_result / reasoning / task_start / task_completion / ...)
+- `call_id` (when applicable — correlates tool_call with tool_result per the rollout schema)
+- user instruction (when event_type = user_message)
+- assistant response (when event_type = assistant_message)
+- tool call, if any (when event_type = tool_call)
+- tool output, if any (when event_type = tool_result)
 - file paths touched, if available
 - terminal output, if available
 
-The trace format must be convertible to the same conceptual schema as the Claude Code corpus: `(session_id, turn_idx)` plus event content. The deterministic oracle and the rule-engine extractor both anchor on this schema; without it, no per-question scoring is possible.
+The trace format must be convertible to the same conceptual schema as the Claude Code corpus, now at triple-component event identity: `(session_id, turn_idx, event_idx)` plus event content. The Claude Code corpus can be retro-augmented with `event_idx = 0` for every existing row (non-breaking — it was one event per conceptual turn already). The deterministic oracle and the rule-engine extractor both anchor on this schema; without it, no per-question scoring is possible.
 
 **Decide before starting:** where traces are saved, in what format, and what tooling exports them after each session. If trace capture is added at session N, only sessions ≥ N are admissible; earlier sessions are useful software work but not admissible substrate.
 
