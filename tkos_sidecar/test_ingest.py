@@ -665,6 +665,210 @@ def test_mid_dispatch_failure_rolls_back_retire_and_complete(conn, monkeypatch):
     )
 
 
+# ─── Step 4B: pipeline_failed rule pair ─────────────────────────────────
+
+
+def test_failure_signature_uses_stderr_then_output_then_empty():
+    base = {
+        "event_id": 1,
+        "source_event_id": "event-1",
+        "session_id": SESSION,
+        "turn_idx": 0,
+        "event_type": "tool_result",
+        "exit_code": 2,
+    }
+    assert rules_module.failure_signature(rules_module.RuleEvent(
+        **base,
+        stderr_first_line="Error: stderr wins",
+        output="output loses",
+    )) == "2:Error: stderr wins"
+    assert rules_module.failure_signature(rules_module.RuleEvent(
+        **base,
+        output="\nfirst output\nsecond output",
+    )) == "2:first output"
+    assert rules_module.failure_signature(rules_module.RuleEvent(
+        **base,
+    )) == "2:"
+
+
+def test_failed_tool_result_mints_pipeline_failed(conn):
+    ingest_source_line(
+        conn,
+        SESSION,
+        1,
+        make_tool_result("t1", "Error: boom\nProcess exited with code 2", call_id="f1"),
+    )
+
+    instance = conn.execute(
+        """
+        SELECT claim, created_turn FROM belief_instances
+        WHERE session_id=? AND belief_type='pipeline_failed'
+        """,
+        (SESSION,),
+    ).fetchone()
+    assert instance == (
+        "pipeline_failed —  exit 2 signature '2:Error: boom' at turn 0",
+        0,
+    )
+    lifecycle = conn.execute(
+        """
+        SELECT kind, at_turn, effective_turn, authority
+        FROM belief_events
+        WHERE belief_id = (
+            SELECT belief_id FROM belief_instances
+            WHERE session_id=? AND belief_type='pipeline_failed'
+        )
+        """,
+        (SESSION,),
+    ).fetchone()
+    assert lifecycle == ("born", 0, 0, "confirmed_by_tool")
+
+
+def test_repeated_same_signature_failure_strengthens(conn):
+    failure = "Error: boom\nProcess exited with code 2"
+    ingest_source_line(conn, SESSION, 1, make_tool_result("t1", failure, call_id="f1"))
+    ingest_source_line(conn, SESSION, 2, make_tool_result("t2", failure, call_id="f2"))
+
+    kinds = conn.execute(
+        """
+        SELECT E.kind
+        FROM belief_events E
+        JOIN belief_instances B ON B.belief_id=E.belief_id
+        WHERE B.session_id=? AND B.belief_type='pipeline_failed'
+        ORDER BY E.belief_event_id
+        """,
+        (SESSION,),
+    ).fetchall()
+    assert kinds == [("born",), ("refreshed",)]
+
+
+def test_different_signature_failure_mints_new(conn):
+    ingest_source_line(
+        conn, SESSION, 1,
+        make_tool_result("t1", "Error: first\nProcess exited with code 2", call_id="f1"),
+    )
+    ingest_source_line(
+        conn, SESSION, 2,
+        make_tool_result("t2", "Error: second\nProcess exited with code 2", call_id="f2"),
+    )
+
+    instances = conn.execute(
+        """
+        SELECT claim FROM belief_instances
+        WHERE session_id=? AND belief_type='pipeline_failed'
+        ORDER BY created_turn, belief_id
+        """,
+        (SESSION,),
+    ).fetchall()
+    assert len(instances) == 2
+    assert any("2:Error: first" in row[0] for row in instances)
+    assert any("2:Error: second" in row[0] for row in instances)
+
+
+def test_pipeline_failed_strengthened_does_not_create_new_belief_instance(conn):
+    failure = "stderr: stable failure\nProcess exited with code 1"
+    ingest_source_line(conn, SESSION, 1, make_tool_result("t1", failure, call_id="f1"))
+    ingest_source_line(conn, SESSION, 2, make_tool_result("t2", failure, call_id="f2"))
+
+    instance_count = conn.execute(
+        """
+        SELECT COUNT(*) FROM belief_instances
+        WHERE session_id=? AND belief_type='pipeline_failed'
+        """,
+        (SESSION,),
+    ).fetchone()[0]
+    event_count = conn.execute(
+        """
+        SELECT COUNT(*) FROM belief_events E
+        JOIN belief_instances B ON B.belief_id=E.belief_id
+        WHERE B.session_id=? AND B.belief_type='pipeline_failed'
+        """,
+        (SESSION,),
+    ).fetchone()[0]
+    assert instance_count == 1
+    assert event_count == 2
+
+
+def test_pipeline_failed_mutual_exclusion(conn):
+    failure = "Traceback: same\nProcess exited with code 3"
+    ingest_source_line(conn, SESSION, 1, make_tool_result("t1", failure, call_id="f1"))
+    ingest_source_line(conn, SESSION, 2, make_tool_result("t2", failure, call_id="f2"))
+    ingest_source_line(
+        conn,
+        SESSION,
+        3,
+        make_tool_result("t3", "Traceback: different\nProcess exited with code 3", call_id="f3"),
+    )
+
+    fired_by_line = [
+        json.loads(row[0])
+        for row in conn.execute(
+            """
+            SELECT rules_fired FROM ingest_log
+            WHERE session_id=? ORDER BY source_line_number
+            """,
+            (SESSION,),
+        ).fetchall()
+    ]
+    pipeline_rules = [
+        [name for name in fired if name.startswith("pipeline_failed_")]
+        for fired in fired_by_line
+    ]
+    assert pipeline_rules == [
+        ["pipeline_failed_born"],
+        ["pipeline_failed_strengthened"],
+        ["pipeline_failed_born"],
+    ]
+
+
+def test_pipeline_failed_atomic_with_validation_pending_contradicted(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q", call_id="v1"))
+    ingest_source_line(
+        conn,
+        SESSION,
+        2,
+        make_tool_result(
+            "t1",
+            "Error: assertion failed\nProcess exited with code 1",
+            call_id="v1",
+        ),
+    )
+
+    result_event_id = conn.execute(
+        """
+        SELECT event_id FROM events
+        WHERE session_id=? AND event_type='tool_result'
+        """,
+        (SESSION,),
+    ).fetchone()[0]
+    effects = conn.execute(
+        """
+        SELECT B.belief_type, E.kind
+        FROM belief_events E
+        JOIN belief_instances B ON B.belief_id=E.belief_id
+        WHERE E.event_id=?
+        ORDER BY E.belief_event_id
+        """,
+        (result_event_id,),
+    ).fetchall()
+    assert effects == [
+        ("validation_pending", "contradicted"),
+        ("pipeline_failed", "born"),
+    ]
+
+    rules_fired = json.loads(conn.execute(
+        """
+        SELECT rules_fired FROM ingest_log
+        WHERE session_id=? AND source_line_number=2
+        """,
+        (SESSION,),
+    ).fetchone()[0])
+    assert rules_fired == [
+        "validation_pending_contradicted_by_failure",
+        "pipeline_failed_born",
+    ]
+
+
 # ─── Helpers ────────────────────────────────────────────────────────────
 
 

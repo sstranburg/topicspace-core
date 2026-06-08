@@ -342,6 +342,22 @@ def _exit_code_from_output(output: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
+def _stderr_first_line(output: str) -> str | None:
+    """Apply the locked Codex adapter's conservative stderr heuristic."""
+    for line in (output or "").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith(
+            ("Output:", "Chunk ID", "Process exited")
+        ):
+            continue
+        if any(
+            marker in stripped.lower()
+            for marker in ("error:", "traceback", "exception:", "stderr:")
+        ):
+            return stripped
+    return None
+
+
 def _normalize_event_fields(
     conn: sqlite3.Connection,
     session_id: str,
@@ -361,6 +377,8 @@ def _normalize_event_fields(
         "command": None,
         "exit_code": None,
         "outcome_status": None,
+        "output": None,
+        "stderr_first_line": None,
     }
 
     if event_type == "tool_call":
@@ -403,6 +421,8 @@ def _normalize_event_fields(
             fields["parent_event_id"], fields["tool_name"], fields["command"] = parent
 
         output = payload.get("output") or ""
+        fields["output"] = output
+        fields["stderr_first_line"] = _stderr_first_line(output)
         fields["outcome_status"] = classify_tool_outcome(fields["tool_name"] or "", output)
         fields["exit_code"] = _exit_code_from_output(output)
         if fields["exit_code"] is None and fields["outcome_status"] == "success":
@@ -672,6 +692,8 @@ def ingest_source_line(
                 command=normalized["command"],
                 exit_code=normalized["exit_code"],
                 parent_event_id=normalized["parent_event_id"],
+                output=normalized["output"],
+                stderr_first_line=normalized["stderr_first_line"],
             )
             try:
                 rules_fired = dispatch(conn, event)
