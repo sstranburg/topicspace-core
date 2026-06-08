@@ -24,11 +24,13 @@ import pytest
 import sys as _sys
 _sys.path.insert(0, str(Path(__file__).parent))
 
+import rules as rules_module  # noqa: E402
 from tkos import init_db, reconstruct_state  # noqa: E402
 from ingest import (  # noqa: E402
     IngestError,
     IngestResult,
     OutOfOrderError,
+    RuleDispatchError,
     SessionAlreadyFinalizedError,
     SourceMutationError,
     classify_line,
@@ -143,14 +145,19 @@ def test_envelope_missing_keys_raises(conn):
         handle_ingest_envelope(conn, {"session_id": SESSION, "source_line_number": 1})
 
 
-def test_envelope_string_source_line_number_coerced(conn):
-    envelope = {
-        "session_id": SESSION,
-        "source_line_number": "1",  # JSON sometimes carries ints as strings
-        "raw_line": make_user_message("t1"),
-    }
-    result = handle_ingest_envelope(conn, envelope)
-    assert result.status == "committed"
+@pytest.mark.parametrize(
+    "envelope",
+    [
+        {"session_id": SESSION, "source_line_number": "1", "raw_line": "{}"},
+        {"session_id": "", "source_line_number": 1, "raw_line": "{}"},
+        {"session_id": SESSION, "source_line_number": 0, "raw_line": "{}"},
+        {"session_id": SESSION, "source_line_number": True, "raw_line": "{}"},
+        {"session_id": SESSION, "source_line_number": 1, "raw_line": {}},
+    ],
+)
+def test_envelope_rejects_invalid_source_line_metadata(conn, envelope):
+    with pytest.raises(IngestError):
+        handle_ingest_envelope(conn, envelope)
 
 
 # ─── Behavior 2: Session init + finalized rejection ─────────────────────
@@ -177,6 +184,17 @@ def test_finalized_session_rejects_further_ingest(conn, tmp_path):
 
     with pytest.raises(SessionAlreadyFinalizedError):
         ingest_source_line(conn, SESSION, 2, make_user_message("t1"))
+
+
+def test_finalized_session_rejects_replay_of_existing_line(conn, tmp_path):
+    line = make_user_message("t1")
+    ingest_source_line(conn, SESSION, 1, line)
+    rollout = tmp_path / "rollout.jsonl"
+    rollout.write_text(line + "\n")
+    finalize_session(conn, SESSION, str(rollout))
+
+    with pytest.raises(SessionAlreadyFinalizedError):
+        ingest_source_line(conn, SESSION, 1, line)
 
 
 def test_hash_chain_initialized_to_empty_then_extended(conn):
@@ -344,6 +362,158 @@ def test_mapped_event_idx_increments_per_turn(conn):
     assert len(rows) == 3
     # event_idx is monotonic within the turn, starting at 0 (fix C).
     assert [r[1] for r in rows] == [0, 1, 2]
+
+
+# ─── Step 4: validation_pending rule pair ───────────────────────────────
+
+
+def test_validation_tool_call_mints_validation_pending(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q", call_id="v1"))
+
+    instance = conn.execute(
+        """
+        SELECT belief_type, claim, created_turn
+        FROM belief_instances
+        WHERE session_id=? AND belief_type='validation_pending'
+        """,
+        (SESSION,),
+    ).fetchone()
+    assert instance is not None
+    assert instance[0] == "validation_pending"
+    assert "pytest" in instance[1]
+    assert instance[2] == 0
+
+    lifecycle = conn.execute(
+        """
+        SELECT kind, at_turn, effective_turn, authority, note
+        FROM belief_events
+        WHERE belief_id = (
+            SELECT belief_id FROM belief_instances
+            WHERE session_id=? AND belief_type='validation_pending'
+        )
+        """,
+        (SESSION,),
+    ).fetchone()
+    assert lifecycle == (
+        "born",
+        0,
+        0,
+        "asserted_by_assistant",
+        "validation pending — pytest pytest -q initiated at turn 0",
+    )
+
+
+def test_successful_validation_result_retires_matching_pending(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q", call_id="v1"))
+    ingest_source_line(
+        conn,
+        SESSION,
+        2,
+        make_tool_result("t1", "tests passed\nProcess exited with code 0", call_id="v1"),
+    )
+
+    rows = conn.execute(
+        """
+        SELECT kind, at_turn, effective_turn, authority
+        FROM belief_events
+        WHERE belief_id = (
+            SELECT belief_id FROM belief_instances
+            WHERE session_id=? AND belief_type='validation_pending'
+        )
+        ORDER BY belief_event_id
+        """,
+        (SESSION,),
+    ).fetchall()
+    assert rows == [
+        ("born", 0, 0, "asserted_by_assistant"),
+        ("retired", 0, 0, "confirmed_by_tool"),
+    ]
+
+    beliefs, counts = reconstruct_state(conn, SESSION, turn=0)
+    assert not any(b["belief_type"] == "validation_pending" for b in beliefs)
+    assert counts["retired"] == 1
+
+
+def test_non_validation_tool_call_does_not_mint_validation_pending(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="ls /tmp", call_id="ls1"))
+    count = conn.execute(
+        "SELECT COUNT(*) FROM belief_instances WHERE belief_type='validation_pending'"
+    ).fetchone()[0]
+    assert count == 0
+
+
+def test_failed_validation_result_does_not_retire_pending(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q", call_id="v1"))
+    ingest_source_line(
+        conn,
+        SESSION,
+        2,
+        make_tool_result("t1", "failed\nProcess exited with code 1", call_id="v1"),
+    )
+
+    kinds = conn.execute(
+        """
+        SELECT kind
+        FROM belief_events
+        WHERE belief_id = (
+            SELECT belief_id FROM belief_instances
+            WHERE session_id=? AND belief_type='validation_pending'
+        )
+        ORDER BY belief_event_id
+        """,
+        (SESSION,),
+    ).fetchall()
+    assert kinds == [("born",)]
+
+    beliefs, _ = reconstruct_state(conn, SESSION, turn=0)
+    assert any(b["belief_type"] == "validation_pending" for b in beliefs)
+
+
+def test_validation_rules_record_effective_and_observed_turns(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q", call_id="v1"))
+    ingest_source_line(conn, SESSION, 2, make_user_message("t2"))
+    ingest_source_line(
+        conn,
+        SESSION,
+        3,
+        make_tool_result("t2", "passed\nProcess exited with code 0", call_id="v1"),
+    )
+
+    rows = conn.execute(
+        """
+        SELECT kind, effective_turn, at_turn
+        FROM belief_events
+        WHERE belief_id = (
+            SELECT belief_id FROM belief_instances
+            WHERE session_id=? AND belief_type='validation_pending'
+        )
+        ORDER BY belief_event_id
+        """,
+        (SESSION,),
+    ).fetchall()
+    assert rows == [("born", 0, 0), ("retired", 1, 1)]
+
+
+def test_rule_failure_rolls_back_ingest_and_logs_failure(conn, monkeypatch):
+    def fail_rule(_conn, _event):
+        raise RuntimeError("forced rule failure")
+
+    monkeypatch.setattr(rules_module, "validation_pending_born", fail_rule)
+
+    with pytest.raises(RuleDispatchError):
+        ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q"))
+
+    assert conn.execute("SELECT COUNT(*) FROM raw_lines").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM belief_instances").fetchone()[0] == 0
+    failure = conn.execute(
+        "SELECT rule_name, exception_class, exception_message FROM rule_failures"
+    ).fetchone()
+    assert failure == (
+        "validation_pending_born",
+        "RuntimeError",
+        "forced rule failure",
+    )
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────

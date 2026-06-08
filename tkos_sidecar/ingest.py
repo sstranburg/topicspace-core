@@ -1,4 +1,4 @@
-"""TKOS write-path Step 1 — ingestion skeleton.
+"""TKOS write-path ingestion and initial rule dispatch.
 
 Implements the five behaviors locked in Sue's 2026-06-06 directive:
 
@@ -11,7 +11,8 @@ Implements the five behaviors locked in Sue's 2026-06-06 directive:
        otherwise outcome=unknown and no report_ready (rules are stubs in Step 1).
     5. Ordered source-line ingestion — non-contiguous source_line_number raises.
 
-No belief derivation rules beyond stubs. No v0.4c2-admissible trace capture.
+Only the validation_pending rule pair is implemented. No v0.4c2-admissible
+trace capture.
 The audit-trail rationale for each choice lives in the v0.3.3 spec docs.
 """
 from __future__ import annotations
@@ -19,10 +20,12 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shlex
 import sqlite3
 import time
 from dataclasses import dataclass
-from typing import Any
+
+from rules import RuleApplicationError, RuleEvent, dispatch
 
 
 # ─── DDL extensions (additive to tkos.py's existing schema) ─────────────
@@ -96,7 +99,19 @@ EVENTS_ADD_COLUMNS = [
     "ALTER TABLE events ADD COLUMN source_rollout_path TEXT",
     "ALTER TABLE events ADD COLUMN source_line_number INTEGER",
     "ALTER TABLE events ADD COLUMN call_id TEXT",
+    "ALTER TABLE events ADD COLUMN parent_event_id TEXT",
+    "ALTER TABLE events ADD COLUMN tool_name TEXT",
+    "ALTER TABLE events ADD COLUMN command TEXT",
+    "ALTER TABLE events ADD COLUMN exit_code INTEGER",
     "ALTER TABLE events ADD COLUMN outcome_status TEXT",
+]
+
+BELIEF_EVENTS_ADD_COLUMNS = [
+    "ALTER TABLE belief_events ADD COLUMN effective_turn INTEGER",
+]
+
+INGEST_LOG_ADD_COLUMNS = [
+    "ALTER TABLE ingest_log ADD COLUMN rules_fired TEXT",
 ]
 
 EVENTS_ADD_INDEXES = [
@@ -109,6 +124,16 @@ def init_extended_db(conn: sqlite3.Connection) -> None:
     """Idempotent DDL setup. Safe to call repeatedly."""
     conn.executescript(DDL_EXTENSIONS)
     for stmt in EVENTS_ADD_COLUMNS:
+        try:
+            conn.execute(stmt)
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    for stmt in BELIEF_EVENTS_ADD_COLUMNS:
+        try:
+            conn.execute(stmt)
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    for stmt in INGEST_LOG_ADD_COLUMNS:
         try:
             conn.execute(stmt)
         except sqlite3.OperationalError:
@@ -135,6 +160,15 @@ class OutOfOrderError(IngestError):
 
 class SourceMutationError(IngestError):
     """An existing raw_lines row exists with a different raw_line_sha256."""
+
+
+class RuleDispatchError(IngestError):
+    """Rule dispatch failed after event persistence inside the ingest transaction."""
+
+    def __init__(self, rule_name: str, original: Exception):
+        super().__init__(str(original))
+        self.rule_name = rule_name
+        self.original = original
 
 
 # ─── Helpers: hashing, classification, outcome inference ────────────────
@@ -303,6 +337,81 @@ def classify_tool_outcome(tool_name: str, output: str) -> str:
     return "unknown"
 
 
+def _exit_code_from_output(output: str) -> int | None:
+    m = _SHELL_EXIT_RE.search(output or "")
+    return int(m.group(1)) if m else None
+
+
+def _normalize_event_fields(
+    conn: sqlite3.Connection,
+    session_id: str,
+    event_type: str,
+    payload_json: str,
+) -> dict:
+    """Derive the canonical fields needed by the §3.2 validation rules."""
+    parsed = json.loads(payload_json)
+    payload = parsed.get("payload") or {}
+    if not isinstance(payload, dict):
+        payload = {}
+
+    fields = {
+        "call_id": None,
+        "parent_event_id": None,
+        "tool_name": None,
+        "command": None,
+        "exit_code": None,
+        "outcome_status": None,
+    }
+
+    if event_type == "tool_call":
+        fields["call_id"] = payload.get("call_id")
+        source_tool_name = payload.get("name")
+        arguments = payload.get("arguments") or "{}"
+        try:
+            arguments = json.loads(arguments) if isinstance(arguments, str) else arguments
+        except json.JSONDecodeError:
+            arguments = {}
+        if not isinstance(arguments, dict):
+            arguments = {}
+
+        if source_tool_name == "exec_command":
+            command = arguments.get("cmd") or ""
+            try:
+                tokens = shlex.split(command)
+            except ValueError:
+                tokens = command.split()
+            fields["tool_name"] = tokens[0] if tokens else "exec_command"
+            fields["command"] = command
+        else:
+            fields["tool_name"] = source_tool_name
+            fields["command"] = ""
+        return fields
+
+    if event_type == "tool_result":
+        fields["call_id"] = payload.get("call_id")
+        parent = conn.execute(
+            """
+            SELECT source_event_id, tool_name, command
+            FROM events
+            WHERE session_id = ? AND call_id = ?
+            ORDER BY event_id DESC
+            LIMIT 1
+            """,
+            (session_id, fields["call_id"]),
+        ).fetchone()
+        if parent is not None:
+            fields["parent_event_id"], fields["tool_name"], fields["command"] = parent
+
+        output = payload.get("output") or ""
+        fields["outcome_status"] = classify_tool_outcome(fields["tool_name"] or "", output)
+        fields["exit_code"] = _exit_code_from_output(output)
+        if fields["exit_code"] is None and fields["outcome_status"] == "success":
+            fields["exit_code"] = 0
+        return fields
+
+    return fields
+
+
 # ─── Core: ingest_source_line ───────────────────────────────────────────
 
 
@@ -413,12 +522,12 @@ def ingest_source_line(
 
     Order of operations (per scope v0.3.3 §6.1 + v0.3.4 fixes α, β, γ):
 
-      0. Replay-idempotency: if (session_id, source_line_number) already
+      0. Session-status init: INSERT OR IGNORE the session row (fix β).
+      1. Finalized-rejection: if session_status.capture_ended_at IS NOT NULL,
+         raise SessionAlreadyFinalizedError (fix β).
+      2. Replay-idempotency: if (session_id, source_line_number) already
          exists in raw_lines with matching hash → no-op return; mismatch →
          SourceMutationError.
-      1. Session-status init: INSERT OR IGNORE the session row (fix β).
-      2. Finalized-rejection: if session_status.capture_ended_at IS NOT NULL,
-         raise SessionAlreadyFinalizedError (fix β).
       3. Ordered-delivery: source_line_number must equal prev_max + 1; otherwise
          OutOfOrderError (fix γ).
       4. Classify the line into Mapped / Ignored-known / Unrecognized.
@@ -429,43 +538,43 @@ def ingest_source_line(
       8. If Unrecognized: flip session_status.admissibility_eligible = 0.
       9. Append ingest_log.
 
-    All inside one transaction. Rules dispatch is a stub in Step 1 — no
-    belief_events are written.
+    All inside one transaction, including applicable rule-derived belief writes.
     """
     raw_line_bytes = raw_line.encode("utf-8")
     source_event_id = compute_source_event_id(session_id, source_line_number, raw_line_bytes)
     raw_line_sha = hashlib.sha256(raw_line_bytes).hexdigest()
+    rule_failure: RuleDispatchError | None = None
 
-    # Step 0: replay-idempotency check. Out-of-transaction read is fine; the
-    # UNIQUE constraint enforces correctness on write.
-    existing = _existing_raw_line(conn, session_id, source_line_number)
-    if existing is not None:
-        existing_sha, existing_category, _existing_event_id = existing
-        if existing_sha == raw_line_sha:
-            return IngestResult(
-                status="idempotent_replay",
-                category=existing_category,
-                source_event_id=source_event_id,
-                event_type=None,
-                turn_idx=-1,
-            )
-        raise SourceMutationError(
-            f"raw_lines row at ({session_id}, {source_line_number}) exists with "
-            f"hash {existing_sha[:12]}…; incoming hash {raw_line_sha[:12]}… differs."
-        )
-
-    # Atomic transaction begins. SQLite autocommit is off by default with the
-    # default sqlite3 module behavior; the explicit BEGIN/COMMIT is for clarity.
+    # Serialize the finalized, replay, ordering, and write checks together.
     conn.execute("BEGIN IMMEDIATE")
     try:
-        # Step 1: session init
+        # Step 0: session init
         session_row = _ensure_session_row(conn, session_id)
 
-        # Step 2: finalized rejection
+        # Step 1: finalized rejection. Once finalized, every ingest call is
+        # rejected, including a replay of an existing line.
         if session_row["capture_ended_at"] is not None:
             raise SessionAlreadyFinalizedError(
                 f"session {session_id} was finalized at {session_row['capture_ended_at']}; "
                 f"cannot ingest source_line_number={source_line_number}"
+            )
+
+        # Step 2: replay-idempotency check
+        existing = _existing_raw_line(conn, session_id, source_line_number)
+        if existing is not None:
+            existing_sha, existing_category, _existing_event_id = existing
+            if existing_sha == raw_line_sha:
+                conn.rollback()
+                return IngestResult(
+                    status="idempotent_replay",
+                    category=existing_category,
+                    source_event_id=source_event_id,
+                    event_type=None,
+                    turn_idx=-1,
+                )
+            raise SourceMutationError(
+                f"raw_lines row at ({session_id}, {source_line_number}) exists with "
+                f"hash {existing_sha[:12]}…; incoming hash {raw_line_sha[:12]}… differs."
             )
 
         # Step 3: ordered delivery
@@ -519,20 +628,30 @@ def ingest_source_line(
         )
 
         # Step 7: mapped → insert event
+        rules_fired: list[str] = []
         if classification.category == "mapped":
             event_idx = _next_event_idx_for_turn(conn, session_id, turn_idx)
             timestamp = json.loads(raw_line).get("timestamp") or _now_iso()
-            payload_json = raw_line  # keep full source line for now; richer normalization in Step 2
+            payload_json = raw_line
+            normalized = _normalize_event_fields(
+                conn,
+                session_id,
+                classification.event_type,
+                payload_json,
+            )
             cur = conn.execute(
                 """
                 INSERT INTO events
                     (session_id, turn, event_type, timestamp, payload_json,
-                     source_event_id, event_idx, source_line_number, outcome_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     source_event_id, event_idx, source_line_number, call_id,
+                     parent_event_id, tool_name, command, exit_code, outcome_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (session_id, turn_idx, classification.event_type, timestamp,
                  payload_json, source_event_id, event_idx, source_line_number,
-                 _derive_outcome_status(classification.event_type, payload_json)),
+                 normalized["call_id"], normalized["parent_event_id"],
+                 normalized["tool_name"], normalized["command"],
+                 normalized["exit_code"], normalized["outcome_status"]),
             )
             new_event_id = cur.lastrowid
             conn.execute(
@@ -540,6 +659,25 @@ def ingest_source_line(
                 "WHERE session_id=? AND source_line_number=?",
                 (event_idx, new_event_id, session_id, source_line_number),
             )
+
+            # Step 7b: rule dispatch. Event persistence and belief transitions
+            # commit or roll back together.
+            event = RuleEvent(
+                event_id=new_event_id,
+                source_event_id=source_event_id,
+                session_id=session_id,
+                turn_idx=turn_idx,
+                event_type=classification.event_type,
+                tool_name=normalized["tool_name"],
+                command=normalized["command"],
+                exit_code=normalized["exit_code"],
+                parent_event_id=normalized["parent_event_id"],
+            )
+            try:
+                rules_fired = dispatch(conn, event)
+            except RuleApplicationError as exc:
+                rule_failure = RuleDispatchError(exc.rule_name, exc.original)
+                raise rule_failure
 
         # Step 8: unrecognized → flip admissibility
         if classification.category == "unrecognized":
@@ -563,11 +701,11 @@ def ingest_source_line(
             """
             INSERT INTO ingest_log
                 (source_event_id, session_id, source_line_number, category,
-                 received_at, transaction_status)
-            VALUES (?, ?, ?, ?, ?, 'committed')
+                 received_at, transaction_status, rules_fired)
+            VALUES (?, ?, ?, ?, ?, 'committed', ?)
             """,
             (source_event_id, session_id, source_line_number,
-             classification.category, _now_iso()),
+             classification.category, _now_iso(), json.dumps(rules_fired)),
         )
 
         conn.commit()
@@ -580,7 +718,43 @@ def ingest_source_line(
         )
     except Exception:
         conn.rollback()
+        if rule_failure is not None:
+            _log_rule_failure(
+                conn,
+                session_id=session_id,
+                source_event_id=source_event_id,
+                rule_name=rule_failure.rule_name,
+                original=rule_failure.original,
+            )
         raise
+
+
+def _log_rule_failure(
+    conn: sqlite3.Connection,
+    *,
+    session_id: str,
+    source_event_id: str,
+    rule_name: str,
+    original: Exception,
+) -> None:
+    """Persist a rule exception after the ingest transaction has rolled back."""
+    conn.execute(
+        """
+        INSERT INTO rule_failures
+            (session_id, source_event_id, rule_name, exception_class,
+             exception_message, logged_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            session_id,
+            source_event_id,
+            rule_name,
+            original.__class__.__name__,
+            str(original),
+            _now_iso(),
+        ),
+    )
+    conn.commit()
 
 
 def _derive_outcome_status(event_type: str | None, payload_json: str) -> str | None:
@@ -640,13 +814,31 @@ def handle_ingest_envelope(conn: sqlite3.Connection, envelope: dict) -> IngestRe
     The HTTP server (whatever we use) parses JSON and calls this. No HTTP
     framework is required in Step 1 for tests — the tests call this directly.
     """
+    if not isinstance(envelope, dict):
+        raise IngestError("envelope must be a JSON object")
+
     required = ("session_id", "source_line_number", "raw_line")
     missing = [k for k in required if k not in envelope]
     if missing:
         raise IngestError(f"envelope missing required keys: {missing}")
+
+    session_id = envelope["session_id"]
+    source_line_number = envelope["source_line_number"]
+    raw_line = envelope["raw_line"]
+    if not isinstance(session_id, str) or not session_id:
+        raise IngestError("envelope session_id must be a non-empty string")
+    if (
+        not isinstance(source_line_number, int)
+        or isinstance(source_line_number, bool)
+        or source_line_number < 1
+    ):
+        raise IngestError("envelope source_line_number must be a positive integer")
+    if not isinstance(raw_line, str):
+        raise IngestError("envelope raw_line must be a string")
+
     return ingest_source_line(
         conn,
-        session_id=envelope["session_id"],
-        source_line_number=int(envelope["source_line_number"]),
-        raw_line=envelope["raw_line"],
+        session_id=session_id,
+        source_line_number=source_line_number,
+        raw_line=raw_line,
     )
