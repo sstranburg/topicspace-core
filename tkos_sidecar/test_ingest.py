@@ -124,6 +124,39 @@ def make_tool_result(turn_id: str, output: str, call_id: str = "call_x") -> str:
     })
 
 
+def make_assistant_message(turn_id: str, content: str) -> str:
+    return json.dumps({
+        "timestamp": "2026-06-06T00:00:00Z",
+        "type": "response_item",
+        "payload": {
+            "type": "message",
+            "role": "assistant",
+            "content": [{"type": "output_text", "text": content}],
+            "turn_id": turn_id,
+        },
+    })
+
+
+def make_file_tool_call(
+    turn_id: str,
+    path: str,
+    *,
+    tool_name: str = "write_file",
+    call_id: str = "edit_x",
+) -> str:
+    return json.dumps({
+        "timestamp": "2026-06-06T00:00:00Z",
+        "type": "response_item",
+        "payload": {
+            "type": "function_call",
+            "name": tool_name,
+            "arguments": json.dumps({"path": path}),
+            "call_id": call_id,
+            "turn_id": turn_id,
+        },
+    })
+
+
 # ─── Behavior 1: HTTP envelope ──────────────────────────────────────────
 
 
@@ -1028,6 +1061,166 @@ def test_reconstruct_state_preserves_observed_at_turn_for_retro_minted_belief(co
     assert running["last_updated_turn"] == 3
 
 
+# ─── Step 6: remaining standard belief families ────────────────────────
+
+
+def test_assistant_message_with_approval_request_mints_user_approval_pending(conn):
+    ingest_source_line(conn, SESSION, 1, make_assistant_message("t1", "Should I push now?"))
+    row = conn.execute(
+        """
+        SELECT B.claim, E.authority FROM belief_instances B
+        JOIN belief_events E ON E.belief_id=B.belief_id
+        WHERE B.belief_type='user_approval_pending'
+        """
+    ).fetchone()
+    assert row == ("user_approval_pending — 'Should I push' at turn 0", "asserted_by_assistant")
+
+
+def test_user_message_with_approval_grant_retires_pending(conn):
+    ingest_source_line(conn, SESSION, 1, make_assistant_message("t1", "Shall I proceed?"))
+    ingest_source_line(conn, SESSION, 2, make_user_message("t2", "Yes, go ahead"))
+    assert _belief_kinds(conn, "user_approval_pending") == ["born", "retired"]
+
+
+def test_user_message_with_approval_deny_contradicts_pending(conn):
+    ingest_source_line(conn, SESSION, 1, make_assistant_message("t1", "Do you want me to deploy?"))
+    ingest_source_line(conn, SESSION, 2, make_user_message("t2", "No, stop"))
+    assert _belief_kinds(conn, "user_approval_pending") == ["born", "contradicted"]
+
+
+def test_assistant_message_without_approval_pattern_does_not_mint(conn):
+    ingest_source_line(conn, SESSION, 1, make_assistant_message("t1", "Deployment is complete."))
+    assert _belief_count(conn, "user_approval_pending") == 0
+
+
+def test_approval_authority_upgraded_to_confirmed_by_user(conn):
+    ingest_source_line(conn, SESSION, 1, make_assistant_message("t1", "Can I commit this?"))
+    ingest_source_line(conn, SESSION, 2, make_user_message("t2", "Approved"))
+    authority = conn.execute(
+        """
+        SELECT E.authority FROM belief_events E
+        JOIN belief_instances B ON B.belief_id=E.belief_id
+        WHERE B.belief_type='user_approval_pending'
+        ORDER BY E.belief_event_id DESC LIMIT 1
+        """
+    ).fetchone()[0]
+    assert authority == "confirmed_by_user"
+
+
+def test_successful_write_to_report_path_mints_report_ready(conn):
+    ingest_source_line(conn, SESSION, 1, make_file_tool_call("t1", "reports/report.md", call_id="w1"))
+    ingest_source_line(conn, SESSION, 2, make_tool_result("t1", "Wrote file reports/report.md", "w1"))
+    assert _belief_count(conn, "report_ready") == 1
+
+
+def test_failed_write_to_report_path_does_not_mint_report_ready(conn):
+    ingest_source_line(conn, SESSION, 1, make_file_tool_call("t1", "report.md", call_id="w1"))
+    ingest_source_line(conn, SESSION, 2, make_tool_result("t1", "Error: write failed", "w1"))
+    assert _belief_count(conn, "report_ready") == 0
+
+
+def test_successful_write_to_non_report_path_does_not_mint(conn):
+    ingest_source_line(conn, SESSION, 1, make_file_tool_call("t1", "notes.txt", call_id="w1"))
+    ingest_source_line(conn, SESSION, 2, make_tool_result("t1", "Wrote file notes.txt", "w1"))
+    assert _belief_count(conn, "report_ready") == 0
+
+
+def test_new_report_ready_retires_prior_for_same_path(conn):
+    ingest_source_line(conn, SESSION, 1, make_file_tool_call("t1", "report.md", call_id="w1"))
+    ingest_source_line(conn, SESSION, 2, make_tool_result("t1", "Wrote file report.md", "w1"))
+    ingest_source_line(conn, SESSION, 3, make_file_tool_call("t2", "report.md", call_id="w2"))
+    ingest_source_line(conn, SESSION, 4, make_tool_result("t2", "Wrote file report.md", "w2"))
+    assert _belief_count(conn, "report_ready") == 2
+    assert _belief_kinds(conn, "report_ready") == ["born", "born", "retired"]
+
+
+def _create_failure_context(conn):
+    ingest_source_line(
+        conn, SESSION, 1, make_tool_result("t0", "Error: broken\nProcess exited with code 1", "f1")
+    )
+
+
+def test_edit_with_active_failure_context_mints_fix_attempted(conn):
+    _create_failure_context(conn)
+    ingest_source_line(conn, SESSION, 2, make_file_tool_call("t1", "src/app.py", call_id="e1"))
+    assert _belief_count(conn, "fix_attempted") == 1
+
+
+def test_edit_without_active_failure_context_does_not_mint(conn):
+    ingest_source_line(conn, SESSION, 1, make_file_tool_call("t1", "src/app.py", call_id="e1"))
+    assert _belief_count(conn, "fix_attempted") == 0
+
+
+def test_successful_validation_retires_overlapping_fix_attempted(conn):
+    _create_failure_context(conn)
+    ingest_source_line(conn, SESSION, 2, make_file_tool_call("t1", "src/app.py", call_id="e1"))
+    ingest_source_line(conn, SESSION, 3, make_tool_call("t2", "pytest -q", "v1"))
+    ingest_source_line(conn, SESSION, 4, make_tool_result("t2", "passed\nProcess exited with code 0", "v1"))
+    assert _belief_kinds(conn, "fix_attempted") == ["born", "retired"]
+
+
+def test_new_edit_supersedes_prior_overlapping_fix_attempted(conn):
+    _create_failure_context(conn)
+    ingest_source_line(conn, SESSION, 2, make_file_tool_call("t1", "src/app.py", call_id="e1"))
+    ingest_source_line(conn, SESSION, 3, make_file_tool_call("t2", "src/app.py", call_id="e2"))
+    assert _belief_kinds(conn, "fix_attempted") == ["born", "retired", "born"]
+
+
+def test_fix_attempted_born_and_supersede_fire_in_same_transaction(conn):
+    _create_failure_context(conn)
+    ingest_source_line(conn, SESSION, 2, make_file_tool_call("t1", "src/app.py", call_id="e1"))
+    ingest_source_line(conn, SESSION, 3, make_file_tool_call("t2", "src/app.py", call_id="e2"))
+    fired = json.loads(conn.execute(
+        "SELECT rules_fired FROM ingest_log WHERE source_line_number=3"
+    ).fetchone()[0])
+    assert fired == ["fix_attempted_superseded", "fix_attempted_born_from_edit"]
+
+
+def test_fix_attempted_born_uses_existing_pipeline_failed_as_context(conn):
+    _create_failure_context(conn)
+    ingest_source_line(conn, SESSION, 2, make_file_tool_call("t1", "src/app.py", call_id="e1"))
+    claim = conn.execute(
+        "SELECT claim FROM belief_instances WHERE belief_type='fix_attempted'"
+    ).fetchone()[0]
+    assert "context: pipeline_failed" in claim
+
+
+@pytest.mark.parametrize("family", ["approval", "report", "fix"])
+def test_atomic_rollback_across_all_three_new_families(conn, monkeypatch, family):
+    if family == "approval":
+        monkeypatch.setattr(
+            rules_module,
+            "user_approval_pending_born",
+            lambda *_args: (_ for _ in ()).throw(RuntimeError("approval failed")),
+        )
+        line = make_assistant_message("t1", "Should I push?")
+        expected_lines = 0
+    elif family == "report":
+        ingest_source_line(conn, SESSION, 1, make_file_tool_call("t1", "report.md", call_id="w1"))
+        monkeypatch.setattr(
+            rules_module,
+            "report_ready_retired_by_replacement",
+            lambda *_args: (_ for _ in ()).throw(RuntimeError("report failed")),
+        )
+        line = make_tool_result("t1", "Wrote file report.md", "w1")
+        expected_lines = 1
+    else:
+        _create_failure_context(conn)
+        ingest_source_line(conn, SESSION, 2, make_file_tool_call("t1", "src/app.py", call_id="e1"))
+        monkeypatch.setattr(
+            rules_module,
+            "fix_attempted_born_from_edit",
+            lambda *_args: (_ for _ in ()).throw(RuntimeError("fix failed")),
+        )
+        line = make_file_tool_call("t2", "src/app.py", call_id="e2")
+        expected_lines = 2
+
+    with pytest.raises(RuleDispatchError):
+        ingest_source_line(conn, SESSION, expected_lines + 1, line)
+    assert conn.execute("SELECT COUNT(*) FROM raw_lines").fetchone()[0] == expected_lines
+    assert conn.execute("SELECT COUNT(*) FROM rule_failures").fetchone()[0] == 1
+
+
 # ─── Helpers ────────────────────────────────────────────────────────────
 
 
@@ -1050,6 +1243,26 @@ def _session_row(conn, session_id):
         "failure_reasons": r[5],
         "line_hash_chain": r[6],
     }
+
+
+def _belief_count(conn, belief_type):
+    return conn.execute(
+        "SELECT COUNT(*) FROM belief_instances WHERE belief_type=?", (belief_type,)
+    ).fetchone()[0]
+
+
+def _belief_kinds(conn, belief_type):
+    return [
+        row[0]
+        for row in conn.execute(
+            """
+            SELECT E.kind FROM belief_events E
+            JOIN belief_instances B ON B.belief_id=E.belief_id
+            WHERE B.belief_type=? ORDER BY E.belief_event_id
+            """,
+            (belief_type,),
+        ).fetchall()
+    ]
 
 
 def _insert_blocker(conn, session_id, btype, at_turn):

@@ -1,20 +1,13 @@
 """TKOS write-path rule dispatch.
 
-Implements the validation lifecycle from RULES_SPEC v0.3.2 §3.2-§3.3:
-
-- validation_pending_born
-- validation_pending_retired_by_success
-- validation_pending_contradicted_by_failure
-- validation_complete_born
-- pipeline_failed_born
-- pipeline_failed_strengthened
-- pipeline_running_born_retroactive
-
-No other belief derivation rules are implemented here.
+Implements the RULES_SPEC v0.3.2 §2.1 supported subset only:
+fix_attempted, validation_pending, validation_complete, pipeline_running,
+pipeline_failed, user_approval_pending, and report_ready.
 """
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import sqlite3
 from dataclasses import dataclass
@@ -41,6 +34,33 @@ VALIDATION_COMMAND_PATTERNS = [
     re.compile(r"^go build\b"),
 ]
 
+EDIT_TOOLS = {"write_file", "edit_file", "apply_patch"}
+APPROVAL_REQUEST_PATTERNS = [
+    re.compile(r"should I (proceed|continue|deploy|commit|push|run|delete|drop)", re.I),
+    re.compile(r"can I (proceed|continue|deploy|commit|push|run|delete|drop)", re.I),
+    re.compile(r"are you ok with", re.I),
+    re.compile(r"do you want me to", re.I),
+    re.compile(r"shall I", re.I),
+    re.compile(r"awaiting (your )?approval", re.I),
+]
+APPROVAL_GRANT_PATTERNS = [
+    re.compile(r"^(yes|sure|go ahead|approved|proceed|do it|ok|okay)\b", re.I),
+    re.compile(r"\bsounds good\b", re.I),
+    re.compile(r"\bplease (do|proceed|continue)\b", re.I),
+]
+APPROVAL_DENY_PATTERNS = [
+    re.compile(r"^(no|stop|hold on|wait|don't|do not|cancel)\b", re.I),
+    re.compile(r"\b(reject|denied|refuse)\b", re.I),
+]
+REPORT_PATH_PATTERNS = [
+    re.compile(r"report\.html$"),
+    re.compile(r"report\.pdf$"),
+    re.compile(r"report\.md$"),
+    re.compile(r"REPORT[_\-].*\.md$"),
+    re.compile(r"/reports/"),
+    re.compile(r"summary\.(md|html|pdf)$"),
+]
+
 
 @dataclass(frozen=True)
 class RuleEvent:
@@ -55,6 +75,8 @@ class RuleEvent:
     parent_event_id: str | None = None
     output: str | None = None
     stderr_first_line: str | None = None
+    content: str | None = None
+    paths: tuple[str, ...] = ()
 
 
 class RuleApplicationError(Exception):
@@ -122,10 +144,21 @@ def dispatch_turn_boundary(
 def _rules_for(event: RuleEvent):
     if event.event_type == "tool_call":
         yield "validation_pending_born", validation_pending_born
+        # Supersede first so it cannot retire the new belief minted below.
+        yield "fix_attempted_superseded", fix_attempted_superseded
+        yield "fix_attempted_born_from_edit", fix_attempted_born_from_edit
     elif event.event_type == "tool_result":
         yield "validation_pending_retired_by_success", validation_pending_retired_by_success
         yield "validation_pending_contradicted_by_failure", validation_pending_contradicted_by_failure
         yield "validation_complete_born", validation_complete_born
+        yield "fix_attempted_retired_by_validation", fix_attempted_retired_by_validation
+        yield "report_ready_born", report_ready_born
+        yield "report_ready_retired_by_replacement", report_ready_retired_by_replacement
+    elif event.event_type == "assistant_message":
+        yield "user_approval_pending_born", user_approval_pending_born
+    elif event.event_type == "user_message":
+        yield "user_approval_pending_retired_by_approval", user_approval_pending_retired_by_approval
+        yield "user_approval_pending_contradicted_by_denial", user_approval_pending_contradicted_by_denial
 
 
 def is_validation_call(tool_name: str | None, command: str | None) -> bool:
@@ -418,6 +451,288 @@ def pipeline_failed_strengthened(
         (belief_id, event.event_id, event.turn_idx, event.turn_idx, note),
     )
     return True
+
+
+def user_approval_pending_born(conn: sqlite3.Connection, event: RuleEvent) -> bool:
+    match = _first_pattern_match(event.content, APPROVAL_REQUEST_PATTERNS)
+    if match is None:
+        return False
+    excerpt = match.group(0)
+    note = f"user_approval_pending — '{excerpt}' at turn {event.turn_idx}"
+    _mint_belief(
+        conn, event, "user_approval_pending", note, "asserted_by_assistant"
+    )
+    return True
+
+
+def user_approval_pending_retired_by_approval(
+    conn: sqlite3.Connection, event: RuleEvent
+) -> bool:
+    if _first_pattern_match(event.content, APPROVAL_GRANT_PATTERNS) is None:
+        return False
+    return _transition_all_active(
+        conn,
+        event,
+        "user_approval_pending",
+        "retired",
+        "confirmed_by_user",
+        f"user_approval_pending retired — approved at turn {event.turn_idx}",
+    )
+
+
+def user_approval_pending_contradicted_by_denial(
+    conn: sqlite3.Connection, event: RuleEvent
+) -> bool:
+    if _first_pattern_match(event.content, APPROVAL_DENY_PATTERNS) is None:
+        return False
+    return _transition_all_active(
+        conn,
+        event,
+        "user_approval_pending",
+        "contradicted",
+        "confirmed_by_user",
+        f"user_approval_pending contradicted — denied at turn {event.turn_idx}",
+    )
+
+
+def report_ready_born(conn: sqlite3.Connection, event: RuleEvent) -> bool:
+    if event.exit_code != 0 or event.tool_name not in EDIT_TOOLS:
+        return False
+    path = next(
+        (path for path in event.paths if any(pattern.search(path) for pattern in REPORT_PATH_PATTERNS)),
+        None,
+    )
+    if path is None:
+        return False
+    note = f"report_ready — {path} produced at turn {event.turn_idx} (exit 0)"
+    _mint_belief(conn, event, "report_ready", note, "confirmed_by_tool")
+    return True
+
+
+def report_ready_retired_by_replacement(
+    conn: sqlite3.Connection, event: RuleEvent
+) -> bool:
+    new_report = conn.execute(
+        """
+        SELECT belief_id, claim
+        FROM belief_instances
+        WHERE session_id=? AND belief_type='report_ready' AND created_by_event_id=?
+        """,
+        (event.session_id, event.event_id),
+    ).fetchone()
+    if new_report is None:
+        return False
+    new_belief_id, claim = new_report
+    path = claim.removeprefix("report_ready — ").split(" produced at turn ", 1)[0]
+    matches = [
+        belief_id
+        for belief_id, old_claim in _active_beliefs(conn, event.session_id, "report_ready")
+        if belief_id != new_belief_id
+        and old_claim.startswith(f"report_ready — {path} produced at turn ")
+    ]
+    return _transition_beliefs(
+        conn,
+        event,
+        matches,
+        "retired",
+        "confirmed_by_tool",
+        f"report_ready replaced by newer write at turn {event.turn_idx}",
+    )
+
+
+def fix_attempted_born_from_edit(conn: sqlite3.Connection, event: RuleEvent) -> bool:
+    if event.tool_name not in EDIT_TOOLS or not event.paths:
+        return False
+    context = _most_recent_active_context(conn, event.session_id)
+    if context is None:
+        return False
+    paths = json.dumps(list(event.paths), separators=(",", ":"))
+    note = f"fix attempted via {event.tool_name} on {paths} at turn {event.turn_idx}"
+    claim = f"{note}; context: {context}"
+    _mint_belief(
+        conn, event, "fix_attempted", claim, "asserted_by_assistant", note=note
+    )
+    return True
+
+
+def fix_attempted_retired_by_validation(
+    conn: sqlite3.Connection, event: RuleEvent
+) -> bool:
+    if event.exit_code != 0 or not is_validation_call(event.tool_name, event.command):
+        return False
+    matches = []
+    for belief_id, claim in _active_beliefs(conn, event.session_id, "fix_attempted"):
+        fix_paths = _fix_paths(claim)
+        if not event.paths or any(
+            _paths_overlap(fix_path, validation_path)
+            for fix_path in fix_paths
+            for validation_path in event.paths
+        ):
+            matches.append(belief_id)
+    return _transition_beliefs(
+        conn,
+        event,
+        matches,
+        "retired",
+        "confirmed_by_tool",
+        f"fix attempt validated at turn {event.turn_idx}",
+    )
+
+
+def fix_attempted_superseded(conn: sqlite3.Connection, event: RuleEvent) -> bool:
+    if event.tool_name not in EDIT_TOOLS or not event.paths:
+        return False
+    matches = []
+    for belief_id, claim in _active_beliefs(conn, event.session_id, "fix_attempted"):
+        if any(
+            _paths_overlap(old_path, new_path)
+            for old_path in _fix_paths(claim)
+            for new_path in event.paths
+        ):
+            matches.append(belief_id)
+    return _transition_beliefs(
+        conn,
+        event,
+        matches,
+        "retired",
+        "asserted_by_assistant",
+        f"fix attempt superseded by new edit at turn {event.turn_idx}",
+    )
+
+
+def _mint_belief(
+    conn: sqlite3.Connection,
+    event: RuleEvent,
+    belief_type: str,
+    claim: str,
+    authority: str,
+    *,
+    note: str | None = None,
+) -> str:
+    belief_id = _belief_id(event.session_id, belief_type, event.source_event_id)
+    conn.execute(
+        """
+        INSERT INTO belief_instances
+            (belief_id, session_id, belief_type, claim, created_turn, created_by_event_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (belief_id, event.session_id, belief_type, claim, event.turn_idx, event.event_id),
+    )
+    conn.execute(
+        """
+        INSERT INTO belief_events
+            (belief_id, event_id, kind, at_turn, effective_turn, authority, note)
+        VALUES (?, ?, 'born', ?, ?, ?, ?)
+        """,
+        (belief_id, event.event_id, event.turn_idx, event.turn_idx, authority, note or claim),
+    )
+    return belief_id
+
+
+def _transition_all_active(
+    conn: sqlite3.Connection,
+    event: RuleEvent,
+    belief_type: str,
+    kind: str,
+    authority: str,
+    note: str,
+) -> bool:
+    return _transition_beliefs(
+        conn,
+        event,
+        [belief_id for belief_id, _claim in _active_beliefs(conn, event.session_id, belief_type)],
+        kind,
+        authority,
+        note,
+    )
+
+
+def _transition_beliefs(
+    conn: sqlite3.Connection,
+    event: RuleEvent,
+    belief_ids: list[str],
+    kind: str,
+    authority: str,
+    note: str,
+) -> bool:
+    for belief_id in belief_ids:
+        conn.execute(
+            """
+            INSERT INTO belief_events
+                (belief_id, event_id, kind, at_turn, effective_turn, authority, note)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (belief_id, event.event_id, kind, event.turn_idx, event.turn_idx, authority, note),
+        )
+    return bool(belief_ids)
+
+
+def _active_beliefs(
+    conn: sqlite3.Connection, session_id: str, belief_type: str
+) -> list[tuple[str, str]]:
+    return conn.execute(
+        """
+        SELECT B.belief_id, B.claim
+        FROM belief_instances B
+        JOIN belief_events E ON E.belief_id=B.belief_id
+        WHERE B.session_id=? AND B.belief_type=?
+          AND E.belief_event_id=(
+              SELECT E2.belief_event_id FROM belief_events E2
+              WHERE E2.belief_id=B.belief_id
+              ORDER BY E2.at_turn DESC, E2.belief_event_id DESC LIMIT 1
+          )
+          AND E.kind IN ('born', 'refreshed', 'confirmed', 'weakened')
+        ORDER BY E.at_turn DESC, E.belief_event_id DESC
+        """,
+        (session_id, belief_type),
+    ).fetchall()
+
+
+def _most_recent_active_context(conn: sqlite3.Connection, session_id: str) -> str | None:
+    candidates = []
+    for belief_type in ("pipeline_failed", "validation_pending", "validation_complete"):
+        candidates.extend(_active_beliefs(conn, session_id, belief_type))
+    if not candidates:
+        return None
+    ids = {belief_id for belief_id, _claim in candidates}
+    placeholders = ",".join("?" for _ in ids)
+    row = conn.execute(
+        f"""
+        SELECT B.claim
+        FROM belief_instances B JOIN belief_events E ON E.belief_id=B.belief_id
+        WHERE B.belief_id IN ({placeholders})
+        ORDER BY E.at_turn DESC, E.belief_event_id DESC LIMIT 1
+        """,
+        tuple(ids),
+    ).fetchone()
+    return row[0] if row else None
+
+
+def _fix_paths(claim: str) -> tuple[str, ...]:
+    match = re.search(r" on (\[.*?\]) at turn ", claim)
+    if match is None:
+        return ()
+    try:
+        value = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return ()
+    return tuple(path for path in value if isinstance(path, str))
+
+
+def _paths_overlap(left: str, right: str) -> bool:
+    left = left.rstrip("/")
+    right = right.rstrip("/")
+    return left == right or left.startswith(right + "/") or right.startswith(left + "/")
+
+
+def _first_pattern_match(
+    content: str | None, patterns: list[re.Pattern]
+) -> re.Match | None:
+    for pattern in patterns:
+        match = pattern.search(content or "")
+        if match is not None:
+            return match
+    return None
 
 
 def _matching_validation_parent(

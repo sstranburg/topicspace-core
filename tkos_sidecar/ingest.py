@@ -11,8 +11,8 @@ Implements the five behaviors locked in Sue's 2026-06-06 directive:
        otherwise outcome=unknown and no report_ready (rules are stubs in Step 1).
     5. Ordered source-line ingestion — non-contiguous source_line_number raises.
 
-Only the validation_pending rule pair is implemented. No v0.4c2-admissible
-trace capture.
+Belief derivation is limited to the RULES_SPEC v0.3.2 §2.1 supported subset.
+No v0.4c2-admissible trace capture.
 The audit-trail rationale for each choice lives in the v0.3.3 spec docs.
 """
 from __future__ import annotations
@@ -105,6 +105,8 @@ EVENTS_ADD_COLUMNS = [
     "ALTER TABLE events ADD COLUMN command TEXT",
     "ALTER TABLE events ADD COLUMN exit_code INTEGER",
     "ALTER TABLE events ADD COLUMN outcome_status TEXT",
+    "ALTER TABLE events ADD COLUMN content TEXT",
+    "ALTER TABLE events ADD COLUMN paths_json TEXT",
 ]
 
 BELIEF_EVENTS_ADD_COLUMNS = [
@@ -380,7 +382,13 @@ def _normalize_event_fields(
         "outcome_status": None,
         "output": None,
         "stderr_first_line": None,
+        "content": None,
+        "paths": (),
     }
+
+    if event_type in {"assistant_message", "user_message"}:
+        fields["content"] = _message_content(payload)
+        return fields
 
     if event_type == "tool_call":
         fields["call_id"] = payload.get("call_id")
@@ -404,13 +412,14 @@ def _normalize_event_fields(
         else:
             fields["tool_name"] = source_tool_name
             fields["command"] = ""
+        fields["paths"] = _tool_call_paths(source_tool_name, arguments)
         return fields
 
     if event_type == "tool_result":
         fields["call_id"] = payload.get("call_id")
         parent = conn.execute(
             """
-            SELECT source_event_id, tool_name, command
+            SELECT source_event_id, tool_name, command, paths_json
             FROM events
             WHERE session_id = ? AND call_id = ?
             ORDER BY event_id DESC
@@ -419,7 +428,8 @@ def _normalize_event_fields(
             (session_id, fields["call_id"]),
         ).fetchone()
         if parent is not None:
-            fields["parent_event_id"], fields["tool_name"], fields["command"] = parent
+            fields["parent_event_id"], fields["tool_name"], fields["command"], paths_json = parent
+            fields["paths"] = tuple(json.loads(paths_json or "[]"))
 
         output = payload.get("output") or ""
         fields["output"] = output
@@ -431,6 +441,45 @@ def _normalize_event_fields(
         return fields
 
     return fields
+
+
+def _message_content(payload: dict) -> str:
+    content = payload.get("message", payload.get("content", ""))
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+    parts = []
+    for item in content:
+        if isinstance(item, str):
+            parts.append(item)
+        elif isinstance(item, dict):
+            text = item.get("text") or item.get("content")
+            if isinstance(text, str):
+                parts.append(text)
+    return "\n".join(parts)
+
+
+def _tool_call_paths(tool_name: str | None, arguments: dict) -> tuple[str, ...]:
+    paths: list[str] = []
+    for key in ("path", "file_path"):
+        value = arguments.get(key)
+        if isinstance(value, str) and value:
+            paths.append(value)
+    value = arguments.get("paths")
+    if isinstance(value, list):
+        paths.extend(path for path in value if isinstance(path, str) and path)
+
+    if tool_name == "apply_patch":
+        patch = arguments.get("input") or arguments.get("patch") or ""
+        if isinstance(patch, str):
+            for match in re.finditer(
+                r"^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$",
+                patch,
+                re.MULTILINE,
+            ):
+                paths.append(match.group(1).strip())
+    return tuple(dict.fromkeys(paths))
 
 
 # ─── Core: ingest_source_line ───────────────────────────────────────────
@@ -679,15 +728,17 @@ def ingest_source_line(
                 INSERT INTO events
                     (session_id, turn, event_type, timestamp, payload_json,
                      source_event_id, event_idx, source_line_number, turn_id, call_id,
-                     parent_event_id, tool_name, command, exit_code, outcome_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     parent_event_id, tool_name, command, exit_code, outcome_status,
+                     content, paths_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (session_id, turn_idx, classification.event_type, timestamp,
                  payload_json, source_event_id, event_idx, source_line_number,
                  resolved_turn_id,
                  normalized["call_id"], normalized["parent_event_id"],
                  normalized["tool_name"], normalized["command"],
-                 normalized["exit_code"], normalized["outcome_status"]),
+                 normalized["exit_code"], normalized["outcome_status"],
+                 normalized["content"], json.dumps(normalized["paths"])),
             )
             new_event_id = cur.lastrowid
             conn.execute(
@@ -710,6 +761,8 @@ def ingest_source_line(
                 parent_event_id=normalized["parent_event_id"],
                 output=normalized["output"],
                 stderr_first_line=normalized["stderr_first_line"],
+                content=normalized["content"],
+                paths=normalized["paths"],
             )
             try:
                 if turn_idx > prior_max_turn:
