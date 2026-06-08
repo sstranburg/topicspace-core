@@ -442,7 +442,7 @@ def test_non_validation_tool_call_does_not_mint_validation_pending(conn):
     assert count == 0
 
 
-def test_failed_validation_result_does_not_retire_pending(conn):
+def test_failed_validation_result_contradicts_but_does_not_retire_pending(conn):
     ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q", call_id="v1"))
     ingest_source_line(
         conn,
@@ -451,9 +451,9 @@ def test_failed_validation_result_does_not_retire_pending(conn):
         make_tool_result("t1", "failed\nProcess exited with code 1", call_id="v1"),
     )
 
-    kinds = conn.execute(
+    lifecycle = conn.execute(
         """
-        SELECT kind
+        SELECT kind, at_turn, effective_turn, authority, note
         FROM belief_events
         WHERE belief_id = (
             SELECT belief_id FROM belief_instances
@@ -463,10 +463,116 @@ def test_failed_validation_result_does_not_retire_pending(conn):
         """,
         (SESSION,),
     ).fetchall()
-    assert kinds == [("born",)]
+    assert lifecycle == [
+        (
+            "born",
+            0,
+            0,
+            "asserted_by_assistant",
+            "validation pending — pytest pytest -q initiated at turn 0",
+        ),
+        (
+            "contradicted",
+            0,
+            0,
+            "confirmed_by_tool",
+            "validation pending contradicted — failed at turn 0",
+        ),
+    ]
 
-    beliefs, _ = reconstruct_state(conn, SESSION, turn=0)
-    assert any(b["belief_type"] == "validation_pending" for b in beliefs)
+    beliefs, counts = reconstruct_state(conn, SESSION, turn=0)
+    assert not any(b["belief_type"] == "validation_pending" for b in beliefs)
+    assert counts["contradicted"] == 1
+
+
+def test_failed_validation_result_without_matching_pending_writes_no_contradiction(conn):
+    ingest_source_line(
+        conn,
+        SESSION,
+        1,
+        make_tool_result("t1", "failed\nProcess exited with code 1", call_id="missing"),
+    )
+    count = conn.execute(
+        "SELECT COUNT(*) FROM belief_events WHERE kind='contradicted'"
+    ).fetchone()[0]
+    assert count == 0
+
+
+def test_successful_validation_retires_pending_and_mints_complete_atomically(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q", call_id="v1"))
+    ingest_source_line(
+        conn,
+        SESSION,
+        2,
+        make_tool_result("t1", "passed\nProcess exited with code 0", call_id="v1"),
+    )
+
+    rows = conn.execute(
+        """
+        SELECT B.belief_type, E.kind, E.at_turn, E.effective_turn, E.authority, E.note
+        FROM belief_events E
+        JOIN belief_instances B ON B.belief_id = E.belief_id
+        WHERE E.event_id = (
+            SELECT event_id FROM events
+            WHERE session_id=? AND event_type='tool_result'
+        )
+        ORDER BY E.belief_event_id
+        """,
+        (SESSION,),
+    ).fetchall()
+    assert rows == [
+        (
+            "validation_pending",
+            "retired",
+            0,
+            0,
+            "confirmed_by_tool",
+            "validation pending retired — succeeded at turn 0",
+        ),
+        (
+            "validation_complete",
+            "born",
+            0,
+            0,
+            "confirmed_by_tool",
+            "validation complete — pytest pytest -q passed at turn 0",
+        ),
+    ]
+
+    complete_claim = conn.execute(
+        """
+        SELECT claim FROM belief_instances
+        WHERE session_id=? AND belief_type='validation_complete'
+        """,
+        (SESSION,),
+    ).fetchone()[0]
+    assert complete_claim == "validation complete — pytest pytest -q from turn 0"
+
+    rules_fired = conn.execute(
+        """
+        SELECT rules_fired FROM ingest_log
+        WHERE session_id=? AND source_line_number=2
+        """,
+        (SESSION,),
+    ).fetchone()[0]
+    assert json.loads(rules_fired) == [
+        "validation_pending_retired_by_success",
+        "validation_complete_born",
+    ]
+
+
+def test_successful_non_validation_result_does_not_mint_validation_complete(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="ls /tmp", call_id="ls1"))
+    ingest_source_line(
+        conn,
+        SESSION,
+        2,
+        make_tool_result("t1", "listed\nProcess exited with code 0", call_id="ls1"),
+    )
+    count = conn.execute(
+        "SELECT COUNT(*) FROM belief_instances WHERE belief_type='validation_complete'"
+    ).fetchone()[0]
+    assert count == 0
 
 
 def test_validation_rules_record_effective_and_observed_turns(conn):
@@ -513,6 +619,49 @@ def test_rule_failure_rolls_back_ingest_and_logs_failure(conn, monkeypatch):
         "validation_pending_born",
         "RuntimeError",
         "forced rule failure",
+    )
+
+
+def test_mid_dispatch_failure_rolls_back_retire_and_complete(conn, monkeypatch):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t1", cmd="pytest -q", call_id="v1"))
+
+    def fail_complete(_conn, _event):
+        raise RuntimeError("complete rule failed")
+
+    monkeypatch.setattr(rules_module, "validation_complete_born", fail_complete)
+
+    with pytest.raises(RuleDispatchError):
+        ingest_source_line(
+            conn,
+            SESSION,
+            2,
+            make_tool_result("t1", "passed\nProcess exited with code 0", call_id="v1"),
+        )
+
+    # The result event, its raw line, the preceding retirement effect, and the
+    # complete belief all roll back. The previously committed pending birth stays.
+    assert conn.execute("SELECT COUNT(*) FROM raw_lines").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 1
+    assert conn.execute(
+        "SELECT COUNT(*) FROM belief_instances WHERE belief_type='validation_complete'"
+    ).fetchone()[0] == 0
+    kinds = conn.execute(
+        """
+        SELECT E.kind
+        FROM belief_events E
+        JOIN belief_instances B ON B.belief_id = E.belief_id
+        WHERE B.belief_type='validation_pending'
+        ORDER BY E.belief_event_id
+        """
+    ).fetchall()
+    assert kinds == [("born",)]
+    failure = conn.execute(
+        "SELECT rule_name, exception_class, exception_message FROM rule_failures"
+    ).fetchone()
+    assert failure == (
+        "validation_complete_born",
+        "RuntimeError",
+        "complete rule failed",
     )
 
 

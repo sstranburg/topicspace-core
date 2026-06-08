@@ -1,9 +1,11 @@
 """TKOS write-path rule dispatch.
 
-Step 4 implements only RULES_SPEC v0.3.2 §3.2:
+Implements the validation lifecycle from RULES_SPEC v0.3.2 §3.2-§3.3:
 
 - validation_pending_born
 - validation_pending_retired_by_success
+- validation_pending_contradicted_by_failure
+- validation_complete_born
 
 No other belief derivation rules are implemented here.
 """
@@ -76,6 +78,8 @@ def _rules_for(event: RuleEvent):
         yield "validation_pending_born", validation_pending_born
     elif event.event_type == "tool_result":
         yield "validation_pending_retired_by_success", validation_pending_retired_by_success
+        yield "validation_pending_contradicted_by_failure", validation_pending_contradicted_by_failure
+        yield "validation_complete_born", validation_complete_born
 
 
 def is_validation_call(tool_name: str | None, command: str | None) -> bool:
@@ -150,6 +154,119 @@ def validation_pending_retired_by_success(conn: sqlite3.Connection, event: RuleE
     return fired
 
 
+def validation_pending_contradicted_by_failure(
+    conn: sqlite3.Connection,
+    event: RuleEvent,
+) -> bool:
+    if event.exit_code is None or event.exit_code == 0:
+        return False
+
+    matches = _active_validation_pending_matches(conn, event)
+    fired = False
+    for belief_id in matches:
+        note = f"validation pending contradicted — failed at turn {event.turn_idx}"
+        conn.execute(
+            """
+            INSERT INTO belief_events
+                (belief_id, event_id, kind, at_turn, effective_turn, authority, note)
+            VALUES (?, ?, 'contradicted', ?, ?, 'confirmed_by_tool', ?)
+            """,
+            (
+                belief_id,
+                event.event_id,
+                event.turn_idx,
+                event.turn_idx,
+                note,
+            ),
+        )
+        fired = True
+    return fired
+
+
+def validation_complete_born(conn: sqlite3.Connection, event: RuleEvent) -> bool:
+    if event.exit_code != 0:
+        return False
+
+    parent = _matching_validation_parent(conn, event)
+    if parent is None:
+        return False
+
+    parent_source_event_id, tool_name, command, parent_turn = parent
+    claim = (
+        f"validation complete — {tool_name or ''} {command or ''} "
+        f"from turn {parent_turn}"
+    )
+    note = (
+        f"validation complete — {tool_name or ''} {command or ''} "
+        f"passed at turn {event.turn_idx}"
+    )
+    belief_id = _belief_id(
+        event.session_id,
+        "validation_complete",
+        event.source_event_id,
+    )
+
+    conn.execute(
+        """
+        INSERT INTO belief_instances
+            (belief_id, session_id, belief_type, claim, created_turn, created_by_event_id)
+        VALUES (?, ?, 'validation_complete', ?, ?, ?)
+        """,
+        (belief_id, event.session_id, claim, event.turn_idx, event.event_id),
+    )
+    conn.execute(
+        """
+        INSERT INTO belief_events
+            (belief_id, event_id, kind, at_turn, effective_turn, authority, note)
+        VALUES (?, ?, 'born', ?, ?, 'confirmed_by_tool', ?)
+        """,
+        (
+            belief_id,
+            event.event_id,
+            event.turn_idx,
+            event.turn_idx,
+            note,
+        ),
+    )
+    return True
+
+
+def _matching_validation_parent(
+    conn: sqlite3.Connection,
+    event: RuleEvent,
+) -> tuple[str, str | None, str | None, int] | None:
+    if event.parent_event_id:
+        parent = conn.execute(
+            """
+            SELECT source_event_id, tool_name, command, turn
+            FROM events
+            WHERE session_id=? AND event_type='tool_call' AND source_event_id=?
+            """,
+            (event.session_id, event.parent_event_id),
+        ).fetchone()
+        if parent is not None and is_validation_call(parent[1], parent[2]):
+            return parent
+        return None
+
+    if not event.tool_name and not event.command:
+        return None
+
+    parent = conn.execute(
+        """
+        SELECT source_event_id, tool_name, command, turn
+        FROM events
+        WHERE session_id=? AND event_type='tool_call'
+          AND tool_name=? AND command=?
+        ORDER BY event_id DESC
+        LIMIT 1
+        """,
+        (event.session_id, event.tool_name, event.command),
+    ).fetchone()
+    if parent is not None and is_validation_call(parent[1], parent[2]):
+        return parent
+    return None
+
+
 def _active_validation_pending_matches(
     conn: sqlite3.Connection,
     event: RuleEvent,
@@ -160,8 +277,7 @@ def _active_validation_pending_matches(
     if event.parent_event_id:
         where.append("C.source_event_id = ?")
         params.append(event.parent_event_id)
-
-    if event.tool_name or event.command:
+    elif event.tool_name or event.command:
         where.append("(C.tool_name = ? AND C.command = ?)")
         params.extend([event.tool_name, event.command])
 
