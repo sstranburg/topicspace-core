@@ -192,8 +192,19 @@ def compute_source_event_id(session_id: str, source_line_number: int, raw_line_b
 
 
 # Codex ignored-known taxonomy (per scope §4.1 fix 2)
-IGNORED_KNOWN_TOP_TYPES = frozenset({"session_meta", "turn_context"})
-IGNORED_KNOWN_EVENT_MSG_SUBTYPES = frozenset({"token_count", "agent_message"})
+IGNORED_KNOWN_TOP_TYPES = frozenset({
+    "session_meta",
+    "turn_context",
+    # v0.3.3+ (extended from real-data capture 2026-06-08):
+    "compacted",          # Codex internal context-compaction marker
+})
+IGNORED_KNOWN_EVENT_MSG_SUBTYPES = frozenset({
+    "token_count",
+    "agent_message",      # duplicate of response_item(payload.type=message)
+    # v0.3.3+ (extended from real-data capture 2026-06-08):
+    "patch_apply_end",    # redundant with function_call_output for apply_patch
+    "context_compacted",  # Codex internal context-management notification
+})
 IGNORED_KNOWN_RESPONSE_ITEM_ROLES = frozenset({"user", "developer"})
 
 # Codex mapped taxonomy
@@ -203,9 +214,12 @@ MAPPED_EVENT_MSG_TO_EVENT_TYPE = {
     "task_complete":  "task_completion",
 }
 MAPPED_RESPONSE_ITEM_TO_EVENT_TYPE = {
-    "function_call":        "tool_call",
-    "function_call_output": "tool_result",
-    "reasoning":            "assistant_reasoning",
+    "function_call":            "tool_call",
+    "function_call_output":     "tool_result",
+    "reasoning":                "assistant_reasoning",
+    # v0.3.3+ (extended from real-data capture 2026-06-08):
+    "custom_tool_call":         "tool_call",    # Codex custom-tool envelope, same shape as function_call
+    "custom_tool_call_output":  "tool_result",  # Codex custom-tool result, same shape as function_call_output
     # "message" with role=assistant maps; user/developer are ignored-known above
 }
 
@@ -892,12 +906,13 @@ def finalize_session(conn: sqlite3.Connection, session_id: str, rollout_path: st
     conn.execute(
         """
         UPDATE session_status
-        SET raw_rollout_sha256 = ?,
-            total_line_count   = ?,
-            capture_ended_at   = ?
+        SET raw_rollout_sha256  = ?,
+            total_line_count    = ?,
+            capture_ended_at    = ?,
+            source_rollout_path = ?
         WHERE session_id = ?
         """,
-        (rollout_sha, line_count, _now_iso(), session_id),
+        (rollout_sha, line_count, _now_iso(), str(rollout_path), session_id),
     )
     conn.commit()
 

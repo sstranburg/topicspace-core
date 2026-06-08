@@ -592,12 +592,83 @@ def cmd_state(args: argparse.Namespace) -> None:
     conn.close()
 
 
+def cmd_capture(args: argparse.Namespace) -> None:
+    """Capture a Codex rollout JSONL into the sidecar substrate."""
+    from ingest import init_extended_db
+    from trace_adapter_codex import ingest_rollout
+
+    conn = sqlite3.connect(args.db)
+    init_db(conn)
+    init_extended_db(conn)
+
+    summary = ingest_rollout(
+        conn, args.rollout_path,
+        session_id=args.session_id,
+        finalize=not args.no_finalize,
+    )
+
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        print(f"session_id: {summary['session_id']}")
+        print(f"rollout:    {summary['rollout_path']}")
+        print(f"lines:      {summary['lines_processed']}")
+        print(f"categories: {summary['categories']}")
+        print(f"finalized:  {summary['finalized']}")
+
+    conn.close()
+
+
+def cmd_verify(args: argparse.Namespace) -> None:
+    """Run the §6.2 five-check completeness validation on a captured session."""
+    from ingest import init_extended_db
+    from verify_export import verify_session
+
+    conn = sqlite3.connect(args.db)
+    init_db(conn)
+    init_extended_db(conn)
+
+    result = verify_session(conn, args.session_id)
+
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        print(f"session_id: {result.session_id}")
+        print(f"verdict:    {'PASS' if result.passed else 'FAIL'}")
+        for check in result.checks:
+            mark = "✓" if check["ok"] else "✗"
+            print(f"  {mark} {check['check']}: {check['detail']}")
+
+    conn.close()
+    if not result.passed:
+        sys.exit(1)
+
+
+def cmd_export(args: argparse.Namespace) -> None:
+    """Produce the deterministic JSONL export per §10 Q6 (substrate artifact)."""
+    from ingest import init_extended_db
+    from verify_export import export_session
+
+    conn = sqlite3.connect(args.db)
+    init_db(conn)
+    init_extended_db(conn)
+
+    out = export_session(conn, args.session_id)
+    if args.out:
+        Path(args.out).write_text(out, encoding="utf-8")
+        print(f"exported {len(out.splitlines())} events to {args.out}")
+    else:
+        sys.stdout.write(out)
+
+    conn.close()
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="tkos",
         description=(
-            "TKOS-002 read-path slice v0.1 — "
-            "human-facing belief-state observability surface."
+            "TKOS write-path sidecar v0.3 — "
+            "capture / verify / export Codex rollouts as belief-state substrate."
         ),
     )
     p.add_argument("--db", default=str(DEFAULT_DB_PATH),
@@ -630,6 +701,39 @@ def build_parser() -> argparse.ArgumentParser:
     op.add_argument("--json", action="store_true",
                     help="Emit JSON envelope with rendered overlay + metadata")
     op.set_defaults(func=cmd_overlay)
+
+    cp = sub.add_parser(
+        "capture",
+        help="Ingest a Codex rollout JSONL into the sidecar substrate.",
+    )
+    cp.add_argument("rollout_path",
+                    help="Path to the rollout JSONL "
+                         "(typically ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl)")
+    cp.add_argument("--session-id",
+                    help="Explicit session_id (default: derive from session_meta header)")
+    cp.add_argument("--no-finalize", action="store_true",
+                    help="Skip finalize_session() at end (use for live-mode partial ingest)")
+    cp.add_argument("--json", action="store_true",
+                    help="Emit JSON summary instead of human-readable text")
+    cp.set_defaults(func=cmd_capture)
+
+    vp = sub.add_parser(
+        "verify",
+        help="Run §6.2 five-check completeness validation on a captured session.",
+    )
+    vp.add_argument("session_id")
+    vp.add_argument("--json", action="store_true",
+                    help="Emit JSON result instead of human-readable text")
+    vp.set_defaults(func=cmd_verify)
+
+    ep = sub.add_parser(
+        "export",
+        help="Produce deterministic JSONL substrate artifact for a captured session.",
+    )
+    ep.add_argument("session_id")
+    ep.add_argument("--out",
+                    help="Write export to file (default: stdout)")
+    ep.set_defaults(func=cmd_export)
 
     return p
 
