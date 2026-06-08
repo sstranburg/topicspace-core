@@ -25,7 +25,7 @@ import sqlite3
 import time
 from dataclasses import dataclass
 
-from rules import RuleApplicationError, RuleEvent, dispatch
+from rules import RuleApplicationError, RuleEvent, dispatch, dispatch_turn_boundary
 
 
 # ─── DDL extensions (additive to tkos.py's existing schema) ─────────────
@@ -98,6 +98,7 @@ EVENTS_ADD_COLUMNS = [
     "ALTER TABLE events ADD COLUMN event_idx INTEGER",
     "ALTER TABLE events ADD COLUMN source_rollout_path TEXT",
     "ALTER TABLE events ADD COLUMN source_line_number INTEGER",
+    "ALTER TABLE events ADD COLUMN turn_id TEXT",
     "ALTER TABLE events ADD COLUMN call_id TEXT",
     "ALTER TABLE events ADD COLUMN parent_event_id TEXT",
     "ALTER TABLE events ADD COLUMN tool_name TEXT",
@@ -496,7 +497,19 @@ def _next_event_idx_for_turn(conn: sqlite3.Connection, session_id: str, turn_idx
     return cur.fetchone()[0]
 
 
-def _resolve_turn_idx(conn: sqlite3.Connection, session_id: str, classification: Classification) -> int:
+def _max_turn_idx(conn: sqlite3.Connection, session_id: str) -> int:
+    cur = conn.execute(
+        "SELECT COALESCE(MAX(turn), -1) FROM events WHERE session_id=?",
+        (session_id,),
+    )
+    return cur.fetchone()[0]
+
+
+def _resolve_turn(
+    conn: sqlite3.Connection,
+    session_id: str,
+    classification: Classification,
+) -> tuple[int, str | None]:
     """Map Codex turn_id → monotonic per-session turn_idx (fix 7).
 
     Lines without turn_id inherit the most recent prior turn_id (adjacency
@@ -507,29 +520,29 @@ def _resolve_turn_idx(conn: sqlite3.Connection, session_id: str, classification:
     if classification.turn_id is None:
         # Inherit from the most recent prior mapped event for this session, if any
         cur = conn.execute(
-            "SELECT turn FROM events WHERE session_id=? "
+            "SELECT turn, turn_id FROM events WHERE session_id=? "
             "ORDER BY event_id DESC LIMIT 1",
             (session_id,),
         )
         prev = cur.fetchone()
-        return prev[0] if prev else -1
+        return (prev[0], prev[1]) if prev else (-1, None)
 
     # Has a turn_id; map it to an integer.
     cur = conn.execute(
         "SELECT turn FROM events WHERE session_id=? "
-        "AND payload_json LIKE ? "
+        "AND turn_id=? "
         "ORDER BY event_id LIMIT 1",
-        (session_id, f'%"turn_id": "{classification.turn_id}"%'),
+        (session_id, classification.turn_id),
     )
     existing = cur.fetchone()
     if existing:
-        return existing[0]
+        return existing[0], classification.turn_id
     # New turn_id — assign the next int.
     cur = conn.execute(
         "SELECT COALESCE(MAX(turn), -1) + 1 FROM events WHERE session_id=?",
         (session_id,),
     )
-    return cur.fetchone()[0]
+    return cur.fetchone()[0], classification.turn_id
 
 
 def ingest_source_line(
@@ -619,12 +632,14 @@ def ingest_source_line(
         turn_idx = -1
         event_idx = None
         new_event_id = None
+        resolved_turn_id = None
+        prior_max_turn = _max_turn_idx(conn, session_id)
         if classification.category == "mapped":
-            turn_idx = _resolve_turn_idx(conn, session_id, classification)
+            turn_idx, resolved_turn_id = _resolve_turn(conn, session_id, classification)
         elif classification.turn_id is not None:
             # Ignored-known lines with a turn_id (e.g., turn_context) get tagged
             # with the inherited turn_idx for grouping, but don't consume event_idx.
-            turn_idx = _resolve_turn_idx(conn, session_id, classification)
+            turn_idx, resolved_turn_id = _resolve_turn(conn, session_id, classification)
 
         # Step 5: insert raw_lines
         conn.execute(
@@ -663,12 +678,13 @@ def ingest_source_line(
                 """
                 INSERT INTO events
                     (session_id, turn, event_type, timestamp, payload_json,
-                     source_event_id, event_idx, source_line_number, call_id,
+                     source_event_id, event_idx, source_line_number, turn_id, call_id,
                      parent_event_id, tool_name, command, exit_code, outcome_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (session_id, turn_idx, classification.event_type, timestamp,
                  payload_json, source_event_id, event_idx, source_line_number,
+                 resolved_turn_id,
                  normalized["call_id"], normalized["parent_event_id"],
                  normalized["tool_name"], normalized["command"],
                  normalized["exit_code"], normalized["outcome_status"]),
@@ -696,7 +712,14 @@ def ingest_source_line(
                 stderr_first_line=normalized["stderr_first_line"],
             )
             try:
-                rules_fired = dispatch(conn, event)
+                if turn_idx > prior_max_turn:
+                    rules_fired.extend(dispatch_turn_boundary(
+                        conn,
+                        session_id=session_id,
+                        current_turn=turn_idx,
+                        trigger_event_id=new_event_id,
+                    ))
+                rules_fired.extend(dispatch(conn, event))
             except RuleApplicationError as exc:
                 rule_failure = RuleDispatchError(exc.rule_name, exc.original)
                 raise rule_failure

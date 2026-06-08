@@ -195,6 +195,11 @@ def load_demo_fixture(conn: sqlite3.Connection, session_id: str = DEMO_SESSION_I
     return True
 
 
+def _belief_events_has_effective_turn(conn: sqlite3.Connection) -> bool:
+    cur = conn.execute("PRAGMA table_info(belief_events)")
+    return any(row[1] == "effective_turn" for row in cur.fetchall())
+
+
 # ─── State reconstruction (the load-bearing read-path query) ────────────
 
 def reconstruct_state(
@@ -209,6 +214,8 @@ def reconstruct_state(
     here. Turn-T queries must replay the audit trail, not read a snapshot.
     """
     cur = conn.cursor()
+    has_effective_turn = _belief_events_has_effective_turn(conn)
+    turn_expr = "COALESCE(effective_turn, at_turn)" if has_effective_turn else "at_turn"
     cur.execute(
         "SELECT belief_id, belief_type, claim, created_turn "
         "FROM belief_instances "
@@ -222,17 +229,17 @@ def reconstruct_state(
     counts = {"active": 0, "retired": 0, "contradicted": 0}
 
     for belief_id, btype, claim, created_turn in rows:
-        # Latest lifecycle event at_turn <= T determines current state.
+        # Latest lifecycle event with effective_turn <= T determines current state.
         cur.execute(
-            "SELECT kind, at_turn FROM belief_events "
-            "WHERE belief_id = ? AND at_turn <= ? "
-            "ORDER BY at_turn DESC, belief_event_id DESC LIMIT 1",
+            f"SELECT kind, at_turn, {turn_expr} FROM belief_events "
+            f"WHERE belief_id = ? AND {turn_expr} <= ? "
+            f"ORDER BY {turn_expr} DESC, at_turn DESC, belief_event_id DESC LIMIT 1",
             (belief_id, turn),
         )
         last = cur.fetchone()
         if last is None:
             continue
-        last_kind, last_updated_turn = last
+        last_kind, observed_at_turn, effective_turn = last
         state = KIND_TO_STATE[last_kind]
         counts[state] = counts.get(state, 0) + 1
 
@@ -240,17 +247,17 @@ def reconstruct_state(
             continue
 
         cur.execute(
-            "SELECT at_turn FROM belief_events "
-            "WHERE belief_id = ? AND at_turn <= ? "
+            f"SELECT {turn_expr} FROM belief_events "
+            f"WHERE belief_id = ? AND {turn_expr} <= ? "
             "AND kind IN ('born','refreshed','confirmed') "
-            "ORDER BY at_turn ASC, belief_event_id ASC",
+            f"ORDER BY {turn_expr} ASC, at_turn ASC, belief_event_id ASC",
             (belief_id, turn),
         )
         warrant_turns = [r[0] for r in cur.fetchall()]
 
         cur.execute(
             "SELECT authority FROM belief_events "
-            "WHERE belief_id = ? AND at_turn <= ?",
+            f"WHERE belief_id = ? AND {turn_expr} <= ?",
             (belief_id, turn),
         )
         observed_auths = [r[0] for r in cur.fetchall()]
@@ -267,7 +274,9 @@ def reconstruct_state(
             "state":              state,
             "authority":          authority,
             "warrant_turns":      warrant_turns,
-            "last_updated_turn":  last_updated_turn,
+            "last_updated_turn":  observed_at_turn,
+            "observed_at_turn":   observed_at_turn,
+            "effective_turn":     effective_turn,
             "created_turn":       created_turn,
         })
 

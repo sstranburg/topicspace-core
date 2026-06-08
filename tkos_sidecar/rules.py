@@ -8,6 +8,7 @@ Implements the validation lifecycle from RULES_SPEC v0.3.2 §3.2-§3.3:
 - validation_complete_born
 - pipeline_failed_born
 - pipeline_failed_strengthened
+- pipeline_running_born_retroactive
 
 No other belief derivation rules are implemented here.
 """
@@ -98,6 +99,26 @@ def dispatch(conn: sqlite3.Connection, event: RuleEvent) -> list[str]:
     return fired
 
 
+def dispatch_turn_boundary(
+    conn: sqlite3.Connection,
+    *,
+    session_id: str,
+    current_turn: int,
+    trigger_event_id: int,
+) -> list[str]:
+    """Run rules whose trigger is turn-boundary advancement, not event_type."""
+    try:
+        count = pipeline_running_born_retroactive(
+            conn,
+            session_id=session_id,
+            current_turn=current_turn,
+            trigger_event_id=trigger_event_id,
+        )
+    except Exception as exc:
+        raise RuleApplicationError("pipeline_running_born_retroactive", exc) from exc
+    return ["pipeline_running_born_retroactive"] if count else []
+
+
 def _rules_for(event: RuleEvent):
     if event.event_type == "tool_call":
         yield "validation_pending_born", validation_pending_born
@@ -122,6 +143,72 @@ def failure_signature(event: RuleEvent) -> str:
     if detail is None:
         detail = _first_nonempty_line(event.output)
     return f"{event.exit_code}:{detail or ''}"
+
+
+def pipeline_running_born_retroactive(
+    conn: sqlite3.Connection,
+    *,
+    session_id: str,
+    current_turn: int,
+    trigger_event_id: int,
+) -> int:
+    """Retro-mint pipeline_running after K=3 subsequent turns.
+
+    This is intentionally not part of event_type dispatch. It runs only when
+    ingest advances to the first mapped event of a new turn.
+    """
+    candidates = conn.execute(
+        """
+        SELECT E.event_id, E.source_event_id, E.turn, E.tool_name, E.command
+        FROM events E
+        LEFT JOIN events R
+          ON R.session_id = E.session_id
+         AND R.event_type = 'tool_result'
+         AND R.call_id = E.call_id
+         AND R.turn <= ?
+        WHERE E.session_id = ?
+          AND E.event_type = 'tool_call'
+          AND E.turn <= ?
+          AND R.event_id IS NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM belief_instances B
+              WHERE B.belief_type = 'pipeline_running'
+                AND B.created_by_event_id = E.event_id
+          )
+        ORDER BY E.turn ASC, E.event_idx ASC, E.event_id ASC
+        """,
+        (current_turn - 1, session_id, current_turn - 3),
+    ).fetchall()
+
+    for event_id, source_event_id, effective_turn, tool_name, command in candidates:
+        claim = (
+            f"pipeline_running — {tool_name or ''} {command or ''} "
+            f"from turn {effective_turn} (observed at turn {current_turn})"
+        )
+        belief_id = _belief_id(session_id, "pipeline_running", source_event_id)
+        conn.execute(
+            """
+            INSERT INTO belief_instances
+                (belief_id, session_id, belief_type, claim, created_turn, created_by_event_id)
+            VALUES (?, ?, 'pipeline_running', ?, ?, ?)
+            """,
+            (belief_id, session_id, claim, effective_turn, event_id),
+        )
+        conn.execute(
+            """
+            INSERT INTO belief_events
+                (belief_id, event_id, kind, at_turn, effective_turn, authority, note)
+            VALUES (?, ?, 'born', ?, ?, 'asserted_by_assistant', ?)
+            """,
+            (
+                belief_id,
+                trigger_event_id,
+                current_turn,
+                effective_turn,
+                claim,
+            ),
+        )
+    return len(candidates)
 
 
 def validation_pending_born(conn: sqlite3.Connection, event: RuleEvent) -> bool:

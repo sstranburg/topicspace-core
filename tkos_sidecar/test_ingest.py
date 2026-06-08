@@ -869,6 +869,165 @@ def test_pipeline_failed_atomic_with_validation_pending_contradicted(conn):
     ]
 
 
+# ─── Step 5: pipeline_running retro-mint ────────────────────────────────
+
+
+def _advance_turns(conn, start_line: int, turn_ids: list[str]) -> None:
+    for offset, turn_id in enumerate(turn_ids):
+        ingest_source_line(
+            conn,
+            SESSION,
+            start_line + offset,
+            make_user_message(turn_id, content=f"advance {turn_id}"),
+        )
+
+
+def test_pipeline_running_does_not_fire_with_multiple_events_same_turn(conn):
+    compact = lambda line: json.dumps(json.loads(line), separators=(",", ":"))
+    ingest_source_line(
+        conn, SESSION, 1, compact(make_tool_call("t0", cmd="sleep 30", call_id="slow"))
+    )
+    ingest_source_line(
+        conn, SESSION, 2, compact(make_tool_call("t0", cmd="ls /tmp", call_id="parallel1"))
+    )
+    ingest_source_line(
+        conn, SESSION, 3, compact(make_tool_call("t0", cmd="pwd", call_id="parallel2"))
+    )
+    ingest_source_line(
+        conn, SESSION, 4, compact(make_user_message("t0", content="same turn"))
+    )
+
+    count = conn.execute(
+        "SELECT COUNT(*) FROM belief_instances WHERE belief_type='pipeline_running'"
+    ).fetchone()[0]
+    assert count == 0
+    assert conn.execute(
+        "SELECT COUNT(DISTINCT turn) FROM events WHERE session_id=?",
+        (SESSION,),
+    ).fetchone()[0] == 1
+
+
+def test_pipeline_running_retro_mints_after_three_subsequent_turns(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t0", cmd="sleep 30", call_id="slow"))
+    _advance_turns(conn, 2, ["t1", "t2", "t3"])
+
+    row = conn.execute(
+        """
+        SELECT claim, created_turn, created_by_event_id
+        FROM belief_instances
+        WHERE session_id=? AND belief_type='pipeline_running'
+        """,
+        (SESSION,),
+    ).fetchone()
+    assert row is not None
+    assert row[0] == "pipeline_running — sleep sleep 30 from turn 0 (observed at turn 3)"
+    assert row[1] == 0
+    original_call_event_id = conn.execute(
+        "SELECT event_id FROM events WHERE session_id=? AND call_id='slow'",
+        (SESSION,),
+    ).fetchone()[0]
+    assert row[2] == original_call_event_id
+
+
+def test_pipeline_running_uses_effective_turn_from_original_call_and_observed_turn_from_detection(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t0", cmd="sleep 30", call_id="slow"))
+    _advance_turns(conn, 2, ["t1", "t2", "t3"])
+
+    lifecycle = conn.execute(
+        """
+        SELECT kind, effective_turn, at_turn, authority
+        FROM belief_events E
+        JOIN belief_instances B ON B.belief_id=E.belief_id
+        WHERE B.session_id=? AND B.belief_type='pipeline_running'
+        """,
+        (SESSION,),
+    ).fetchone()
+    assert lifecycle == ("born", 0, 3, "asserted_by_assistant")
+
+
+def test_pipeline_running_does_not_duplicate_for_same_unmatched_call(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t0", cmd="sleep 30", call_id="slow"))
+    _advance_turns(conn, 2, ["t1", "t2", "t3", "t4", "t5"])
+
+    instances = conn.execute(
+        "SELECT COUNT(*) FROM belief_instances WHERE belief_type='pipeline_running'"
+    ).fetchone()[0]
+    events = conn.execute(
+        """
+        SELECT COUNT(*) FROM belief_events E
+        JOIN belief_instances B ON B.belief_id=E.belief_id
+        WHERE B.belief_type='pipeline_running'
+        """
+    ).fetchone()[0]
+    assert instances == 1
+    assert events == 1
+
+
+def test_pipeline_running_not_minted_if_result_arrives_before_k_turns(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t0", cmd="sleep 30", call_id="slow"))
+    ingest_source_line(conn, SESSION, 2, make_user_message("t1"))
+    ingest_source_line(
+        conn,
+        SESSION,
+        3,
+        make_tool_result("t1", "done\nProcess exited with code 0", call_id="slow"),
+    )
+    _advance_turns(conn, 4, ["t2", "t3", "t4"])
+
+    count = conn.execute(
+        "SELECT COUNT(*) FROM belief_instances WHERE belief_type='pipeline_running'"
+    ).fetchone()[0]
+    assert count == 0
+
+
+def test_pipeline_running_rule_failure_rolls_back_ingest_and_logs_failure(conn, monkeypatch):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t0", cmd="sleep 30", call_id="slow"))
+    _advance_turns(conn, 2, ["t1", "t2"])
+
+    def fail_scan(*_args, **_kwargs):
+        raise RuntimeError("retro scan failed")
+
+    monkeypatch.setattr(rules_module, "pipeline_running_born_retroactive", fail_scan)
+
+    with pytest.raises(RuleDispatchError):
+        ingest_source_line(conn, SESSION, 4, make_user_message("t3"))
+
+    assert conn.execute("SELECT COUNT(*) FROM raw_lines").fetchone()[0] == 3
+    assert conn.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 3
+    assert conn.execute(
+        "SELECT COUNT(*) FROM belief_instances WHERE belief_type='pipeline_running'"
+    ).fetchone()[0] == 0
+    failure = conn.execute(
+        "SELECT rule_name, exception_class, exception_message FROM rule_failures"
+    ).fetchone()
+    assert failure == (
+        "pipeline_running_born_retroactive",
+        "RuntimeError",
+        "retro scan failed",
+    )
+
+
+def test_reconstruct_state_includes_retro_minted_pipeline_running_by_effective_turn(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t0", cmd="sleep 30", call_id="slow"))
+    _advance_turns(conn, 2, ["t1", "t2", "t3"])
+
+    beliefs, _ = reconstruct_state(conn, SESSION, turn=1)
+    running = [b for b in beliefs if b["belief_type"] == "pipeline_running"]
+    assert len(running) == 1
+    assert running[0]["effective_turn"] == 0
+
+
+def test_reconstruct_state_preserves_observed_at_turn_for_retro_minted_belief(conn):
+    ingest_source_line(conn, SESSION, 1, make_tool_call("t0", cmd="sleep 30", call_id="slow"))
+    _advance_turns(conn, 2, ["t1", "t2", "t3"])
+
+    beliefs, _ = reconstruct_state(conn, SESSION, turn=1)
+    running = next(b for b in beliefs if b["belief_type"] == "pipeline_running")
+    assert running["effective_turn"] == 0
+    assert running["observed_at_turn"] == 3
+    assert running["last_updated_turn"] == 3
+
+
 # ─── Helpers ────────────────────────────────────────────────────────────
 
 
